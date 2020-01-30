@@ -5,7 +5,7 @@ A method for producing a standardized pseudo-color plot of 2D data
 import os
 try:
   if os.environ['DISPLAY'] != None: pass
-except: 
+except:
   import matplotlib
   matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -13,15 +13,15 @@ from matplotlib.colors import BoundaryNorm, ListedColormap, LogNorm
 from matplotlib.ticker import MaxNLocator
 import math
 import numpy, numpy.matlib
-import m6toolbox
-import VerticalSplitScale
+from OM4_Analysis_Labs import m6toolbox
+from OM4_Analysis_Labs import VerticalSplitScale
 
 try: from mpl_toolkits.basemap import Basemap
 except: print('Basemap module not found. Some regional plots may not function properly')
 
-try: 
+try:
   import cmocean
-except: 
+except:
   if "HTTP_USER_AGENT" in os.environ.keys():
     pass
   else:
@@ -99,7 +99,7 @@ def xyplot(field, x=None, y=None, area=None,
   cb = plt.colorbar(fraction=.08, pad=0.02, extend=extend)
   if centerlabels and len(clim)>2: cb.set_ticks(  0.5*(clim[:-1]+clim[1:]) )
   elif clim is not None and len(clim)>2: cb.set_ticks( clim )
-  axis.set_axis_bgcolor(landcolor)
+  axis.set_facecolor(landcolor)
   plt.xlim( xLims )
   plt.ylim( yLims )
   axis.annotate('max=%.5g\nmin=%.5g'%(sMax,sMin), xy=(0.0,1.01), xycoords='axes fraction', verticalalignment='bottom', fontsize=10)
@@ -236,10 +236,10 @@ def xycompare(field1, field2, x=None, y=None, area=None,
       plotBasemapPanel(maskedField1, sector, xCoord, yCoord, lonRange, latRange, \
                        cmap, norm, interactive, extend)
     if centerlabels and len(clim)>2: cb1.set_ticks(  0.5*(clim[:-1]+clim[1:]) )
-    axis.set_axis_bgcolor(landcolor)
+    axis.set_facecolor(landcolor)
     annotateStats(axis, s1Min, s1Max, s1Mean, s1Std, s1RMS, webversion=webversion)
     if len(ylabel+yunits)>0: plt.ylabel(label(ylabel, yunits))
-    if len(title1)>0: 
+    if len(title1)>0:
       if webversion == True: axis.annotate(preTitleA+title1, xy=(0.5,1.14), xycoords='axes fraction', \
                                            verticalalignment='bottom', horizontalalignment='center', fontsize=12)
       else:
@@ -256,10 +256,10 @@ def xycompare(field1, field2, x=None, y=None, area=None,
       plotBasemapPanel(maskedField2, sector, xCoord, yCoord, lonRange, latRange, \
                        cmap, norm, interactive, extend)
     if centerlabels and len(clim)>2: cb2.set_ticks(  0.5*(clim[:-1]+clim[1:]) )
-    axis.set_axis_bgcolor(landcolor)
+    axis.set_facecolor(landcolor)
     annotateStats(axis, s2Min, s2Max, s2Mean, s2Std, s2RMS, webversion=webversion)
     if len(ylabel+yunits)>0: plt.ylabel(label(ylabel, yunits))
-    if len(title2)>0: 
+    if len(title2)>0:
       if webversion == True: axis.annotate(preTitleB+title2, xy=(0.5,titleOffset), xycoords='axes fraction', \
                                            verticalalignment='bottom', horizontalalignment='center', fontsize=12)
       else:
@@ -279,7 +279,7 @@ def xycompare(field1, field2, x=None, y=None, area=None,
       if dextend is None: dextend = extend
       cb3 = plt.colorbar(fraction=.08, pad=0.02, extend=dextend) # was extend!
       if centerdlabels and len(dlim)>2: cb3.set_ticks(  0.5*(dlim[:-1]+dlim[1:]) )
-      axis.set_axis_bgcolor(landcolor)
+      axis.set_facecolor(landcolor)
       plt.xlim( xLims ); plt.ylim( yLims )
       annotateStats(axis, dMin, dMax, dMean, dStd, dRMS, webversion=webversion)
       if len(ylabel+yunits)>0: plt.ylabel(label(ylabel, yunits))
@@ -299,7 +299,7 @@ def xycompare(field1, field2, x=None, y=None, area=None,
                        cmap, norm, interactive, dextend)
       annotateStats(axis, dMin, dMax, dMean, dStd, dRMS, webversion=webversion)
       if len(ylabel+yunits)>0: plt.ylabel(label(ylabel, yunits))
-      if len(title3)>0: 
+      if len(title3)>0:
         if webversion == True: axis.annotate(title3, xy=(0.5,titleOffset), xycoords='axes fraction', verticalalignment='bottom',
                                              horizontalalignment='center', fontsize=12)
         else:
@@ -387,7 +387,7 @@ def yzplot(field, y=None, z=None,
   if interactive: addStatusBar(yCoord, zCoord, field2)
   cb = plt.colorbar(fraction=.08, pad=0.02, extend=extend)
   if centerlabels and len(clim)>2: cb.set_ticks(  0.5*(clim[:-1]+clim[1:]) )
-  axis.set_axis_bgcolor(landcolor)
+  axis.set_facecolor(landcolor)
   if splitscale is not None:
     for zzz in splitscale[1:-1]: plt.axhline(zzz,color='k',linestyle='--')
     axis.set_yscale('splitscale', zval=splitscale)
@@ -517,7 +517,7 @@ def yzcompare(field1, field2, y=None, z=None,
     if interactive: addStatusBar(yCoord, zCoord, field1)
     cb1 = plt.colorbar(fraction=.08, pad=0.02, extend=extend)
     if centerlabels and len(clim)>2: cb1.set_ticks(  0.5*(clim[:-1]+clim[1:]) )
-    axis.set_axis_bgcolor(landcolor)
+    axis.set_facecolor(landcolor)
     if splitscale is not None:
       for zzz in splitscale[1:-1]: plt.axhline(zzz,color='k',linestyle='--')
       axis.set_yscale('splitscale', zval=splitscale)
@@ -532,7 +532,7 @@ def yzcompare(field1, field2, y=None, z=None,
     if interactive: addStatusBar(yCoord, zCoord, field2)
     cb2 = plt.colorbar(fraction=.08, pad=0.02, extend=extend)
     if centerlabels and len(clim)>2: cb2.set_ticks(  0.5*(clim[:-1]+clim[1:]) )
-    axis.set_axis_bgcolor(landcolor)
+    axis.set_facecolor(landcolor)
     if splitscale is not None:
       for zzz in splitscale[1:-1]: plt.axhline(zzz,color='k',linestyle='--')
       axis.set_yscale('splitscale', zval=splitscale)
@@ -553,7 +553,7 @@ def yzcompare(field1, field2, y=None, z=None,
     if interactive: addStatusBar(yCoord, zCoord, field1 - field2)
     cb3 = plt.colorbar(fraction=.08, pad=0.02, extend=dextend)
     if centerdlabels and len(dlim)>2: cb3.set_ticks(  0.5*(dlim[:-1]+dlim[1:]) )
-    axis.set_axis_bgcolor(landcolor)
+    axis.set_facecolor(landcolor)
     if splitscale is not None:
       for zzz in splitscale[1:-1]: plt.axhline(zzz,color='k',linestyle='--')
       axis.set_yscale('splitscale', zval=splitscale)
@@ -592,7 +592,7 @@ def ztplot(field, t=None, z=None,
   splitscale    A list of depths to define equal regions of projection in the vertical, e.g. [0.,-1000,-6500]
   title       The title to place at the top of the panel. Default ''.
   suptitle    The super-title to place at the top of the figure. Default ''.
-  autocenter  If clim generated by script, set to be centered on zero.  Default False. 
+  autocenter  If clim generated by script, set to be centered on zero.  Default False.
   clim        A tuple of (min,max) color range OR a list of contour levels. Default None.
   colormap    The name of the colormap to use. Default None.
   extend      Can be one of 'both', 'neither', 'max', 'min'. Default None.
@@ -636,7 +636,7 @@ def ztplot(field, t=None, z=None,
   if interactive: addStatusBar(tCoord, zCoord, field2)
   cb = plt.colorbar(fraction=.08, pad=0.02, extend=extend)
   if centerlabels and len(clim)>2: cb.set_ticks(  0.5*(clim[:-1]+clim[1:]) )
-  axis.set_axis_bgcolor(landcolor)
+  axis.set_facecolor(landcolor)
   if splitscale is not None:
     for zzz in splitscale[1:-1]: plt.axhline(zzz,color='k',linestyle='--')
     axis.set_yscale('splitscale', zval=splitscale)
@@ -673,7 +673,7 @@ def chooseColorLevels(sMin, sMax, colorMapName, clim=None, nbins=None, steps=[1,
   If clim provides more than 2 color interfaces, nbins must be absent.
   If clim is absent, the sMin,sMax are used as the color range bounds.
   If autocenter is True and clim is None then the automatic color levels are centered.
-  
+
   Returns cmap, norm and extend.
   """
   if nbins is None and clim is None: raise Exception('At least one of clim or nbins is required.')
@@ -1090,13 +1090,13 @@ def dunne_pm(N=256):
                      (0.50, 1.0, 1.0),
                      (0.95, 0.6, 0.6),
                      (1.00, 0.4, 0.4)],
-  
+
            'green': [(0.00, 0.0, 0.0),
                      (0.30, 0.5, 0.5),
                      (0.40, 1.0, 1.0),
                      (0.70, 1.0, 1.0),
                      (1.00, 0.0, 0.0)],
-  
+
            'blue':  [(0.00, 0.3, 0.3),
                      (0.05, 0.5, 0.5),
                      (0.20, 1.0, 1.0),

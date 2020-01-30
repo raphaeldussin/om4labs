@@ -11,5 +11,5 @@ setuptools.setup(
     keywords="",
     url="https://github.com/raphaeldussin/OM4_Analysis_Labs",
     packages=['OM4_Analysis_Labs'],
-    scripts=['OM4_Analysis_Labs/annual_bias_WOA_1x1deg.py']
+    scripts=['OM4_Analysis_Labs/annual_bias_1x1deg.py']
 )

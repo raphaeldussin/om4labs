@@ -43,8 +43,9 @@ def read_all_data(args):
     datamodel = datamodel.where(dataobs)
 
     # dump values
-    model = datamodel.values
-    obs = dataobs.values
+    model = datamodel.to_masked_array()
+    obs = dataobs.to_masked_array()
+
     # compute area
     area = compute_area_regular_grid(args.infile)
 
@@ -81,7 +82,7 @@ def read_data(ncfile, possible_variable_names, depth=None):
 
     # extract the desired level
     if (depth is not None) and (vardepth in da.dims):
-        da2d = da.isel({vardepth: depth})
+        da2d = da.sel({vardepth: depth})
     else:
         da2d = da
 
@@ -151,7 +152,7 @@ def main():
                         help='Annually-averaged file containing model data')
     parser.add_argument('-f', '--field', type=str,
                         required=True, help='field name compared to obs')
-    parser.add_argument('-d', '--depth', type=str, default=None,
+    parser.add_argument('-d', '--depth', type=float, default=None,
                         required=False, help='depth of field compared to obs')
     parser.add_argument('-l', '--label', type=str, default='',
                         required=False, help='Label to add to the plot')
@@ -168,9 +169,8 @@ def main():
                         help='stream output plot (diff/compare)')
     cmdLineArgs = parser.parse_args()
 
-    if cmdLineArgs.stream is not None:
-        streamdiff = True if cmdLineArgs.stream == 'diff' else False
-        streamcompare = True if cmdLineArgs.stream == 'compare' else False
+    streamdiff = True if cmdLineArgs.stream == 'diff' else False
+    streamcompare = True if cmdLineArgs.stream == 'compare' else False
 
     # read the data needed for plots
     x, y, area, model, obs = read_all_data(cmdLineArgs)
@@ -194,7 +194,7 @@ def main():
     if cmdLineArgs.suptitle != '':
         suptitle = f'{cmdLineArgs.suptitle} {cmdLineArgs.label}'
     else:
-        title = get_run_name(cmdLineArgs.input)
+        title = get_run_name(cmdLineArgs.infile)
         suptitle = f'{title} {cmdLineArgs.label}'
 
     title_diff = f'{var} bias (w.r.t. {obsds}) {units}'
