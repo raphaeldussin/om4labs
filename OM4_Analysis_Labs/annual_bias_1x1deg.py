@@ -145,7 +145,8 @@ def plot_compare(x, y, model, obs, compare_kwargs, stream=False):
         imgbufs.append(img)
 
 
-def main():
+def run():
+    """ parse the command line arguments """
     parser = argparse.ArgumentParser(description='Script for plotting \
                                                   annual-average bias to obs')
     parser.add_argument('-i', '--infile', type=str, required=True,
@@ -168,6 +169,13 @@ def main():
     parser.add_argument('-S', '--stream', type=str, required=False,
                         help='stream output plot (diff/compare)')
     cmdLineArgs = parser.parse_args()
+    # execute the main code
+    main(cmdLineArgs)
+
+
+def main(cmdLineArgs):
+    """ main can be called from either command line and then use parser from run()
+    or DORA can build the args and run it directly """
 
     streamdiff = True if cmdLineArgs.stream == 'diff' else False
     streamcompare = True if cmdLineArgs.stream == 'compare' else False
@@ -225,4 +233,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    run()
