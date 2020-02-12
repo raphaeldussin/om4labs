@@ -125,7 +125,7 @@ def plot_diff(x, y, model, obs, diff_kwargs, stream=False):
     """ make difference plot """
     if stream:
         img = io.BytesIO()
-        diff_kwargs['img'] = img
+        diff_kwargs['save'] = img
 
     m6plot.xyplot(model - obs, x, y, **diff_kwargs)
 
@@ -179,6 +179,7 @@ def main(cmdLineArgs):
 
     streamdiff = True if cmdLineArgs.stream == 'diff' else False
     streamcompare = True if cmdLineArgs.stream == 'compare' else False
+    streamnone = True if cmdLineArgs.stream == None else False
 
     # read the data needed for plots
     x, y, area, model, obs = read_all_data(cmdLineArgs)
@@ -223,10 +224,12 @@ def main(cmdLineArgs):
                       'centerdlabels': True, 'save': png_compare}
 
     # make diff plot
-    plot_diff(x, y, model, obs, diff_kwargs, stream=streamdiff)
+    if streamdiff or streamnone:
+        plot_diff(x, y, model, obs, diff_kwargs, stream=streamdiff)
 
     # make compare plot
-    plot_compare(x, y, model, obs, compare_kwargs, stream=streamcompare)
+    if streamcompare or streamnone:
+        plot_compare(x, y, model, obs, compare_kwargs, stream=streamcompare)
 
     if cmdLineArgs.stream is not None:
         return imgbufs
