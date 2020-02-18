@@ -1,8 +1,14 @@
 #!/usr/bin/env python
 
 import io
-from OM4_Analysis_Labs import m6plot
-from OM4_Analysis_Labs import helpers
+try:
+    from OM4_Analysis_Labs import m6plot
+    from OM4_Analysis_Labs import helpers
+except:
+    # DORA mode, works without install.
+    # reads from current directory
+    import m6plot
+    import helpers
 import numpy as np
 import argparse
 import xarray as xr
