@@ -40,10 +40,14 @@ def read_all_data(args):
 
     xobs, yobs, dataobs = read_data(args.obs,
                                     possible_variable_names,
-                                    depth=args.depth)
+                                    depth=args.depth,
+                                    decode_times=False)
     # check consistency of coordinates
     assert np.allclose(xmodel, xobs)
     assert np.allclose(ymodel, yobs)
+
+    # homogeneize coords
+    dataobs = copy_coordinates(datamodel, dataobs)
 
     # restrict model to where obs exists
     datamodel = datamodel.where(dataobs)
@@ -58,9 +62,32 @@ def read_all_data(args):
     return xmodel, ymodel, area, model, obs
 
 
-def read_data(ncfile, possible_variable_names, depth=None):
+def copy_coordinates(da1, da2):
+    """ copy coordinates of da1 into da2 """
+
+    # find the appropriate variable names
+    varlon_1 = helpers.try_variable_from_list(list(da1.coords),
+                                            possible_lon_names)
+    varlat_1 = helpers.try_variable_from_list(list(da1.coords),
+                                            possible_lat_names)
+
+    varlon_2 = helpers.try_variable_from_list(list(da2.coords),
+                                            possible_lon_names)
+    varlat_2 = helpers.try_variable_from_list(list(da2.coords),
+                                            possible_lat_names)
+
+    da2 = da2.rename({varlon_2: varlon_1, varlat_2: varlat_1})
+
+    da2[varlon_1] = da1[varlon_1]
+    da2[varlat_1] = da1[varlat_1]
+
+    return da2
+
+
+def read_data(ncfile, possible_variable_names, depth=None, decode_times=False):
     """ read data from one file """
-    ds = xr.open_dataset(ncfile)
+    ds = xr.open_mfdataset(ncfile, decode_times=decode_times, combine='by_coords')
+
     # find the appropriate variable names
     varname = helpers.try_variable_from_list(list(ds.variables),
                                              possible_variable_names)
@@ -104,14 +131,21 @@ def read_data(ncfile, possible_variable_names, depth=None):
 def compute_area_regular_grid(ncfile, Rearth=6378e+3):
     """ compute the cells area on a regular grid """
 
-    ds = xr.open_dataset(ncfile)
+    ds = xr.open_mfdataset(ncfile, combine='by_coords')
 
     rfac = 2*np.pi*Rearth/360
-    dx1d = rfac * (ds['lon_bnds'].isel(bnds=1) - ds['lon_bnds'].isel(bnds=0))
-    dy1d = rfac * (ds['lat_bnds'].isel(bnds=1) - ds['lat_bnds'].isel(bnds=0))
+
+    up = {'bnds': 1}
+    down = {'bnds': 0}
+    if 'time' in ds['lon_bnds'].dims:
+        up.update({'time': 0})
+        down.update({'time': 0})
+
+    dx1d = rfac * (ds['lon_bnds'].isel(up) - ds['lon_bnds'].isel(down))
+    dy1d = rfac * (ds['lat_bnds'].isel(up) - ds['lat_bnds'].isel(down))
 
     dx2d, dy2d = np.meshgrid(dx1d, dy1d)
-    lon2d, lat2d = np.meshgrid(ds['lon'], ds['lat'])
+    lon2d, lat2d = np.meshgrid(ds['lon'].values, ds['lat'].values)
 
     dx = dx2d * np.cos(2*np.pi*lat2d/360)
     dy = dy2d
@@ -120,7 +154,7 @@ def compute_area_regular_grid(ncfile, Rearth=6378e+3):
 
 
 def get_run_name(ncfile):
-    ds = xr.open_dataset(ncfile)
+    ds = xr.open_mfdataset(ncfile, combine='by_coords')
     if 'title' in ds.attrs:
         return ds.attrs['title']
     else:
@@ -155,8 +189,8 @@ def run():
     """ parse the command line arguments """
     parser = argparse.ArgumentParser(description='Script for plotting \
                                                   annual-average bias to obs')
-    parser.add_argument('-i', '--infile', type=str, required=True,
-                        help='Annually-averaged file containing model data')
+    parser.add_argument('-i', '--infile', type=str, nargs='+', required=True,
+                        help='Annually-averaged file(s) containing model data')
     parser.add_argument('-f', '--field', type=str,
                         required=True, help='field name compared to obs')
     parser.add_argument('-d', '--depth', type=float, default=None,
