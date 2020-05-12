@@ -21,6 +21,8 @@ possible_lat_names = ['lat', 'LAT', 'latitude', 'LATITUDE']
 possible_time_names = ['time', 'TIME', 'latitude']
 possible_depth_names = ['z_l', 'depth', 'DEPTH']
 
+surface_default_depth = 2.5  # meters, first level of 1x1deg grid
+
 imgbufs = []
 
 
@@ -221,9 +223,6 @@ def main(cmdLineArgs):
     streamcompare = True if cmdLineArgs.stream == 'compare' else False
     streamnone = True if cmdLineArgs.stream == None else False
 
-    # read the data needed for plots
-    x, y, area, model, obs = read_all_data(cmdLineArgs)
-
     # set plots properties according to variable
     if cmdLineArgs.field == 'SST':
         var = 'SST'
@@ -232,9 +231,14 @@ def main(cmdLineArgs):
         clim_compare = m6plot.linCI(-2, 29, .5)
         cmap_diff = 'dunnePM'
         cmap_compare = 'dunneRainbow'
+        if cmdLineArgs.depth is None:
+            cmdLineArgs.depth = surface_default_depth
     # elif cmdLineArgs.field == 'NEW_VAR':
     else:
         raise ValueError(f'field {cmdLineArgs.field} is not available')
+
+    # read the data needed for plots
+    x, y, area, model, obs = read_all_data(cmdLineArgs)
 
     # common plot properties
     pngout = cmdLineArgs.outdir
