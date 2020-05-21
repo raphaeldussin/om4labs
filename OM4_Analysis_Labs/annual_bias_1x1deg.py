@@ -4,11 +4,13 @@ import io
 try:
     from OM4_Analysis_Labs import m6plot
     from OM4_Analysis_Labs import helpers
-except:
+    from OM4_Analysis_Labs.om4plotting import plot_xydiff, plot_xycompare
+except ImportError:
     # DORA mode, works without install.
     # reads from current directory
     import m6plot
     import helpers
+    from om4plotting import plot_xydiff, plot_xycompare
 import numpy as np
 import argparse
 import xarray as xr
@@ -163,29 +165,29 @@ def get_run_name(ncfile):
         return 'Unknown experiment'
 
 
-def plot_diff(x, y, model, obs, diff_kwargs, stream=False):
-    """ make difference plot """
-    if stream:
-        img = io.BytesIO()
-        diff_kwargs['save'] = img
-
-    m6plot.xyplot(model - obs, x, y, **diff_kwargs)
-
-    if stream:
-        imgbufs.append(img)
-
-
-def plot_compare(x, y, model, obs, compare_kwargs, stream=False):
-    """ make 3 panel compare plot """
-    if stream:
-        img = io.BytesIO()
-        compare_kwargs['img'] = img
-
-    m6plot.xycompare(model, obs, x, y, **compare_kwargs)
-
-    if stream:
-        imgbufs.append(img)
-
+#def plot_diff(x, y, model, obs, diff_kwargs, stream=False):
+#    """ make difference plot """
+#    if stream:
+#        img = io.BytesIO()
+#        diff_kwargs['save'] = img
+#
+#    m6plot.xyplot(model - obs, x, y, **diff_kwargs)
+#
+#    if stream:
+#        imgbufs.append(img)
+#
+#
+#def plot_compare(x, y, model, obs, compare_kwargs, stream=False):
+#    """ make 3 panel compare plot """
+#    if stream:
+#        img = io.BytesIO()
+#        compare_kwargs['img'] = img
+#
+#    m6plot.xycompare(model, obs, x, y, **compare_kwargs)
+#
+#    if stream:
+#        imgbufs.append(img)
+#
 
 def run():
     """ parse the command line arguments """
@@ -269,11 +271,13 @@ def main(cmdLineArgs):
 
     # make diff plot
     if streamdiff or streamnone:
-        plot_diff(x, y, model, obs, diff_kwargs, stream=streamdiff)
+        img = plot_xydiff(x, y, model, obs, diff_kwargs, stream=streamdiff)
+        imgbufs = [img]
 
     # make compare plot
     if streamcompare or streamnone:
-        plot_compare(x, y, model, obs, compare_kwargs, stream=streamcompare)
+        img = plot_xycompare(x, y, model, obs, compare_kwargs, stream=streamcompare)
+        imgbufs = [img]
 
     if cmdLineArgs.stream is not None:
         return imgbufs
