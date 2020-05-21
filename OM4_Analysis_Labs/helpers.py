@@ -13,8 +13,8 @@ def try_variable_from_list(vars_in_file, query_vars):
 
 
 def get_run_name(ncfile):
-    ds = xr.open_mfdataset(ncfile, combine='by_coords')
-    if 'title' in ds.attrs:
-        return ds.attrs['title']
+    ds = xr.open_mfdataset(ncfile, combine="by_coords")
+    if "title" in ds.attrs:
+        return ds.attrs["title"]
     else:
-        return 'Unknown experiment'
+        return "Unknown experiment"
