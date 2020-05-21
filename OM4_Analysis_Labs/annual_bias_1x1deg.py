@@ -1,34 +1,35 @@
 #!/usr/bin/env python
 
 import io
-try:
-    from OM4_Analysis_Labs import m6plot
-    from OM4_Analysis_Labs import helpers
-    from OM4_Analysis_Labs.om4plotting import plot_xydiff, plot_xycompare
-except ImportError:
-    # DORA mode, works without install.
-    # reads from current directory
-    import m6plot
-    import helpers
-    from om4plotting import plot_xydiff, plot_xycompare
 import numpy as np
 import argparse
 import xarray as xr
 import warnings
+try:
+    from OM4_Analysis_Labs import m6plot
+    from OM4_Analysis_Labs.helpers import get_run_name, try_variable_from_list
+    from OM4_Analysis_Labs.om4plotting import plot_xydiff, plot_xycompare
+    from OM4_Analysis_Labs.om4compute import read_data, subset_data
+    from OM4_Analysis_Labs.om4compute import simple_average, copy_coordinates
+    from OM4_Analysis_Labs.om4compute import compute_area_regular_grid
+except ImportError:
+    # DORA mode, works without install.
+    # reads from current directory
+    import m6plot
+    from helpers import get_run_name, try_variable_from_list
+    from om4plotting import plot_xydiff, plot_xycompare
+    from om4compute import read_data, subset_data
+    from om4compute import simple_average, copy_coordinates
+    from om4compute import compute_area_regular_grid
 
 warnings.filterwarnings("ignore")
-
-possible_lon_names = ['lon', 'LON', 'longitude', 'LONGITUDE']
-possible_lat_names = ['lat', 'LAT', 'latitude', 'LATITUDE']
-possible_time_names = ['time', 'TIME', 'latitude']
-possible_depth_names = ['z_l', 'depth', 'DEPTH']
 
 surface_default_depth = 2.5  # meters, first level of 1x1deg grid
 
 imgbufs = []
 
 
-def read_all_data(args):
+def read_all_data(args, **kwargs):
     """ read data from model and obs files, process data and return it """
 
     # define list of possible netcdf names for given field
@@ -37,21 +38,45 @@ def read_all_data(args):
     else:
         raise ValueError(f'field {args.field} is not available')
 
-    # read in model and obs data
-    xmodel, ymodel, datamodel = read_data(args.infile,
-                                          possible_variable_names,
-                                          depth=args.depth)
+    dsmodel = xr.open_mfdataset(args.infile, combine='by_coords', decode_times=False)
+    dsobs = xr.open_mfdataset(args.obs, combine='by_coords', decode_times=False)
 
-    xobs, yobs, dataobs = read_data(args.obs,
-                                    possible_variable_names,
-                                    depth=args.depth,
-                                    decode_times=False)
+    # read in model and obs data
+    datamodel = read_data(dsmodel, possible_variable_names)
+    dataobs = read_data(dsobs, possible_variable_names)
+
+    # subset data
+    if (args.depth is not None):
+        datamodel = subset_data(datamodel, 'assigned_depth', args.depth)
+        dataobs = subset_data(dataobs, 'assigned_depth', args.depth)
+
+    # reduce data along depth (not yet implemented)
+    if 'depth_reduce' in kwargs:
+        if kwargs['depth_reduce'] == 'mean':
+            # do mean
+            pass
+        elif kwargs['depth_reduce'] == 'sum':
+            # do mean
+            pass
+
+    # reduce data along time, here mandatory
+    datamodel = simple_average(datamodel, 'assigned_time')
+    dataobs = simple_average(dataobs, 'assigned_time')
+
+    datamodel = datamodel.squeeze()
+    dataobs = dataobs.squeeze()
+
+    # check final data is 2d
+    assert len(datamodel.dims) == 2
+    assert len(dataobs.dims) == 2
+
     # check consistency of coordinates
-    assert np.allclose(xmodel, xobs)
-    assert np.allclose(ymodel, yobs)
+    assert np.allclose(datamodel['assigned_lon'], dataobs['assigned_lon'])
+    assert np.allclose(datamodel['assigned_lat'], dataobs['assigned_lat'])
 
     # homogeneize coords
-    dataobs = copy_coordinates(datamodel, dataobs)
+    dataobs = copy_coordinates(datamodel, dataobs,
+                               ['assigned_lon', 'assigned_lat'])
 
     # restrict model to where obs exists
     datamodel = datamodel.where(dataobs)
@@ -59,135 +84,20 @@ def read_all_data(args):
     # dump values
     model = datamodel.to_masked_array()
     obs = dataobs.to_masked_array()
+    x = datamodel['assigned_lon'].values
+    y = datamodel['assigned_lat'].values
 
     # compute area
-    area = compute_area_regular_grid(args.infile)
-
-    return xmodel, ymodel, area, model, obs
-
-
-def copy_coordinates(da1, da2):
-    """ copy coordinates of da1 into da2 """
-
-    # find the appropriate variable names
-    varlon_1 = helpers.try_variable_from_list(list(da1.coords),
-                                            possible_lon_names)
-    varlat_1 = helpers.try_variable_from_list(list(da1.coords),
-                                            possible_lat_names)
-
-    varlon_2 = helpers.try_variable_from_list(list(da2.coords),
-                                            possible_lon_names)
-    varlat_2 = helpers.try_variable_from_list(list(da2.coords),
-                                            possible_lat_names)
-
-    da2 = da2.rename({varlon_2: varlon_1, varlat_2: varlat_1})
-
-    da2[varlon_1] = da1[varlon_1]
-    da2[varlat_1] = da1[varlat_1]
-
-    return da2
-
-
-def read_data(ncfile, possible_variable_names, depth=None, decode_times=False):
-    """ read data from one file """
-    ds = xr.open_mfdataset(ncfile, decode_times=decode_times, combine='by_coords')
-
-    # find the appropriate variable names
-    varname = helpers.try_variable_from_list(list(ds.variables),
-                                             possible_variable_names)
-    varlon = helpers.try_variable_from_list(list(ds.variables),
-                                            possible_lon_names)
-    varlat = helpers.try_variable_from_list(list(ds.variables),
-                                            possible_lat_names)
-    vartime = helpers.try_variable_from_list(list(ds.variables),
-                                             possible_time_names)
-    if depth is not None:
-        vardepth = helpers.try_variable_from_list(list(ds.variables),
-                                                  possible_depth_names)
-
-    if varname is None:
-        raise ValueError(f'no suitable variable found in {ncfile}')
-    if varlon is None:
-        raise ValueError(f'no suitable longitude found in {ncfile}')
-    if varlat is None:
-        raise ValueError(f'no suitable latitude found in {ncfile}')
-
-    da = ds[varname]
-
-    x = ds[varlon].values
-    y = ds[varlat].values
-
-    # extract the desired level
-    if (depth is not None) and (vardepth in da.dims):
-        da2d = da.sel({vardepth: depth})
+    if 'areacello' in dsmodel.variables:
+        area = ds['areacello'].values
     else:
-        da2d = da
+        if model.shape == (180, 360):
+            area = compute_area_regular_grid(dsmodel)
+        else:
+            raise IOError('no cell area provided')
 
-    # average in time if needed
-    if (vartime is not None) and (vartime in da.dims):
-        data = da2d.mean(dim='time')
-    else:
-        data = da2d
+    return x, y, area, model, obs
 
-    return x, y, data
-
-
-def compute_area_regular_grid(ncfile, Rearth=6378e+3):
-    """ compute the cells area on a regular grid """
-
-    ds = xr.open_mfdataset(ncfile, combine='by_coords')
-
-    rfac = 2*np.pi*Rearth/360
-
-    up = {'bnds': 1}
-    down = {'bnds': 0}
-    if 'time' in ds['lon_bnds'].dims:
-        up.update({'time': 0})
-        down.update({'time': 0})
-
-    dx1d = rfac * (ds['lon_bnds'].isel(up) - ds['lon_bnds'].isel(down))
-    dy1d = rfac * (ds['lat_bnds'].isel(up) - ds['lat_bnds'].isel(down))
-
-    dx2d, dy2d = np.meshgrid(dx1d, dy1d)
-    lon2d, lat2d = np.meshgrid(ds['lon'].values, ds['lat'].values)
-
-    dx = dx2d * np.cos(2*np.pi*lat2d/360)
-    dy = dy2d
-    area = dx * dy
-    return area
-
-
-def get_run_name(ncfile):
-    ds = xr.open_mfdataset(ncfile, combine='by_coords')
-    if 'title' in ds.attrs:
-        return ds.attrs['title']
-    else:
-        return 'Unknown experiment'
-
-
-#def plot_diff(x, y, model, obs, diff_kwargs, stream=False):
-#    """ make difference plot """
-#    if stream:
-#        img = io.BytesIO()
-#        diff_kwargs['save'] = img
-#
-#    m6plot.xyplot(model - obs, x, y, **diff_kwargs)
-#
-#    if stream:
-#        imgbufs.append(img)
-#
-#
-#def plot_compare(x, y, model, obs, compare_kwargs, stream=False):
-#    """ make 3 panel compare plot """
-#    if stream:
-#        img = io.BytesIO()
-#        compare_kwargs['img'] = img
-#
-#    m6plot.xycompare(model, obs, x, y, **compare_kwargs)
-#
-#    if stream:
-#        imgbufs.append(img)
-#
 
 def run():
     """ parse the command line arguments """
