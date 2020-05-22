@@ -1,0 +1,6 @@
+black
+matplotlib
+numpy
+pytest
+scipy
+xarray

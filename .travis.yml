@@ -1,0 +1,15 @@
+language: python
+sudo: false
+notifications:
+  email: false
+
+install:
+  - pip install virtualenv
+  - virtualenv testing
+  - source testing/bin/activate
+  - pip install -r ci/requirements.txt
+  - pip install -e .
+
+script:
+  - py.test OM4_Analysis_Labs
+  - black OM4_Analysis_Labs
