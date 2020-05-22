@@ -23,7 +23,7 @@ except ImportError:
     from om4compute import simple_average, copy_coordinates
     from om4compute import compute_area_regular_grid
 
-#warnings.filterwarnings("ignore")
+# warnings.filterwarnings("ignore")
 
 surface_default_depth = 2.5  # meters, first level of 1x1deg grid
 
@@ -65,10 +65,14 @@ def read_all_data(args, **kwargs):
 
     # reduce data along time, here mandatory
     if ("assigned_time" in datamodel.dims) and len(datamodel["assigned_time"]) > 1:
-        warnings.warn("input dataset has more than one time record, performing non-weighted average")
+        warnings.warn(
+            "input dataset has more than one time record, performing non-weighted average"
+        )
         datamodel = simple_average(datamodel, "assigned_time")
     if ("assigned_time" in dataobs.dims) and len(dataobs["assigned_time"]) > 1:
-        warnings.warn("reference dataset has more than one time record, performing non-weighted average")
+        warnings.warn(
+            "reference dataset has more than one time record, performing non-weighted average"
+        )
         dataobs = simple_average(dataobs, "assigned_time")
 
     datamodel = datamodel.squeeze()

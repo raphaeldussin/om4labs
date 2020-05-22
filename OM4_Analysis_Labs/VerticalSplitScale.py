@@ -7,7 +7,8 @@ from matplotlib import scale as mscale
 from matplotlib import transforms as mtransforms
 from matplotlib.ticker import Formatter, FixedLocator, MaxNLocator, AutoLocator
 
-mpl_version = str(matplotlib.__version__).split('.')
+mpl_version = str(matplotlib.__version__).split(".")
+
 
 class VerticalSplitScale(mscale.ScaleBase):
     """
@@ -20,7 +21,7 @@ class VerticalSplitScale(mscale.ScaleBase):
     # string used to select the scale.  For example,
     # ``gca().set_yscale("splitscale")`` would be used to select this
     # scale.
-    name = 'splitscale'
+    name = "splitscale"
 
     def __init__(self, axis, **kwargs):
         """
@@ -31,8 +32,8 @@ class VerticalSplitScale(mscale.ScaleBase):
         thresh: The degree above which to crop the data.
         """
         mscale.ScaleBase.__init__(self)
-        #thresh = kwargs.pop("thresh", (85 / 180.0) * np.pi)
-        #if thresh >= np.pi / 2.0:
+        # thresh = kwargs.pop("thresh", (85 / 180.0) * np.pi)
+        # if thresh >= np.pi / 2.0:
         #    raise ValueError("thresh must be less than pi/2")
         zval = kwargs.pop("zval", None)
         if zval is None:
@@ -41,13 +42,13 @@ class VerticalSplitScale(mscale.ScaleBase):
             raise Exception("zval must be at least 3 long")
         zfrac = kwargs.pop("zfrac", None)
         if zfrac is None:
-            zfrac = np.linspace(0., 1., len(zval))
+            zfrac = np.linspace(0.0, 1.0, len(zval))
         if len(zfrac) != len(zval):
             raise Exception("zval and zfrac must have the same length")
-        #zval[0] = zval[1] + 1e4*(zval[0] - zval[1])
-        #zfrac[0] = zfrac[1] + 1e4*(zfrac[0] - zfrac[1])
-        #zval[-1] = zval[-2] + 1e4*(zval[-1] - zval[-2])
-        #zfrac[-1] = zfrac[-2] + 1e4*(zfrac[-1] - zfrac[-2])
+        # zval[0] = zval[1] + 1e4*(zval[0] - zval[1])
+        # zfrac[0] = zfrac[1] + 1e4*(zfrac[0] - zfrac[1])
+        # zval[-1] = zval[-2] + 1e4*(zval[-1] - zval[-2])
+        # zfrac[-1] = zfrac[-2] + 1e4*(zfrac[-1] - zfrac[-2])
         self.zval = np.array(zval)
         self.zfrac = np.array(zfrac)
 
@@ -74,27 +75,35 @@ class VerticalSplitScale(mscale.ScaleBase):
         the radians to degrees and put a degree symbol after the
         value::
         """
-        #class DegreeFormatter(Formatter):
+        # class DegreeFormatter(Formatter):
         #    def __call__(self, x, pos=None):
         #        # \u00b0 : degree symbol
         #        return "%d\u00b0" % ((x / np.pi) * 180.0)
 
-        #axis.set_major_locator(MaxNLocator(10))
+        # axis.set_major_locator(MaxNLocator(10))
         ticks = None
-        for k in range(1,len(self.zval)):
-          nbins = 16 * ( self.zfrac[k] - self.zfrac[k-1] )
-          newticks = MaxNLocator(nbins=nbins, steps=[1,2,2.5,5,10]).tick_values(self.zval[k-1], self.zval[k])
-          if ticks is None: ticks = newticks
-          else: ticks = np.append( ticks, newticks )
-        ticks = [x for x in ticks if (x>+self.zval.min() and x<=self.zval.max())] # Only used tickes within range
-        ticks = np.sort( ticks ) # Fix due to different python versions on PP and workstations!
-        axis.set_major_locator( FixedLocator( ticks ) )
-        #axis.set_major_locator(AutoLocator())
-        #deg2rad = np.pi / 180.0
-        #axis.set_major_locator(FixedLocator(
-                #np.arange(-90, 90, 10) * deg2rad))
-        #axis.set_major_formatter(DegreeFormatter())
-        #axis.set_minor_formatter(DegreeFormatter())
+        for k in range(1, len(self.zval)):
+            nbins = 16 * (self.zfrac[k] - self.zfrac[k - 1])
+            newticks = MaxNLocator(nbins=nbins, steps=[1, 2, 2.5, 5, 10]).tick_values(
+                self.zval[k - 1], self.zval[k]
+            )
+            if ticks is None:
+                ticks = newticks
+            else:
+                ticks = np.append(ticks, newticks)
+        ticks = [
+            x for x in ticks if (x > +self.zval.min() and x <= self.zval.max())
+        ]  # Only used tickes within range
+        ticks = np.sort(
+            ticks
+        )  # Fix due to different python versions on PP and workstations!
+        axis.set_major_locator(FixedLocator(ticks))
+        # axis.set_major_locator(AutoLocator())
+        # deg2rad = np.pi / 180.0
+        # axis.set_major_locator(FixedLocator(
+        # np.arange(-90, 90, 10) * deg2rad))
+        # axis.set_major_formatter(DegreeFormatter())
+        # axis.set_minor_formatter(DegreeFormatter())
 
     def limit_range_for_scale(self, vmin, vmax, minpos):
         """
@@ -107,9 +116,9 @@ class VerticalSplitScale(mscale.ScaleBase):
         and zooming.
         """
         if int(mpl_version[0]) < 2:
-          return min(vmin, self.zval[0]), max(vmax, self.zval[-1])
+            return min(vmin, self.zval[0]), max(vmax, self.zval[-1])
         else:
-          return max(vmin, self.zval[0]), min(vmax, self.zval[-1])
+            return max(vmin, self.zval[0]), min(vmax, self.zval[-1])
 
     class VerticalSplitScaleTransform(mtransforms.Transform):
         # There are two value members that must be defined.
@@ -148,7 +157,9 @@ class VerticalSplitScale(mscale.ScaleBase):
             Override this method so matplotlib knows how to get the
             inverse transform for this transform.
             """
-            return VerticalSplitScale.InvertedVerticalSplitScaleTransform(self.zval, self.zfrac)
+            return VerticalSplitScale.InvertedVerticalSplitScaleTransform(
+                self.zval, self.zfrac
+            )
 
     class InvertedVerticalSplitScaleTransform(mtransforms.Transform):
         input_dims = 1
@@ -161,30 +172,31 @@ class VerticalSplitScale(mscale.ScaleBase):
             self.zfrac = zfrac
 
         def transform_non_affine(self, a):
-            #return np.arctan(np.sinh(a))
-            #return 0.5*(np.array(a)-1000.)
+            # return np.arctan(np.sinh(a))
+            # return 0.5*(np.array(a)-1000.)
             return np.interp(a, self.zfrac, -self.zval)
 
         def inverted(self):
             return VerticalSplitScale.VerticalSplitScaleTransform(self.zval, self.zfrac)
+
 
 # Now that the Scale class has been defined, it must be registered so
 # that ``matplotlib`` can find it.
 mscale.register_scale(VerticalSplitScale)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
-    z = np.linspace(-6500., 0., 43)
-    s = -1. * z
+    z = np.linspace(-6500.0, 0.0, 43)
+    s = -1.0 * z
 
-    plt.plot(s, z, '.-', lw=2)
-    plt.axhline(-1000.)
-    plt.gca().set_yscale('splitscale', zval=[0.,-1000.,-9000.])
+    plt.plot(s, z, ".-", lw=2)
+    plt.axhline(-1000.0)
+    plt.gca().set_yscale("splitscale", zval=[0.0, -1000.0, -9000.0])
 
-    plt.xlabel('Depth')
-    plt.ylabel('Z')
+    plt.xlabel("Depth")
+    plt.ylabel("Z")
     plt.grid(True)
 
     plt.show()
