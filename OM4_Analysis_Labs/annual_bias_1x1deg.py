@@ -23,7 +23,7 @@ except ImportError:
     from om4compute import simple_average, copy_coordinates
     from om4compute import compute_area_regular_grid
 
-warnings.filterwarnings("ignore")
+#warnings.filterwarnings("ignore")
 
 surface_default_depth = 2.5  # meters, first level of 1x1deg grid
 
@@ -36,6 +36,9 @@ def read_all_data(args, **kwargs):
     # define list of possible netcdf names for given field
     if args.field == "SST":
         possible_variable_names = ["thetao", "temp", "ptemp", "TEMP", "PTEMP"]
+    elif args.field == "SSS":
+        possible_variable_names = ["so", "salt", "salinity", "SALT", "SALINITY"]
+    # elif args.field == 'NEW_VAR':
     else:
         raise ValueError(f"field {args.field} is not available")
 
@@ -61,8 +64,12 @@ def read_all_data(args, **kwargs):
             pass
 
     # reduce data along time, here mandatory
-    datamodel = simple_average(datamodel, "assigned_time")
-    dataobs = simple_average(dataobs, "assigned_time")
+    if ("assigned_time" in datamodel.dims) and len(datamodel["assigned_time"]) > 1:
+        warnings.warn("input dataset has more than one time record, performing non-weighted average")
+        datamodel = simple_average(datamodel, "assigned_time")
+    if ("assigned_time" in dataobs.dims) and len(dataobs["assigned_time"]) > 1:
+        warnings.warn("reference dataset has more than one time record, performing non-weighted average")
+        dataobs = simple_average(dataobs, "assigned_time")
 
     datamodel = datamodel.squeeze()
     dataobs = dataobs.squeeze()
@@ -153,6 +160,7 @@ def run():
         "-O",
         "--obs",
         type=str,
+        nargs="+",
         required=True,
         help="File containing obs data to compare against",
     )
@@ -191,6 +199,15 @@ def main(cmdLineArgs):
         clim_compare = m6plot.linCI(-2, 29, 0.5)
         cmap_diff = "dunnePM"
         cmap_compare = "dunneRainbow"
+        if cmdLineArgs.depth is None:
+            cmdLineArgs.depth = surface_default_depth
+    elif cmdLineArgs.field == "SSS":
+        var = "SSS"
+        units = "[ppt]"
+        clim_diff = m6plot.pmCI(0.125, 2.25, 0.25)
+        clim_compare = m6plot.linCI(20, 30, 10, 31, 39, 0.5)
+        cmap_diff = "dunnePM"
+        cmap_compare = "dunnePM"
         if cmdLineArgs.depth is None:
             cmdLineArgs.depth = surface_default_depth
     # elif cmdLineArgs.field == 'NEW_VAR':
