@@ -12,4 +12,4 @@ install:
 
 script:
   - py.test OM4_Analysis_Labs
-  - black OM4_Analysis_Labs
+  - black --check OM4_Analysis_Labs
