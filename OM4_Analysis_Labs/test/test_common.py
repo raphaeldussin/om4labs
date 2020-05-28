@@ -13,21 +13,21 @@ grid_1x1['lat_bnds'] = xr.DataArray(data=[np.arange(-90,90),
 
 
 def test_infer_and_assign_coord():
-    from OM4_Analysis_Labs.om4compute import infer_and_assign_coord
+    from OM4_Analysis_Labs.om4common import infer_and_assign_coord
     da = xr.DataArray(data=np.empty((360, 2)), dims=('lon', 'bnds'))
     da = infer_and_assign_coord(grid_1x1, da, 'lon')
     assert "assigned_lon" in list(da.dims)
 
 
 def test_copy_coordinates():
-    from OM4_Analysis_Labs.om4compute import copy_coordinates
+    from OM4_Analysis_Labs.om4common import copy_coordinates
     da = xr.DataArray(data=np.empty((360, 2)), dims=('lon', 'bnds'))
     da = copy_coordinates(grid_1x1['lon_bnds'], da, ['lon', 'bnds'])
     assert list(da.coords).sort() == list(grid_1x1['lon_bnds'].coords).sort()
 
 
 def test_compute_area_regular_grid():
-    from OM4_Analysis_Labs.om4compute import compute_area_regular_grid
+    from OM4_Analysis_Labs.om4common import compute_area_regular_grid
     area = compute_area_regular_grid(grid_1x1)
     assert isinstance(area, np.ndarray)
     assert area.shape == (180, 360)
