@@ -1,5 +1,5 @@
 def test_try_variable_from_list():
-    from OM4_Analysis_Labs.helpers import try_variable_from_list
+    from OM4labs.helpers import try_variable_from_list
 
     vars_in_file = ["thetao", "so"]
     query_vars = ["temp", "ptemp", "thetao", "TEMP"]

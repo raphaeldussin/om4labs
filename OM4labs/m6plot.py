@@ -18,8 +18,8 @@ import math
 import numpy, numpy.matlib
 
 try:
-    from OM4_Analysis_Labs import m6toolbox
-    from OM4_Analysis_Labs import VerticalSplitScale
+    from OM4labs import m6toolbox
+    from OM4labs import VerticalSplitScale
 except:
     # DORA mode, works without install
     import m6toolbox

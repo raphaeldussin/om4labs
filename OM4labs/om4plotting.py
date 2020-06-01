@@ -1,7 +1,7 @@
 import io
 
 try:
-    from OM4_Analysis_Labs import m6plot
+    from OM4labs import m6plot
 except ImportError:
     import m6plot
 
