@@ -8,6 +8,7 @@ install:
   - virtualenv testing
   - source testing/bin/activate
   - pip install -r ci/requirements.txt
+  - pip install cartopy
   - pip install -e .
 
 script:

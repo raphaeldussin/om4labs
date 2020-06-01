@@ -4,4 +4,3 @@ numpy
 pytest
 scipy
 xarray
-cartopy
