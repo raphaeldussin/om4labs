@@ -11,5 +11,5 @@ install:
   - pip install -e .
 
 script:
-  - py.test OM4labs
-  - black --check OM4labs
+  - py.test om4labs
+  - black --check om4labs
