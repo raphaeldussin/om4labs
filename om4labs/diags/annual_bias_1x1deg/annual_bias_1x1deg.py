@@ -7,12 +7,12 @@ import xarray as xr
 import warnings
 
 try:
-    from OM4_Analysis_Labs import m6plot
-    from OM4_Analysis_Labs.helpers import get_run_name, try_variable_from_list
-    from OM4_Analysis_Labs.om4plotting import plot_xydiff, plot_xycompare
-    from OM4_Analysis_Labs.om4common import read_data, subset_data
-    from OM4_Analysis_Labs.om4common import simple_average, copy_coordinates
-    from OM4_Analysis_Labs.om4common import compute_area_regular_grid
+    from om4labs import m6plot
+    from om4labs.helpers import get_run_name, try_variable_from_list
+    from om4labs.om4plotting import plot_xydiff, plot_xycompare
+    from om4labs.om4common import read_data, subset_data
+    from om4labs.om4common import simple_average, copy_coordinates
+    from om4labs.om4common import compute_area_regular_grid
 except ImportError:
     # DORA mode, works without install.
     # reads from current directory

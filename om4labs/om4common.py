@@ -3,7 +3,7 @@
 import numpy as np
 
 try:
-    from OM4_Analysis_Labs.helpers import try_variable_from_list
+    from om4labs.helpers import try_variable_from_list
 except ImportError:
     # DORA mode, works without install.
     # reads from current directory
