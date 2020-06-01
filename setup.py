@@ -1,4 +1,4 @@
-''' setup for om4labs '''
+""" setup for om4labs """
 import setuptools
 
 setuptools.setup(
@@ -10,6 +10,9 @@ setuptools.setup(
     license="GPLv3",
     keywords="",
     url="https://github.com/raphaeldussin/om4labs",
-    packages=['om4labs'],
-    scripts=['om4labs/diags/annual_bias_1x1deg/annual_bias_1x1deg.py']
+    packages=["om4labs"],
+    scripts=[
+        "scripts/om4labs",
+        "om4labs/diags/annual_bias_1x1deg/annual_bias_1x1deg.py",
+    ],
 )
