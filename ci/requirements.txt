@@ -1,7 +1,7 @@
 black
-cartopy
 matplotlib
 numpy
 pytest
 scipy
 xarray
+cartopy
