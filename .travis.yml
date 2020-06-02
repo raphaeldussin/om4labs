@@ -3,6 +3,10 @@ sudo: false
 notifications:
   email: false
 
+before_install:
+  - sudo apt-get update
+  - sudo apt-get -y install libgeos-dev libproj-dev
+
 install:
   - pip install virtualenv
   - virtualenv testing

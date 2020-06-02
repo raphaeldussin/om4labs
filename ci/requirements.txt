@@ -1,6 +1,9 @@
 black
 matplotlib
 numpy
+pyshp
 pytest
 scipy
+shapely
+six
 xarray
