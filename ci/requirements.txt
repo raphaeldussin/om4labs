@@ -1,5 +1,7 @@
 black
+dask
 matplotlib
+netcdf4
 numpy
 pyshp
 pytest
@@ -7,3 +9,4 @@ scipy
 shapely
 six
 xarray
+xesmf
