@@ -1,3 +1,4 @@
+import calendar
 import xarray as xr
 import numpy as np
 
@@ -13,40 +14,26 @@ dpm = {
 }
 
 
-def leap_year(year, calendar="standard"):
+def leap_year(year, cal="standard"):
     """Determine if year is a leap year"""
-    leap = False
-    if (calendar in ["standard", "gregorian", "proleptic_gregorian", "julian"]) and (
-        year % 4 == 0
-    ):
-        leap = True
-        if (
-            (calendar == "proleptic_gregorian")
-            and (year % 100 == 0)
-            and (year % 400 != 0)
-        ):
-            leap = False
-        elif (
-            (calendar in ["standard", "gregorian"])
-            and (year % 100 == 0)
-            and (year % 400 != 0)
-            and (year < 1583)
-        ):
-            leap = False
-    return leap
+    year = int(year)
+    if cal in ["standard", "gregorian", "proleptic_gregorian", "julian"]:
+        return calendar.isleap(year)
+    else:
+        return False
 
 
-def get_dpm(time, calendar="standard"):
+def get_dpm(time, cal="standard"):
     """
     return a array of days per month corresponding to the months provided in `months`
     """
     month_length = np.zeros(len(time), dtype=np.int)
 
-    cal_days = dpm[calendar]
+    cal_days = dpm[cal]
 
     for i, (month, year) in enumerate(zip(time.month, time.year)):
         month_length[i] = cal_days[month]
-        if leap_year(year, calendar=calendar) and month == 2:
+        if leap_year(year, cal=cal) and month == 2:
             month_length[i] += 1
     return month_length
 
@@ -55,13 +42,13 @@ def annual_cycle(ds, var):
     """Compute annual cycle climatology"""
     # Make a DataArray with the number of days in each month, size = len(time)
     if hasattr(ds.time, "calendar"):
-        calendar = ds.time.calendar
+        cal = ds.time.calendar
     elif hasattr(ds.time, "calendar_type"):
-        calendar = ds.time.calendar_type.lower()
+        cal = ds.time.calendar_type.lower()
     else:
-        calendar = "standard"
+        cal = "standard"
     month_length = xr.DataArray(
-        get_dpm(ds.time.to_index(), calendar=calendar),
+        get_dpm(ds.time.to_index(), cal=cal),
         coords=[ds.time],
         name="month_length",
     )
