@@ -48,9 +48,7 @@ def annual_cycle(ds, var):
     else:
         cal = "standard"
     month_length = xr.DataArray(
-        get_dpm(ds.time.to_index(), cal=cal),
-        coords=[ds.time],
-        name="month_length",
+        get_dpm(ds.time.to_index(), cal=cal), coords=[ds.time], name="month_length",
     )
 
     # Calculate the weights by grouping by 'time.season'.
