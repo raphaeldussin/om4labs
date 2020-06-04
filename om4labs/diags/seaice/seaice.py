@@ -31,7 +31,7 @@ import xarray as xr
 
 
 def arguments(cliargs=None):
-    """Plot sea ice vs. NSIDC"""
+    description = """Plot sea ice vs. NSIDC"""
 
     parser = argparse.ArgumentParser(
         description=description, formatter_class=argparse.RawTextHelpFormatter
