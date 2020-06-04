@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
 
+"""
+om4labs: model-simulated sea ice vs. NSIDC obs
+"""
+
+__all__ = ['arguments','read','calculate','plot','run','parse_and_run']
+
 import argparse
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import cartopy.crs as ccrs
 import cartopy.feature
+import time
 import warnings
 
 warnings.filterwarnings("ignore", message=".*csr_matrix.*")
@@ -24,16 +31,7 @@ import xarray as xr
 
 
 def arguments(cliargs=None):
-    """
-    Function to capture the user-specified command line options
-    """
-    description = """
-    Program for generating global mean statistics directly 
-    from history tarfile.
-
-    For help, contact John.Krasting@noaa.gov
-
-    """
+    """Plot sea ice vs. NSIDC"""
 
     parser = argparse.ArgumentParser(
         description=description, formatter_class=argparse.RawTextHelpFormatter
@@ -104,9 +102,8 @@ def arguments(cliargs=None):
 
     return parser.parse_args(cliargs)
 
-
-def calc_seaice(infile, static, obsfile, label=None, region="nh"):
-    """Main computational script"""
+def read(infile, obsfile, static):
+    """Function to read in the data. Returns xarray datasets"""
 
     # Open ice model output and the static file
     ds = xr.open_mfdataset(infile, combine="by_coords")
@@ -122,73 +119,74 @@ def calc_seaice(infile, static, obsfile, label=None, region="nh"):
     ds["GEOLAT"] = dstatic["GEOLAT"]
     ds["AREA"] = dstatic["CELL_AREA"] * 4.0 * np.pi * (6.378e6 ** 2)
 
-    # Get model start year and end year
-    modtime = (
-        int(ds["time"].isel({"time": 0}).dt.strftime("%Y")),
-        int(ds["time"].isel({"time": -1}).dt.strftime("%Y")),
-    )
-
     # Get Valid Mask
     valid_mask = np.where(ds["CELL_AREA"] == 0, True, False)
 
     # Open observed SIC on 25-km EASE grid (coords already named lat and lon)
     dobs = xr.open_dataset(obsfile)
 
-    # Get observation start year and end year
-    obstime = (
+    # Close the static file (no longer used)
+    dstatic.close()
+
+    return ds, dobs, valid_mask
+
+
+
+def calculate(ds, dobs, region="nh"):
+    """ Function to calculate sea ice parameters """
+
+    # Container dictionaries to hold results
+    model = {}
+    obs = {}
+
+    # Create annual cycle climatology
+    model['ac'] = averagers.annual_cycle(ds, "CN")
+    obs['ac']   = averagers.annual_cycle(dobs, "sic")
+
+    # Calculate area and extent
+    if region == "nh":
+        model['area'] = np.where(ds["GEOLAT"] > 0.0, model['ac'] * ds.AREA, 0.0)
+        model['ext'] = np.where((model['ac'] > 0.15) & (ds["GEOLAT"] > 0.0), ds.AREA, 0.0)
+    elif region == "sh":
+        model['area'] = np.where(ds["GEOLAT"] < 0.0, model['ac'] * ds.AREA, 0.0)
+        model['ext'] = np.where((model['ac'] > 0.15) & (ds["GEOLAT"] < 0.0), ds.AREA, 0.0)
+    else:
+        raise ValueError(f"Unknown region {region}. Option are nh or sh")
+
+    model['area'] = model['area'].sum(axis=(-2, -1)) * 1.0e-12
+    model['ext']  = model['ext'].sum(axis=(-2, -1)) * 1.0e-12
+
+    obs['area'] = obs['ac'] * dobs.areacello
+    obs['area'] = obs['area'].sum(axis=(-2, -1)) * 1.0e-12
+
+    obs['ext'] = np.where(obs['ac'] > 0.15, dobs.areacello, 0.0)
+    obs['ext'] = obs['ext'].sum(axis=(-2, -1)) * 1.0e-12
+
+    # Add back in the 2D coordinates
+    model['ac']["GEOLON"] = ds["GEOLON"]
+    model['ac']["GEOLAT"] = ds["GEOLAT"]
+    model['ac'] = model['ac'].rename({"GEOLON": "lon", "GEOLAT": "lat"})
+    obs['ac']["lon"] = dobs["lon"]
+    obs['ac']["lat"] = dobs["lat"]
+
+    # Regrid the observations to the model grid (for plotting)
+    obs['ac_r'] = regrid.curv_to_curv(obs['ac'], model['ac'], reuse_weights=False)
+
+    # Get tuple of start year and end years for model and observations
+    model['time'] = (
+        int(ds["time"].isel({"time": 0}).dt.strftime("%Y")),
+        int(ds["time"].isel({"time": -1}).dt.strftime("%Y")),
+    )
+
+    obs['time'] = (
         int(dobs["time"].isel({"time": 0}).dt.strftime("%Y")),
         int(dobs["time"].isel({"time": -1}).dt.strftime("%Y")),
     )
 
-    # Create annual cycle climatology
-    model = averagers.annual_cycle(ds, "CN")
-    obs = averagers.annual_cycle(dobs, "sic")
-
-    # Calculate area and extent
-    if region == "nh":
-        area_model = np.where(ds["GEOLAT"] > 0.0, model * ds.AREA, 0.0)
-        ext_model = np.where((model > 0.15) & (ds["GEOLAT"] > 0.0), ds.AREA, 0.0)
-    elif region == "sh":
-        area_model = np.where(ds["GEOLAT"] < 0.0, model * ds.AREA, 0.0)
-        ext_model = np.where((model > 0.15) & (ds["GEOLAT"] < 0.0), ds.AREA, 0.0)
-    else:
-        raise ValueError(f"Unknown region {region}. Option are nh or sh")
-    area_model = area_model.sum(axis=(-2, -1)) * 1.0e-12
-    ext_model = ext_model.sum(axis=(-2, -1)) * 1.0e-12
-
-    area_obs = obs * dobs.areacello
-    area_obs = area_obs.sum(axis=(-2, -1)) * 1.0e-12
-    ext_obs = np.where(obs > 0.15, dobs.areacello, 0.0)
-    ext_obs = ext_obs.sum(axis=(-2, -1)) * 1.0e-12
-
-    # Add back in the 2D coordinates
-    model["GEOLON"] = ds["GEOLON"]
-    model["GEOLAT"] = ds["GEOLAT"]
-    model = model.rename({"GEOLON": "lon", "GEOLAT": "lat"})
-    obs["lon"] = dobs["lon"]
-    obs["lat"] = dobs["lat"]
-
-    # Close original files to free up memory
-    ds.close()
-    dobs.close()
-
-    # Regrid the observations to the model grid (for plotting)
-    obs_r = regrid.curv_to_curv(obs, model, reuse_weights=False)
-
-    return (
-        model,
-        obs_r,
-        ext_model,
-        ext_obs,
-        area_model,
-        area_obs,
-        valid_mask,
-        modtime,
-        obstime,
-    )
+    return model, obs
 
 
-def plot_annual_cycle(ax, _mod, _obs, roll=0):
+def _plot_annual_cycle(ax, _mod, _obs, roll=0):
     """Creates an anual cycle subplot panel"""
     _months = np.array(["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"])
 
@@ -213,7 +211,7 @@ def plot_annual_cycle(ax, _mod, _obs, roll=0):
     plt.legend()
 
 
-def plot_map_panel(
+def _plot_map_panel(
     ax,
     x,
     y,
@@ -235,48 +233,14 @@ def plot_map_panel(
         cs2 = ax.contour(
             x, y, plotdata, transform=ccrs.PlateCarree(), levels=[15.0], colors=["r"]
         )
+    return cb
 
 
-def return_month_index(month):
-    """Given a text month, return integer index"""
-
-    assert isinstance(month, str)
-    month = month.lower()
-
-    month_index = {}
-    month_index["january"] = 0
-    month_index["february"] = 1
-    month_index["march"] = 2
-    month_index["april"] = 3
-    month_index["may"] = 4
-    month_index["june"] = 5
-    month_index["july"] = 6
-    month_index["august"] = 7
-    month_index["september"] = 8
-    month_index["october"] = 9
-    month_index["november"] = 10
-    month_index["december"] = 11
-
-    return int(month_index[month])
-
-
-def seaice_plot(
-    model,
-    obs_r,
-    ext_model,
-    ext_obs,
-    area_model,
-    area_obs,
-    valid_mask,
-    modtime,
-    obstime,
-    label=None,
-    region="nh",
-    month="March",
-):
+def plot(model,obs, valid_mask, label=None,region="nh",month="March"):
     """Function to make sea ice plot"""
 
-    month_index = return_month_index(month)
+    # Get integer index of the requested month
+    month_index = int(time.strptime(month, "%B").tm_mon) - 1
 
     # Setup figure canvas
     fig = plt.figure(figsize=(11, 8.5))
@@ -292,30 +256,32 @@ def seaice_plot(
         raise ValueError(f"Unknown region {region}. Option are nh or sh")
 
     # All maps are plotted on the model grid
-    x = np.array(model.lon.to_masked_array())
-    y = np.array(model.lat.to_masked_array())
+    x = np.array(model['ac'].lon.to_masked_array())
+    y = np.array(model['ac'].lat.to_masked_array())
 
     # Top left panel - model map of sea ice
     ax = plt.subplot(2, 3, 1, projection=proj)
-    plotdata = (model[month_index] * 100.0).to_masked_array()
+    plotdata = (model['ac'][month_index] * 100.0).to_masked_array()
     plotdata = np.ma.masked_where(valid_mask, plotdata)
-    plot_map_panel(ax, x, y, plotdata, extent=extent)
-    ax.set_title(f"Model - Years {modtime[0]} to {modtime[1]}")
+    cb1 = _plot_map_panel(ax, x, y, plotdata, extent=extent)
+    ax.set_title(f"Model - Years {model['time'][0]} to {model['time'][1]}")
+    fig.colorbar(cb1,orientation="horizontal",fraction=0.03,pad=0.05,aspect=60,ax=ax)
 
     # Top middle panel - observed map of sea ice
     ax = plt.subplot(2, 3, 2, projection=proj)
-    plotdata = (obs_r[month_index] * 100.0).to_masked_array()
+    plotdata = (obs['ac_r'][month_index] * 100.0).to_masked_array()
     plotdata = np.ma.masked_where(valid_mask, plotdata)
-    plot_map_panel(ax, x, y, plotdata, extent=extent)
-    ax.set_title(f"NSIDC - Years {obstime[0]} to {obstime[1]}")
+    cb2 = _plot_map_panel(ax, x, y, plotdata, extent=extent)
+    ax.set_title(f"NSIDC - Years {obs['time'][0]} to {obs['time'][1]}")
+    fig.colorbar(cb2,orientation="horizontal",fraction=0.03,pad=0.05,aspect=60,ax=ax)
 
     # Top right panel - model minus observed difference
     ax = plt.subplot(2, 3, 3, projection=proj)
-    _mod = np.where(np.isnan(model[month_index].data), 0.0, model[month_index].data)
-    _obs = np.where(np.isnan(obs_r[month_index].data), 0.0, obs_r[month_index].data)
+    _mod = np.where(np.isnan(model['ac'][month_index].data), 0.0, model['ac'][month_index].data)
+    _obs = np.where(np.isnan(obs['ac_r'][month_index].data), 0.0, obs['ac_r'][month_index].data)
     plotdata = (_mod - _obs) * 100.0
     plotdata = np.ma.masked_where(valid_mask, plotdata)
-    plot_map_panel(
+    cb3 = _plot_map_panel(
         ax,
         x,
         y,
@@ -327,30 +293,31 @@ def seaice_plot(
         extent=extent,
     )
     ax.set_title("Difference")
+    fig.colorbar(cb3,orientation="horizontal",fraction=0.03,pad=0.05,aspect=60,ax=ax)
 
     # Bottom left panel - annual cycle of sea ice area
     ax = plt.subplot(2, 3, 4)
-    plot_annual_cycle(ax, area_model, area_obs, roll=month_index - 9)
+    _plot_annual_cycle(ax, model['area'], obs['area'], roll=month_index - 9)
     ax.set_title("Sea Ice Area")
     ax.set_ylabel("1.e6 km^2")
 
     # Bottom middle panel - annual cycle of sea ice extent
     ax = plt.subplot(2, 3, 5)
-    plot_annual_cycle(ax, ext_model, ext_obs, roll=month_index - 9)
+    _plot_annual_cycle(ax, model['ext'], obs['ext'], roll=month_index - 9)
     ax.set_title("Sea Ice Extent")
     ax.set_ylabel("1.e6 km^2")
 
     # Text statistics annotations
     fig.text(0.67, 0.39, "Annual Sea Ice Area", fontsize=10)
-    fig.text(0.67, 0.375, "Model Max: %0.5f" % (area_model.max()), fontsize=10)
-    fig.text(0.67, 0.36, "Obs Max: %0.5f" % (area_obs.max()), fontsize=10)
-    fig.text(0.67, 0.345, "Model Min: %0.5f" % (area_model.min()), fontsize=10)
-    fig.text(0.67, 0.33, "Obs Min: %0.5f" % (area_obs.min()), fontsize=10)
+    fig.text(0.67, 0.375, "Model Max: %0.5f" % (model['area'].max()), fontsize=10)
+    fig.text(0.67, 0.36, "Obs Max: %0.5f" % (obs['area'].max()), fontsize=10)
+    fig.text(0.67, 0.345, "Model Min: %0.5f" % (model['area'].min()), fontsize=10)
+    fig.text(0.67, 0.33, "Obs Min: %0.5f" % (obs['area'].min()), fontsize=10)
     fig.text(0.67, 0.285, "Annual Sea Ice Extent", fontsize=10)
-    fig.text(0.67, 0.27, "Model Max: %0.5f" % (ext_model.max()), fontsize=10)
-    fig.text(0.67, 0.255, "Obs Max: %0.5f" % (ext_obs.max()), fontsize=10)
-    fig.text(0.67, 0.24, "Model Min: %0.5f" % (ext_model.min()), fontsize=10)
-    fig.text(0.67, 0.225, "Obs Min: %0.5f" % (ext_obs.min()), fontsize=10)
+    fig.text(0.67, 0.27, "Model Max: %0.5f" % (model['ext'].max()), fontsize=10)
+    fig.text(0.67, 0.255, "Obs Max: %0.5f" % (obs['ext'].max()), fontsize=10)
+    fig.text(0.67, 0.24, "Model Min: %0.5f" % (model['ext'].min()), fontsize=10)
+    fig.text(0.67, 0.225, "Obs Min: %0.5f" % (obs['ext'].min()), fontsize=10)
 
     # Top header title
     plt.subplots_adjust(top=0.8)
@@ -387,6 +354,9 @@ def seaice_plot(
 
 
 def run(args):
+    """Function to call read, calc, and plot in sequence"""
+
+    # parameters
     interactive = args.interactive
     outdir = args.outdir
     pltfmt = args.format
@@ -397,6 +367,7 @@ def run(args):
     region = args.region
     label = args.label
 
+    # set visual backend
     if interactive is False:
         plt.switch_backend("Agg")
     else:
@@ -404,33 +375,13 @@ def run(args):
 
     print(f"Matplotlib is using the {mpl.get_backend()} back-end.")
 
-    (
-        model,
-        obs_r,
-        ext_model,
-        ext_obs,
-        area_model,
-        area_obs,
-        valid_mask,
-        modtime,
-        obstime,
-    ) = calc_seaice(infile, static, obsfile, region=region)
+    # --- the main show ---
+    ds, dobs, valid_mask = read(infile, obsfile, static)
+    model, obs = calculate(ds, dobs, region=region)
+    fig = plot(model, obs, valid_mask, label=label, region= region, month=month)
+    # ---------------------
 
-    fig = seaice_plot(
-        model,
-        obs_r,
-        ext_model,
-        ext_obs,
-        area_model,
-        area_obs,
-        valid_mask,
-        modtime,
-        obstime,
-        label=label,
-        region=region,
-        month=month,
-    )
-
+    # do something with the figure
     if interactive is True:
         plt.show(fig)
     else:
@@ -441,9 +392,12 @@ def run(args):
 
 
 def parse_and_run(cliargs=None):
+    """ Function to make compatibile with the superwrapper """
     args = arguments(cliargs)
     run(args)
 
 
 if __name__ == "__main__":
     parse_and_run()
+
+
