@@ -51,18 +51,18 @@ def get_dpm(time, calendar="standard"):
     return month_length
 
 
-def annual_cycle(D, var):
+def annual_cycle(ds, var):
     """Compute annual cycle climatology"""
     # Make a DataArray with the number of days in each month, size = len(time)
-    if hasattr(D.time, "calendar"):
-        calendar = D.time.calendar
-    elif hasattr(D.time, "calendar_type"):
-        calendar = D.time.calendar_type.lower()
+    if hasattr(ds.time, "calendar"):
+        calendar = ds.time.calendar
+    elif hasattr(ds.time, "calendar_type"):
+        calendar = ds.time.calendar_type.lower()
     else:
         calendar = "standard"
     month_length = xr.DataArray(
-        get_dpm(D.time.to_index(), calendar=calendar),
-        coords=[D.time],
+        get_dpm(ds.time.to_index(), calendar=calendar),
+        coords=[ds.time],
         name="month_length",
     )
 
@@ -76,6 +76,6 @@ def annual_cycle(D, var):
     np.testing.assert_allclose(weights.groupby("time.month").sum().values, np.ones(12))
 
     # Calculate the weighted average
-    D_weighted = (D[var] * weights).groupby("time.month").sum(dim="time")
+    ds_weighted = (ds[var] * weights).groupby("time.month").sum(dim="time")
 
-    return D_weighted
+    return ds_weighted
