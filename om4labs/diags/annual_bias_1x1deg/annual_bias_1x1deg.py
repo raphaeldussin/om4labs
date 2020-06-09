@@ -110,7 +110,7 @@ def read_all_data(args, **kwargs):
     return x, y, area, model, obs
 
 
-def run():
+def parse(cliargs=None):
     """ parse the command line arguments """
     parser = argparse.ArgumentParser(
         description="Script for plotting \
@@ -182,12 +182,11 @@ def run():
         required=False,
         help="stream output plot (diff/compare)",
     )
-    cmdLineArgs = parser.parse_args()
-    # execute the main code
-    main(cmdLineArgs)
+    cmdLineArgs = parser.parse_args(cliargs)
+    return cmdLineArgs
 
 
-def main(cmdLineArgs):
+def run(cmdLineArgs):
     """ main can be called from either command line and then use parser from run()
     or DORA can build the args and run it directly """
 
@@ -276,5 +275,10 @@ def main(cmdLineArgs):
         return imgbufs
 
 
+def parse_and_run(cliargs=None):
+    cmdLineArgs = parse(cliargs)
+    run(cmdLineArgs)
+
+
 if __name__ == "__main__":
-    run()
+    parse_and_run()
