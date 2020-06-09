@@ -11,21 +11,22 @@ class CLI(object):
     """Top-level command line interface"""
 
     for diag in avail_diags:
-        exec(f"from om4analysis.diags import {diag}")
+        exec(f"from om4labs.diags import {diag}")
 
     def __init__(self):
-        usage = "om4plot <command> [<args>]\n\n"
+        usage = "om4labs <command> [<args>]\n\n"
         for diag in avail_diags:
-            _description = eval(f"om4analysis.diags.{diag}.__description__")
+            _description = eval(f"om4labs.diags.{diag}.__description__")
             usage = usage + (f"    {diag}  {_description}\n")
 
-        parser = argparse.ArgumentParser(
+        metaparser = argparse.ArgumentParser(
             description="Command line interface to plot standard ocean analyses",
             usage=usage,
         )
-        parser.add_argument("command", help="Subcommand to run")
-        args = parser.parse_args(sys.argv[1:2])
-        om4analysis.diags.__dict__[diag].parse_and_run(sys.argv[2:])
+        metaparser.add_argument("command", help="Subcommand to run")
+        args = metaparser.parse_args(sys.argv[1:2])
+        subargs = sys.argv[2:]
+        om4labs.diags.__dict__[args.command].parse_and_run(subargs)
 
 
 if __name__ == "__main__":

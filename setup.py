@@ -10,9 +10,9 @@ setuptools.setup(
     license="GPLv3",
     keywords="",
     url="https://github.com/raphaeldussin/om4labs",
-    packages=["om4labs"],
+    packages=["om4labs", "om4labs/diags",
+              "om4labs/diags/annual_bias_1x1deg"],
     scripts=[
-        "scripts/om4labs",
-        "om4labs/diags/annual_bias_1x1deg/annual_bias_1x1deg.py",
+        "scripts/om4labs"
     ],
 )
