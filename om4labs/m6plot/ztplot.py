@@ -1,12 +1,31 @@
-def ztplot(field, t=None, z=None,
-  tlabel=None, tunits=None, zlabel=None, zunits=None,
-  splitscale=None,
-  title='', suptitle='', autocenter=False,
-  clim=None, colormap=None, extend=None, centerlabels=False,
-  nbins=None, landcolor=[.5,.5,.5],
-  aspect=[16,9], resolution=576, axis=None,
-  ignore=None, save=None, debug=False, show=False, interactive=False):
-  """
+def ztplot(
+    field,
+    t=None,
+    z=None,
+    tlabel=None,
+    tunits=None,
+    zlabel=None,
+    zunits=None,
+    splitscale=None,
+    title="",
+    suptitle="",
+    autocenter=False,
+    clim=None,
+    colormap=None,
+    extend=None,
+    centerlabels=False,
+    nbins=None,
+    landcolor=[0.5, 0.5, 0.5],
+    aspect=[16, 9],
+    resolution=576,
+    axis=None,
+    ignore=None,
+    save=None,
+    debug=False,
+    show=False,
+    interactive=False,
+):
+    """
   Renders section plot of scalar field, field(x,z).
 
   Arguments:
@@ -37,47 +56,94 @@ def ztplot(field, t=None, z=None,
   interactive If true, adds interactive features such as zoom, close and cursor. Default False.
   """
 
-  # Create coordinates if not provided
-  tlabel, tunits, zlabel, zunits = createTZlabels(t, z, tlabel, tunits, zlabel, zunits)
-  if debug: print('t,z label/units=',tlabel,tunits,zlabel,zunits)
-  if ignore is not None: maskedField = numpy.ma.masked_array(field, mask=[field==ignore])
-  else: maskedField = field.copy()
-  field2 = maskedField.T
-  tCoord = t; zCoord = z
+    # Create coordinates if not provided
+    tlabel, tunits, zlabel, zunits = createTZlabels(
+        t, z, tlabel, tunits, zlabel, zunits
+    )
+    if debug:
+        print("t,z label/units=", tlabel, tunits, zlabel, zunits)
+    if ignore is not None:
+        maskedField = numpy.ma.masked_array(field, mask=[field == ignore])
+    else:
+        maskedField = field.copy()
+    field2 = maskedField.T
+    tCoord = t
+    zCoord = z
 
-  # Diagnose statistics
-  sMin, sMax, sMean, sStd, sRMS = myStats(maskedField, None, debug=debug)
-  tLims = numpy.amin(tCoord), numpy.amax(tCoord)
-  zLims = numpy.amin(zCoord), numpy.amax(zCoord)
-  #zLims = boundaryStats(zCoord)
+    # Diagnose statistics
+    sMin, sMax, sMean, sStd, sRMS = myStats(maskedField, None, debug=debug)
+    tLims = numpy.amin(tCoord), numpy.amax(tCoord)
+    zLims = numpy.amin(zCoord), numpy.amax(zCoord)
+    # zLims = boundaryStats(zCoord)
 
-  # Choose colormap
-  if nbins is None and (clim is None or len(clim)==2): nbins=35
-  if colormap is None: colormap = chooseColorMap(sMin, sMax)
-  cmap, norm, extend = chooseColorLevels(sMin, sMax, colormap, clim=clim, nbins=nbins, extend=extend, autocenter=autocenter)
+    # Choose colormap
+    if nbins is None and (clim is None or len(clim) == 2):
+        nbins = 35
+    if colormap is None:
+        colormap = chooseColorMap(sMin, sMax)
+    cmap, norm, extend = chooseColorLevels(
+        sMin,
+        sMax,
+        colormap,
+        clim=clim,
+        nbins=nbins,
+        extend=extend,
+        autocenter=autocenter,
+    )
 
-  if axis is None:
-    setFigureSize(aspect, resolution, debug=debug)
-    #plt.gcf().subplots_adjust(left=.10, right=.99, wspace=0, bottom=.09, top=.9, hspace=0)
-    axis = plt.gca()
-  plt.pcolormesh(tCoord, zCoord, field2, cmap=cmap, norm=norm)
-  if interactive: addStatusBar(tCoord, zCoord, field2)
-  cb = plt.colorbar(fraction=.08, pad=0.02, extend=extend)
-  if centerlabels and len(clim)>2: cb.set_ticks(  0.5*(clim[:-1]+clim[1:]) )
-  axis.set_facecolor(landcolor)
-  if splitscale is not None:
-    for zzz in splitscale[1:-1]: plt.axhline(zzz,color='k',linestyle='--')
-    axis.set_yscale('splitscale', zval=splitscale)
-  plt.xlim( tLims ); plt.ylim( zLims )
-  axis.annotate('max=%.5g\nmin=%.5g'%(sMax,sMin), xy=(0.0,1.01), xycoords='axes fraction', verticalalignment='bottom', fontsize=10)
-  if sMean is not None:
-    axis.annotate('mean=%.5g\nrms=%.5g'%(sMean,sRMS), xy=(1.0,1.01), xycoords='axes fraction', verticalalignment='bottom', horizontalalignment='right', fontsize=10)
-    axis.annotate(' sd=%.5g\n'%(sStd), xy=(1.0,1.01), xycoords='axes fraction', verticalalignment='bottom', horizontalalignment='left', fontsize=10)
-  if len(tlabel+tunits)>0: plt.xlabel(label(tlabel, tunits))
-  if len(zlabel+zunits)>0: plt.ylabel(label(zlabel, zunits))
-  if len(title)>0: plt.title(title)
-  if len(suptitle)>0: plt.suptitle(suptitle)
+    if axis is None:
+        setFigureSize(aspect, resolution, debug=debug)
+        # plt.gcf().subplots_adjust(left=.10, right=.99, wspace=0, bottom=.09, top=.9, hspace=0)
+        axis = plt.gca()
+    plt.pcolormesh(tCoord, zCoord, field2, cmap=cmap, norm=norm)
+    if interactive:
+        addStatusBar(tCoord, zCoord, field2)
+    cb = plt.colorbar(fraction=0.08, pad=0.02, extend=extend)
+    if centerlabels and len(clim) > 2:
+        cb.set_ticks(0.5 * (clim[:-1] + clim[1:]))
+    axis.set_facecolor(landcolor)
+    if splitscale is not None:
+        for zzz in splitscale[1:-1]:
+            plt.axhline(zzz, color="k", linestyle="--")
+        axis.set_yscale("splitscale", zval=splitscale)
+    plt.xlim(tLims)
+    plt.ylim(zLims)
+    axis.annotate(
+        "max=%.5g\nmin=%.5g" % (sMax, sMin),
+        xy=(0.0, 1.01),
+        xycoords="axes fraction",
+        verticalalignment="bottom",
+        fontsize=10,
+    )
+    if sMean is not None:
+        axis.annotate(
+            "mean=%.5g\nrms=%.5g" % (sMean, sRMS),
+            xy=(1.0, 1.01),
+            xycoords="axes fraction",
+            verticalalignment="bottom",
+            horizontalalignment="right",
+            fontsize=10,
+        )
+        axis.annotate(
+            " sd=%.5g\n" % (sStd),
+            xy=(1.0, 1.01),
+            xycoords="axes fraction",
+            verticalalignment="bottom",
+            horizontalalignment="left",
+            fontsize=10,
+        )
+    if len(tlabel + tunits) > 0:
+        plt.xlabel(label(tlabel, tunits))
+    if len(zlabel + zunits) > 0:
+        plt.ylabel(label(zlabel, zunits))
+    if len(title) > 0:
+        plt.title(title)
+    if len(suptitle) > 0:
+        plt.suptitle(suptitle)
 
-  if save is not None: plt.savefig(save)
-  if interactive: addInteractiveCallbacks()
-  if show: plt.show(block=False)
+    if save is not None:
+        plt.savefig(save)
+    if interactive:
+        addInteractiveCallbacks()
+    if show:
+        plt.show(block=False)

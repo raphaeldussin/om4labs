@@ -6,14 +6,36 @@ from . import coords
 from . import formatting
 from . import stats
 
-def xyplot(field, x=None, y=None, area=None,
-  xlabel=None, xunits=None, ylabel=None, yunits=None,
-  title='', suptitle='',
-  clim=None, colormap=None, extend=None, centerlabels=False,
-  nbins=None, landcolor=[.5,.5,.5],
-  aspect=[16,9], resolution=576, axis=None, sigma=2.,
-  ignore=None, save=None, debug=False, show=False, interactive=False, logscale=False):
-  """
+
+def xyplot(
+    field,
+    x=None,
+    y=None,
+    area=None,
+    xlabel=None,
+    xunits=None,
+    ylabel=None,
+    yunits=None,
+    title="",
+    suptitle="",
+    clim=None,
+    colormap=None,
+    extend=None,
+    centerlabels=False,
+    nbins=None,
+    landcolor=[0.5, 0.5, 0.5],
+    aspect=[16, 9],
+    resolution=576,
+    axis=None,
+    sigma=2.0,
+    ignore=None,
+    save=None,
+    debug=False,
+    show=False,
+    interactive=False,
+    logscale=False,
+):
+    """
   Renders plot of scalar field, field(x,y).
 
   Arguments:
@@ -47,50 +69,103 @@ def xyplot(field, x=None, y=None, area=None,
   logscale     If true, use logaritmic coloring scheme. Default False.
   """
 
-  c = cm.dunne_pm()
-  c = cm.dunne_rainbow()
+    c = cm.dunne_pm()
+    c = cm.dunne_rainbow()
 
-  # Create coordinates if not provided
-  xlabel, xunits, ylabel, yunits = formatting.createXYlabels(x, y, xlabel, xunits, ylabel, yunits)
-  if debug: print('x,y label/units=',xlabel,xunits,ylabel,yunits)
-  xCoord, yCoord = formatting.createXYcoords(field, x, y)
+    # Create coordinates if not provided
+    xlabel, xunits, ylabel, yunits = formatting.createXYlabels(
+        x, y, xlabel, xunits, ylabel, yunits
+    )
+    if debug:
+        print("x,y label/units=", xlabel, xunits, ylabel, yunits)
+    xCoord, yCoord = formatting.createXYcoords(field, x, y)
 
-  # Diagnose statistics
-  if ignore is not None: maskedField = numpy.ma.masked_array(field, mask=[field==ignore])
-  else: maskedField = field.copy()
-  sMin, sMax, sMean, sStd, sRMS = stats.calc(maskedField, area, debug=debug)
-  xLims = coords.boundaryStats(xCoord)
-  yLims = coords.boundaryStats(yCoord)
+    # Diagnose statistics
+    if ignore is not None:
+        maskedField = numpy.ma.masked_array(field, mask=[field == ignore])
+    else:
+        maskedField = field.copy()
+    sMin, sMax, sMean, sStd, sRMS = stats.calc(maskedField, area, debug=debug)
+    xLims = coords.boundaryStats(xCoord)
+    yLims = coords.boundaryStats(yCoord)
 
-  # Choose colormap
-  if nbins is None and (clim is None or len(clim)==2): nbins=35
-  if colormap is None: colormap = chooseColorMap(sMin, sMax)
-  if clim is None and sStd>0:
-    cmap, norm, extend = cm.chooseColorLevels(sMean-sigma*sStd, sMean+sigma*sStd, colormap, clim=clim, nbins=nbins, extend=extend, logscale=logscale)
-  else:
-    cmap, norm, extend = cm.chooseColorLevels(sMin, sMax, colormap, clim=clim, nbins=nbins, extend=extend, logscale=logscale)
+    # Choose colormap
+    if nbins is None and (clim is None or len(clim) == 2):
+        nbins = 35
+    if colormap is None:
+        colormap = chooseColorMap(sMin, sMax)
+    if clim is None and sStd > 0:
+        cmap, norm, extend = cm.chooseColorLevels(
+            sMean - sigma * sStd,
+            sMean + sigma * sStd,
+            colormap,
+            clim=clim,
+            nbins=nbins,
+            extend=extend,
+            logscale=logscale,
+        )
+    else:
+        cmap, norm, extend = cm.chooseColorLevels(
+            sMin,
+            sMax,
+            colormap,
+            clim=clim,
+            nbins=nbins,
+            extend=extend,
+            logscale=logscale,
+        )
 
-  if axis is None:
-    formatting.setFigureSize(aspect, resolution, debug=debug)
-    #plt.gcf().subplots_adjust(left=.08, right=.99, wspace=0, bottom=.09, top=.9, hspace=0)
-    axis = plt.gca()
-  plt.pcolormesh(xCoord, yCoord, maskedField, cmap=cmap, norm=norm)
-  if interactive: addStatusBar(xCoord, yCoord, maskedField)
-  cb = plt.colorbar(fraction=.08, pad=0.02, extend=extend)
-  if centerlabels and len(clim)>2: cb.set_ticks(  0.5*(clim[:-1]+clim[1:]) )
-  elif clim is not None and len(clim)>2: cb.set_ticks( clim )
-  axis.set_facecolor(landcolor)
-  plt.xlim( xLims )
-  plt.ylim( yLims )
-  axis.annotate('max=%.5g\nmin=%.5g'%(sMax,sMin), xy=(0.0,1.01), xycoords='axes fraction', verticalalignment='bottom', fontsize=10)
-  if area is not None:
-    axis.annotate('mean=%.5g\nrms=%.5g'%(sMean,sRMS), xy=(1.0,1.01), xycoords='axes fraction', verticalalignment='bottom', horizontalalignment='right', fontsize=10)
-    axis.annotate(' sd=%.5g\n'%(sStd), xy=(1.0,1.01), xycoords='axes fraction', verticalalignment='bottom', horizontalalignment='left', fontsize=10)
-  if len(xlabel+xunits)>0: plt.xlabel(formatting.label(xlabel, xunits))
-  if len(ylabel+yunits)>0: plt.ylabel(formatting.label(ylabel, yunits))
-  if len(title)>0: plt.title(title)
-  if len(suptitle)>0: plt.suptitle(suptitle)
+    if axis is None:
+        formatting.setFigureSize(aspect, resolution, debug=debug)
+        # plt.gcf().subplots_adjust(left=.08, right=.99, wspace=0, bottom=.09, top=.9, hspace=0)
+        axis = plt.gca()
+    plt.pcolormesh(xCoord, yCoord, maskedField, cmap=cmap, norm=norm)
+    if interactive:
+        addStatusBar(xCoord, yCoord, maskedField)
+    cb = plt.colorbar(fraction=0.08, pad=0.02, extend=extend)
+    if centerlabels and len(clim) > 2:
+        cb.set_ticks(0.5 * (clim[:-1] + clim[1:]))
+    elif clim is not None and len(clim) > 2:
+        cb.set_ticks(clim)
+    axis.set_facecolor(landcolor)
+    plt.xlim(xLims)
+    plt.ylim(yLims)
+    axis.annotate(
+        "max=%.5g\nmin=%.5g" % (sMax, sMin),
+        xy=(0.0, 1.01),
+        xycoords="axes fraction",
+        verticalalignment="bottom",
+        fontsize=10,
+    )
+    if area is not None:
+        axis.annotate(
+            "mean=%.5g\nrms=%.5g" % (sMean, sRMS),
+            xy=(1.0, 1.01),
+            xycoords="axes fraction",
+            verticalalignment="bottom",
+            horizontalalignment="right",
+            fontsize=10,
+        )
+        axis.annotate(
+            " sd=%.5g\n" % (sStd),
+            xy=(1.0, 1.01),
+            xycoords="axes fraction",
+            verticalalignment="bottom",
+            horizontalalignment="left",
+            fontsize=10,
+        )
+    if len(xlabel + xunits) > 0:
+        plt.xlabel(formatting.label(xlabel, xunits))
+    if len(ylabel + yunits) > 0:
+        plt.ylabel(formatting.label(ylabel, yunits))
+    if len(title) > 0:
+        plt.title(title)
+    if len(suptitle) > 0:
+        plt.suptitle(suptitle)
 
-  if save is not None: plt.savefig(save)
-  if interactive: addInteractiveCallbacks()
-  if show: plt.show(block=False)
+    if save is not None:
+        plt.savefig(save)
+    if interactive:
+        addInteractiveCallbacks()
+    if show:
+        plt.show(block=False)

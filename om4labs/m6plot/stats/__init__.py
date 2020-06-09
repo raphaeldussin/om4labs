@@ -3,10 +3,10 @@
 """
 
 __all__ = [
-    'calc',
-    'corr',
-    'yzWeight',
-    ]
+    "calc",
+    "corr",
+    "yzWeight",
+]
 
 for func in __all__:
-    exec(f'from .{func} import *')
+    exec(f"from .{func} import *")

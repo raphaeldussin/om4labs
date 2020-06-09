@@ -3,15 +3,15 @@
 """
 
 __all__ = [
-    'createXYcoords',
-    'createXYlabels',
-    'createYZlabels',
-    'label',
-    'linCI',
-    'pmCI',
-    'setFigureSize',
-    'VerticalSplitScale',
-    ]
+    "createXYcoords",
+    "createXYlabels",
+    "createYZlabels",
+    "label",
+    "linCI",
+    "pmCI",
+    "setFigureSize",
+    "VerticalSplitScale",
+]
 
 for func in __all__:
-    exec(f'from .{func} import *')
+    exec(f"from .{func} import *")

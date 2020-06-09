@@ -5,8 +5,8 @@
 """
 
 __all__ = [
-    'sectorRanges',
-    ]
+    "sectorRanges",
+]
 
 for func in __all__:
-    exec(f'from .{func} import *')
+    exec(f"from .{func} import *")

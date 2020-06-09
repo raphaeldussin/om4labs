@@ -4,12 +4,12 @@ with 2-D grids
 """
 
 __all__ = [
-    'boundaryStats',
-    'expand',
-    'expandI',
-    'expandJ',
-    'section2quadmesh',
-    ]
+    "boundaryStats",
+    "expand",
+    "expandI",
+    "expandJ",
+    "section2quadmesh",
+]
 
 for func in __all__:
-    exec(f'from .{func} import *')
+    exec(f"from .{func} import *")
