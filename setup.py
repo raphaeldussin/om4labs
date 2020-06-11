@@ -4,6 +4,8 @@ import os
 import subprocess
 import sys
 
+is_travis = 'TRAVIS' in os.environ
+
 platform = 'unknown'
 if '--platform' in sys.argv:
     index = sys.argv.index('--platform')
@@ -38,5 +40,5 @@ link_platform = ["ln ", "-s ",
                               'obs_catalog.yml')]
 
 if not os.path.exists(f"{os.environ['HOME']}/.om4labs/obs_catalog.yml"):
-    if os.environ['USER'] != 'travis':
+    if not is_travis:
         err = subprocess.check_call(''.join(link_platform), shell=True)
