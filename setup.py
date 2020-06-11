@@ -36,5 +36,7 @@ link_platform = ["ln ", "-s ",
                               f'obs_catalog_{platform}.yml'), " ",
                  os.path.join(os.environ['HOME'], '.om4labs',
                               'obs_catalog.yml')]
+
 if not os.path.exists(f"{os.environ['HOME']}/.om4labs/obs_catalog.yml"):
-    err = subprocess.check_call(''.join(link_platform), shell=True)
+    if os.environ['USER'] != 'travis':
+        err = subprocess.check_call(''.join(link_platform), shell=True)
