@@ -30,15 +30,15 @@ imgbufs = []
 def read(dictArgs):
     """ read data from model and obs files, process data and return it """
 
-    dsmodel = xr.open_mfdataset(dictArgs["infile"],
-                                combine="by_coords",
-                                decode_times=False)
+    dsmodel = xr.open_mfdataset(
+        dictArgs["infile"], combine="by_coords", decode_times=False
+    )
 
     if dictArgs["obsfile"] is not None:
         # priority to user-provided obs file
-        dsobs = xr.open_mfdataset(dictArgs["obsfile"],
-                                  combine="by_coords",
-                                  decode_times=False)
+        dsobs = xr.open_mfdataset(
+            dictArgs["obsfile"], combine="by_coords", decode_times=False
+        )
     else:
         # use dataset from catalog, either from command line or default
         cat_platform = "catalogs/obs_catalog_" + dictArgs["platform"] + ".yml"
@@ -93,9 +93,7 @@ def read(dictArgs):
     assert np.allclose(datamodel["assigned_lat"], dataobs["assigned_lat"])
 
     # homogeneize coords
-    dataobs = copy_coordinates(datamodel,
-                               dataobs,
-                               ["assigned_lon", "assigned_lat"])
+    dataobs = copy_coordinates(datamodel, dataobs, ["assigned_lon", "assigned_lat"])
 
     # restrict model to where obs exists
     datamodel = datamodel.where(dataobs)
