@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import io
 import numpy as np
 import argparse
 import xarray as xr
@@ -23,55 +22,52 @@ except ImportError:
     from om4common import simple_average, copy_coordinates
     from om4common import compute_area_regular_grid
 
-# warnings.filterwarnings("ignore")
-
-surface_default_depth = 2.5  # meters, first level of 1x1deg grid
-
 imgbufs = []
 
 
-def read_all_data(args, **kwargs):
+def read(dictArgs):
     """ read data from model and obs files, process data and return it """
 
-    # define list of possible netcdf names for given field
-    if args.field == "SST":
-        possible_variable_names = ["thetao", "temp", "ptemp", "TEMP", "PTEMP"]
-    elif args.field == "SSS":
-        possible_variable_names = ["so", "salt", "salinity", "SALT", "SALINITY"]
-    # elif args.field == 'NEW_VAR':
-    else:
-        raise ValueError(f"field {args.field} is not available")
-
-    dsmodel = xr.open_mfdataset(args.infile, combine="by_coords", decode_times=False)
-    dsobs = xr.open_mfdataset(args.obs, combine="by_coords", decode_times=False)
+    dsmodel = xr.open_mfdataset(dictArgs['infile'], combine="by_coords",
+                                decode_times=False)
+    dsobs = xr.open_mfdataset(dictArgs['obs'], combine="by_coords",
+                              decode_times=False)
 
     # read in model and obs data
-    datamodel = read_data(dsmodel, possible_variable_names)
-    dataobs = read_data(dsobs, possible_variable_names)
+    datamodel = read_data(dsmodel,
+                          dictArgs['possible_variable_names'])
+    dataobs = read_data(dsobs,
+                        dictArgs['possible_variable_names'])
 
     # subset data
-    if args.depth is not None:
-        datamodel = subset_data(datamodel, "assigned_depth", args.depth)
-        dataobs = subset_data(dataobs, "assigned_depth", args.depth)
+    if dictArgs['depth'] is None:
+        dictArgs['depth'] = dictArgs['surface_default_depth']
+
+    if dictArgs['depth'] is not None:
+        datamodel = subset_data(datamodel, "assigned_depth", dictArgs['depth'])
+        dataobs = subset_data(dataobs, "assigned_depth", dictArgs['depth'])
 
     # reduce data along depth (not yet implemented)
-    if "depth_reduce" in kwargs:
-        if kwargs["depth_reduce"] == "mean":
+    if "depth_reduce" in dictArgs:
+        if dictArgs["depth_reduce"] == "mean":
             # do mean
             pass
-        elif kwargs["depth_reduce"] == "sum":
-            # do mean
+        elif dictArgs["depth_reduce"] == "sum":
+            # do sum
             pass
 
     # reduce data along time, here mandatory
-    if ("assigned_time" in datamodel.dims) and len(datamodel["assigned_time"]) > 1:
+    if ("assigned_time" in datamodel.dims) and \
+       (len(datamodel["assigned_time"]) > 1):
         warnings.warn(
-            "input dataset has more than one time record, performing non-weighted average"
+            "input dataset has more than one time record, " +
+            "performing non-weighted average"
         )
         datamodel = simple_average(datamodel, "assigned_time")
     if ("assigned_time" in dataobs.dims) and len(dataobs["assigned_time"]) > 1:
         warnings.warn(
-            "reference dataset has more than one time record, performing non-weighted average"
+            "reference dataset has more than one time record, " +
+            "performing non-weighted average"
         )
         dataobs = simple_average(dataobs, "assigned_time")
 
@@ -87,7 +83,8 @@ def read_all_data(args, **kwargs):
     assert np.allclose(datamodel["assigned_lat"], dataobs["assigned_lat"])
 
     # homogeneize coords
-    dataobs = copy_coordinates(datamodel, dataobs, ["assigned_lon", "assigned_lat"])
+    dataobs = copy_coordinates(datamodel, dataobs,
+                               ["assigned_lon", "assigned_lat"])
 
     # restrict model to where obs exists
     datamodel = datamodel.where(dataobs)
@@ -125,7 +122,8 @@ def parse(cliargs=None):
         help="Annually-averaged file(s) containing model data",
     )
     parser.add_argument(
-        "-f", "--field", type=str, required=True, help="field name compared to obs"
+        "-f", "--field", type=str, required=True,
+        help="field name compared to obs"
     )
     parser.add_argument(
         "-d",
@@ -186,49 +184,38 @@ def parse(cliargs=None):
     return cmdLineArgs
 
 
-def run(cmdLineArgs):
+def run(dictArgs):
     """ main can be called from either command line and then use parser from run()
     or DORA can build the args and run it directly """
 
-    streamdiff = True if cmdLineArgs.stream == "diff" else False
-    streamcompare = True if cmdLineArgs.stream == "compare" else False
-    streamnone = True if cmdLineArgs.stream == None else False
-
-    # set plots properties according to variable
-    if cmdLineArgs.field == "SST":
-        var = "SST"
-        units = "[$\degree$C]"
-        clim_diff = m6plot.formatting.pmCI(0.25, 4.5, 0.5)
-        clim_compare = m6plot.formatting.linCI(-2, 29, 0.5)
-        cmap_diff = "dunnePM"
-        cmap_compare = "dunneRainbow"
-        if cmdLineArgs.depth is None:
-            cmdLineArgs.depth = surface_default_depth
-    elif cmdLineArgs.field == "SSS":
-        var = "SSS"
-        units = "[ppt]"
-        clim_diff = m6plot.formatting.pmCI(0.125, 2.25, 0.25)
-        clim_compare = m6plot.formatting.linCI(20, 30, 10, 31, 39, 0.5)
-        cmap_diff = "dunnePM"
-        cmap_compare = "dunnePM"
-        if cmdLineArgs.depth is None:
-            cmdLineArgs.depth = surface_default_depth
-    # elif cmdLineArgs.field == 'NEW_VAR':
-    else:
-        raise ValueError(f"field {cmdLineArgs.field} is not available")
-
     # read the data needed for plots
-    x, y, area, model, obs = read_all_data(cmdLineArgs)
+    x, y, area, model, obs = read(dictArgs)
+    # make the plots
+    plot(x, y, area, model, obs, dictArgs)
+
+
+def plot(x, y, area, model, obs, dictArgs):
+    """meta plotting function"""
+
+    streamdiff = True if dictArgs["stream"] == "diff" else False
+    streamcompare = True if dictArgs["stream"] == "compare" else False
+    streamnone = True if dictArgs["stream"] is None else False
 
     # common plot properties
-    pngout = cmdLineArgs.outdir
-    obsds = cmdLineArgs.dataset
+    pngout = dictArgs['outdir']
+    obsds = dictArgs['dataset']
+    var = dictArgs['var']
+    units = dictArgs['units']
+    clim_diff = dictArgs['clim_diff']
+    cmap_diff = dictArgs['cmap_diff']
+    clim_compare = dictArgs['clim_compare']
+    cmap_compare = dictArgs['cmap_compare']
 
-    if cmdLineArgs.suptitle != "":
-        suptitle = f"{cmdLineArgs.suptitle} {cmdLineArgs.label}"
+    if dictArgs["suptitle"] != "":
+        suptitle = f"{dictArgs['suptitle']} {dictArgs['label']}"
     else:
-        title = get_run_name(cmdLineArgs.infile)
-        suptitle = f"{title} {cmdLineArgs.label}"
+        title = get_run_name(dictArgs['infile'])
+        suptitle = f"{title} {dictArgs['label']}"
 
     title_diff = f"{var} bias (w.r.t. {obsds}) {units}"
     title1_compare = f"{var} {units}"
@@ -268,10 +255,11 @@ def run(cmdLineArgs):
 
     # make compare plot
     if streamcompare or streamnone:
-        img = plot_xycompare(x, y, model, obs, compare_kwargs, stream=streamcompare)
+        img = plot_xycompare(x, y, model, obs, compare_kwargs,
+                             stream=streamcompare)
         imgbufs = [img]
 
-    if cmdLineArgs.stream is not None:
+    if not streamnone:
         return imgbufs
 
 
