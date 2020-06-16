@@ -4,6 +4,8 @@ import numpy as np
 import argparse
 import xarray as xr
 import warnings
+import pkg_resources as pkgr
+import intake
 
 try:
     from om4labs import m6plot
@@ -28,10 +30,21 @@ imgbufs = []
 def read(dictArgs):
     """ read data from model and obs files, process data and return it """
 
-    dsmodel = xr.open_mfdataset(
-        dictArgs["infile"], combine="by_coords", decode_times=False
-    )
-    dsobs = xr.open_mfdataset(dictArgs["obs"], combine="by_coords", decode_times=False)
+    dsmodel = xr.open_mfdataset(dictArgs["infile"],
+                                combine="by_coords",
+                                decode_times=False)
+
+    if dictArgs["obsfile"] is not None:
+        # priority to user-provided obs file
+        dsobs = xr.open_mfdataset(dictArgs["obsfile"],
+                                  combine="by_coords",
+                                  decode_times=False)
+    else:
+        # use dataset from catalog, either from command line or default
+        cat_platform = "catalogs/obs_catalog_" + dictArgs["platform"] + ".yml"
+        catfile = pkgr.resource_filename("om4labs", cat_platform)
+        cat = intake.open_catalog(catfile)
+        dsobs = cat[dictArgs["dataset"]].to_dask()
 
     # read in model and obs data
     datamodel = read_data(dsmodel, dictArgs["possible_variable_names"])
@@ -80,7 +93,9 @@ def read(dictArgs):
     assert np.allclose(datamodel["assigned_lat"], dataobs["assigned_lat"])
 
     # homogeneize coords
-    dataobs = copy_coordinates(datamodel, dataobs, ["assigned_lon", "assigned_lat"])
+    dataobs = copy_coordinates(datamodel,
+                               dataobs,
+                               ["assigned_lon", "assigned_lat"])
 
     # restrict model to where obs exists
     datamodel = datamodel.where(dataobs)
@@ -110,15 +125,11 @@ def parse(cliargs=None):
                                                   annual-average bias to obs"
     )
     parser.add_argument(
-        "-i",
-        "--infile",
+        "infile",
+        metavar="INFILE",
         type=str,
         nargs="+",
-        required=True,
         help="Annually-averaged file(s) containing model data",
-    )
-    parser.add_argument(
-        "-f", "--field", type=str, required=True, help="field name compared to obs"
     )
     parser.add_argument(
         "-d",
@@ -155,18 +166,33 @@ def parse(cliargs=None):
     )
     parser.add_argument(
         "-O",
-        "--obs",
+        "--obsfile",
         type=str,
         nargs="+",
-        required=True,
-        help="File containing obs data to compare against",
+        required=False,
+        help="File(s) containing obs data to compare against",
     )
     parser.add_argument(
         "-D",
         "--dataset",
         type=str,
-        required=True,
-        help="Name of the observational dataset",
+        required=False,
+        default="WOA13_annual_TS",
+        help="Name of the observational dataset, \
+              as provided in intake catalog",
+    )
+    parser.add_argument(
+        "-i",
+        "--interactive",
+        action="store_true",
+        help="Interactive mode displays plot to screen. Default is False",
+    )
+    parser.add_argument(
+        "--platform",
+        type=str,
+        required=False,
+        default="gfdl",
+        help="computing platform, default is gfdl",
     )
     parser.add_argument(
         "-S",
