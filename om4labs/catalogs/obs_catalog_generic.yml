@@ -1,0 +1,26 @@
+plugins:
+  source:
+    - module: intake_xarray
+sources:
+
+  WOA13_annual_TS:
+    description: "World Ocean Atlas 2013 annual climatology T/S"
+    driver: netcdf
+    args:
+      urlpath: 'your_data_dir/WOA13_ptemp+salinity_annual_35levels.nc'
+      chunks: {'time': 1}
+      xarray_kwargs:
+        decode_times: False
+    metadata:
+      origin_url: ''
+
+  WOA13_monthly_TS:
+    description: "World Ocean Atlas 2013 monthly climatology T/S"
+    driver: netcdf
+    args:
+      urlpath: 'your_data_dir/WOA13_ptemp+salinity_monthly_35levels.nc'
+      chunks: {'time': 12}
+      xarray_kwargs:
+        decode_times: False
+    metadata:
+      origin_url: ''
