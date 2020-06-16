@@ -2,6 +2,7 @@ black
 intake
 matplotlib
 numpy
+palettable
 pytest
 scipy
 xarray
