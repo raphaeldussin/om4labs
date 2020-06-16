@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 import os
 
 
-is_travis = 'TRAVIS' in os.environ
+is_travis = "TRAVIS" in os.environ
 
 setup(
     name="om4labs",
@@ -15,5 +15,5 @@ setup(
     keywords="",
     url="https://github.com/raphaeldussin/om4labs",
     packages=find_packages(),
-    scripts=["scripts/om4labs"]
+    scripts=["scripts/om4labs"],
 )
