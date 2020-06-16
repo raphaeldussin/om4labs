@@ -5,7 +5,7 @@ import io
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-import m6plot
+from om4labs import m6plot
 import palettable
 import xarray as xr
 import warnings
