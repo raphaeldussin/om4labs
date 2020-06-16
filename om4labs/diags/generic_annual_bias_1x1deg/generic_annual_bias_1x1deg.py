@@ -28,24 +28,22 @@ imgbufs = []
 def read(dictArgs):
     """ read data from model and obs files, process data and return it """
 
-    dsmodel = xr.open_mfdataset(dictArgs['infile'], combine="by_coords",
-                                decode_times=False)
-    dsobs = xr.open_mfdataset(dictArgs['obs'], combine="by_coords",
-                              decode_times=False)
+    dsmodel = xr.open_mfdataset(
+        dictArgs["infile"], combine="by_coords", decode_times=False
+    )
+    dsobs = xr.open_mfdataset(dictArgs["obs"], combine="by_coords", decode_times=False)
 
     # read in model and obs data
-    datamodel = read_data(dsmodel,
-                          dictArgs['possible_variable_names'])
-    dataobs = read_data(dsobs,
-                        dictArgs['possible_variable_names'])
+    datamodel = read_data(dsmodel, dictArgs["possible_variable_names"])
+    dataobs = read_data(dsobs, dictArgs["possible_variable_names"])
 
     # subset data
-    if dictArgs['depth'] is None:
-        dictArgs['depth'] = dictArgs['surface_default_depth']
+    if dictArgs["depth"] is None:
+        dictArgs["depth"] = dictArgs["surface_default_depth"]
 
-    if dictArgs['depth'] is not None:
-        datamodel = subset_data(datamodel, "assigned_depth", dictArgs['depth'])
-        dataobs = subset_data(dataobs, "assigned_depth", dictArgs['depth'])
+    if dictArgs["depth"] is not None:
+        datamodel = subset_data(datamodel, "assigned_depth", dictArgs["depth"])
+        dataobs = subset_data(dataobs, "assigned_depth", dictArgs["depth"])
 
     # reduce data along depth (not yet implemented)
     if "depth_reduce" in dictArgs:
@@ -57,17 +55,16 @@ def read(dictArgs):
             pass
 
     # reduce data along time, here mandatory
-    if ("assigned_time" in datamodel.dims) and \
-       (len(datamodel["assigned_time"]) > 1):
+    if ("assigned_time" in datamodel.dims) and (len(datamodel["assigned_time"]) > 1):
         warnings.warn(
-            "input dataset has more than one time record, " +
-            "performing non-weighted average"
+            "input dataset has more than one time record, "
+            + "performing non-weighted average"
         )
         datamodel = simple_average(datamodel, "assigned_time")
     if ("assigned_time" in dataobs.dims) and len(dataobs["assigned_time"]) > 1:
         warnings.warn(
-            "reference dataset has more than one time record, " +
-            "performing non-weighted average"
+            "reference dataset has more than one time record, "
+            + "performing non-weighted average"
         )
         dataobs = simple_average(dataobs, "assigned_time")
 
@@ -83,8 +80,7 @@ def read(dictArgs):
     assert np.allclose(datamodel["assigned_lat"], dataobs["assigned_lat"])
 
     # homogeneize coords
-    dataobs = copy_coordinates(datamodel, dataobs,
-                               ["assigned_lon", "assigned_lat"])
+    dataobs = copy_coordinates(datamodel, dataobs, ["assigned_lon", "assigned_lat"])
 
     # restrict model to where obs exists
     datamodel = datamodel.where(dataobs)
@@ -122,8 +118,7 @@ def parse(cliargs=None):
         help="Annually-averaged file(s) containing model data",
     )
     parser.add_argument(
-        "-f", "--field", type=str, required=True,
-        help="field name compared to obs"
+        "-f", "--field", type=str, required=True, help="field name compared to obs"
     )
     parser.add_argument(
         "-d",
@@ -202,19 +197,19 @@ def plot(x, y, area, model, obs, dictArgs):
     streamnone = True if dictArgs["stream"] is None else False
 
     # common plot properties
-    pngout = dictArgs['outdir']
-    obsds = dictArgs['dataset']
-    var = dictArgs['var']
-    units = dictArgs['units']
-    clim_diff = dictArgs['clim_diff']
-    cmap_diff = dictArgs['cmap_diff']
-    clim_compare = dictArgs['clim_compare']
-    cmap_compare = dictArgs['cmap_compare']
+    pngout = dictArgs["outdir"]
+    obsds = dictArgs["dataset"]
+    var = dictArgs["var"]
+    units = dictArgs["units"]
+    clim_diff = dictArgs["clim_diff"]
+    cmap_diff = dictArgs["cmap_diff"]
+    clim_compare = dictArgs["clim_compare"]
+    cmap_compare = dictArgs["cmap_compare"]
 
     if dictArgs["suptitle"] != "":
         suptitle = f"{dictArgs['suptitle']} {dictArgs['label']}"
     else:
-        title = get_run_name(dictArgs['infile'])
+        title = get_run_name(dictArgs["infile"])
         suptitle = f"{title} {dictArgs['label']}"
 
     title_diff = f"{var} bias (w.r.t. {obsds}) {units}"
@@ -255,8 +250,7 @@ def plot(x, y, area, model, obs, dictArgs):
 
     # make compare plot
     if streamcompare or streamnone:
-        img = plot_xycompare(x, y, model, obs, compare_kwargs,
-                             stream=streamcompare)
+        img = plot_xycompare(x, y, model, obs, compare_kwargs, stream=streamcompare)
         imgbufs = [img]
 
     if not streamnone:
