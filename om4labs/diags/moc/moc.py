@@ -263,18 +263,8 @@ def plot(y, z, msftyyz, label=None):
 def run(args):
     """Function to call read, calc, and plot in sequence"""
 
-    # parameters
-    basin = args.basin
-    gridspec = args.gridspec
-    infile = args.infile
-    interactive = args.interactive
-    label = args.label
-    outdir = args.outdir
-    pltfmt = args.format
-    topog = args.topog
-
     # set visual backend
-    if interactive is False:
+    if args["interactive"] is False:
         plt.switch_backend("Agg")
     else:
         plt.switch_backend("TkAgg")
@@ -282,23 +272,26 @@ def run(args):
     print(f"Matplotlib is using the {mpl.get_backend()} back-end.")
 
     # --- the main show ---
-    x, y, z, basin_code, vmo = read(infile, basin, gridspec, topog)
+    x, y, z, basin_code, vmo = read(
+        args["infile"], args["basin"], args["gridspec"], args["topog"]
+    )
     msftyyz = calculate(vmo, basin_code)
-    fig = plot(y, z, msftyyz, label)
+    fig = plot(y, z, msftyyz, args["label"])
     # ---------------------
 
     # do something with the figure
-    if interactive is True:
+    if args["interactive"] is True:
         plt.show(fig)
     else:
         imgbuf = io.BytesIO()
-        fig.savefig(imgbuf, format=pltfmt, dpi=150, bbox_inches="tight")
-        with open(f"icefig.{pltfmt}", "wb") as f:
+        fig.savefig(imgbuf, format=args["format"], dpi=150, bbox_inches="tight")
+        with open(f"{args['outdir']}/mocfig.{args['format']}", "wb") as f:
             f.write(imgbuf.getbuffer())
 
 
 def parse_and_run(cliargs=None):
     args = arguments(cliargs)
+    args = args.__dict__
     run(args)
 
 
