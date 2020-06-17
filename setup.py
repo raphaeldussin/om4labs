@@ -1,7 +1,11 @@
 """ setup for om4labs """
-import setuptools
+from setuptools import setup, find_packages
+import os
 
-setuptools.setup(
+
+is_travis = "TRAVIS" in os.environ
+
+setup(
     name="om4labs",
     version="0.0.1",
     author="Raphael Dussin",
@@ -10,9 +14,6 @@ setuptools.setup(
     license="GPLv3",
     keywords="",
     url="https://github.com/raphaeldussin/om4labs",
-    packages=["om4labs"],
-    scripts=[
-        "scripts/om4labs",
-        "om4labs/diags/annual_bias_1x1deg/annual_bias_1x1deg.py",
-    ],
+    packages=find_packages(),
+    scripts=["scripts/om4labs"],
 )

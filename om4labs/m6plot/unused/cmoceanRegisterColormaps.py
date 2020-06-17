@@ -1,0 +1,22 @@
+def cmoceanRegisterColormaps():
+    import matplotlib
+
+    matplotlib.cm.register_cmap(name="algae", cmap=cmocean.cm.algae)
+    matplotlib.cm.register_cmap(name="thermal", cmap=cmocean.cm.thermal)
+    matplotlib.cm.register_cmap(name="haline", cmap=cmocean.cm.haline)
+    matplotlib.cm.register_cmap(name="solar", cmap=cmocean.cm.solar)
+    matplotlib.cm.register_cmap(name="ice", cmap=cmocean.cm.ice)
+    matplotlib.cm.register_cmap(name="gray", cmap=cmocean.cm.gray)
+    matplotlib.cm.register_cmap(name="oxy", cmap=cmocean.cm.oxy)
+    matplotlib.cm.register_cmap(name="deep", cmap=cmocean.cm.deep)
+    matplotlib.cm.register_cmap(name="dense", cmap=cmocean.cm.dense)
+    matplotlib.cm.register_cmap(name="algae", cmap=cmocean.cm.algae)
+    matplotlib.cm.register_cmap(name="matter", cmap=cmocean.cm.matter)
+    matplotlib.cm.register_cmap(name="turbid", cmap=cmocean.cm.turbid)
+    matplotlib.cm.register_cmap(name="speed", cmap=cmocean.cm.speed)
+    matplotlib.cm.register_cmap(name="amp", cmap=cmocean.cm.amp)
+    matplotlib.cm.register_cmap(name="tempo", cmap=cmocean.cm.tempo)
+    matplotlib.cm.register_cmap(name="phase", cmap=cmocean.cm.phase)
+    matplotlib.cm.register_cmap(name="balance", cmap=cmocean.cm.balance)
+    matplotlib.cm.register_cmap(name="delta", cmap=cmocean.cm.delta)
+    matplotlib.cm.register_cmap(name="curl", cmap=cmocean.cm.curl)

@@ -1,5 +1,6 @@
 black
 dask
+intake
 matplotlib
 netcdf4
 numpy

@@ -110,7 +110,7 @@ def read_all_data(args, **kwargs):
     return x, y, area, model, obs
 
 
-def run():
+def parse(cliargs=None):
     """ parse the command line arguments """
     parser = argparse.ArgumentParser(
         description="Script for plotting \
@@ -182,12 +182,11 @@ def run():
         required=False,
         help="stream output plot (diff/compare)",
     )
-    cmdLineArgs = parser.parse_args()
-    # execute the main code
-    main(cmdLineArgs)
+    cmdLineArgs = parser.parse_args(cliargs)
+    return cmdLineArgs
 
 
-def main(cmdLineArgs):
+def run(cmdLineArgs):
     """ main can be called from either command line and then use parser from run()
     or DORA can build the args and run it directly """
 
@@ -199,8 +198,8 @@ def main(cmdLineArgs):
     if cmdLineArgs.field == "SST":
         var = "SST"
         units = "[$\degree$C]"
-        clim_diff = m6plot.pmCI(0.25, 4.5, 0.5)
-        clim_compare = m6plot.linCI(-2, 29, 0.5)
+        clim_diff = m6plot.formatting.pmCI(0.25, 4.5, 0.5)
+        clim_compare = m6plot.formatting.linCI(-2, 29, 0.5)
         cmap_diff = "dunnePM"
         cmap_compare = "dunneRainbow"
         if cmdLineArgs.depth is None:
@@ -208,8 +207,8 @@ def main(cmdLineArgs):
     elif cmdLineArgs.field == "SSS":
         var = "SSS"
         units = "[ppt]"
-        clim_diff = m6plot.pmCI(0.125, 2.25, 0.25)
-        clim_compare = m6plot.linCI(20, 30, 10, 31, 39, 0.5)
+        clim_diff = m6plot.formatting.pmCI(0.125, 2.25, 0.25)
+        clim_compare = m6plot.formatting.linCI(20, 30, 10, 31, 39, 0.5)
         cmap_diff = "dunnePM"
         cmap_compare = "dunnePM"
         if cmdLineArgs.depth is None:
@@ -276,5 +275,10 @@ def main(cmdLineArgs):
         return imgbufs
 
 
+def parse_and_run(cliargs=None):
+    cmdLineArgs = parse(cliargs)
+    run(cmdLineArgs)
+
+
 if __name__ == "__main__":
-    run()
+    parse_and_run()
