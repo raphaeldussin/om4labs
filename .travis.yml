@@ -3,11 +3,51 @@ sudo: false
 notifications:
   email: false
 
+before_install:
+  - sudo apt-get update
+  - sudo apt-get -y install libgeos-dev libproj-dev
+  - sudo apt-get install git tcsh pkg-config
+  - sudo apt-get install gfortran
+  - sudo apt-get install netcdf-bin libnetcdf-dev libnetcdff-dev
+  - sudo apt-get install openmpi-bin libopenmpi-dev
+  - sudo apt-get install libnetcdff-dev
+  - dpkg -L libnetcdf-dev
+  - dpkg -L libnetcdff-dev
+  - dpkg -L netcdf-bin
+
 install:
   - pip install virtualenv
   - virtualenv testing
   - source testing/bin/activate
+
+  # Build ESMF / ESMPy
+  - pip install numpy
+  - curl -o esmf.tar.gz http://www.earthsystemmodeling.org/esmf_releases/public/ESMF_7_1_0r/esmf_7_1_0r_src.tar.gz
+  - tar -xzvf esmf.tar.gz
+  - pushd esmf
+  - export ESMF_DIR=`pwd`
+  - export ESMF_INSTALL_PREFIX=/usr/local/esmf
+  - export ESMF_OS=Linux
+  - export ESMF_NETCDF="local"
+  - export ESMF_COMM=mpiuni
+  - export ESMF_F90COMPILER=gfortran
+  - export ESMF_CXXCOMPILER=g++
+  - export ESMF_TESTEXHAUSTIVE=on
+  - export ESMF_TESTSHAREDOBJ=on
+  - export ESMF_NETCDF_INCLUDE=/usr/include
+  - export ESMF_NETCDF_LIBS="-lnetcdf -lnetcdff"
+  - export ESMF_NETCDF_LIBPATH=/usr/lib/x86_64-linux-gnu
+  - export ESMF_BOPT=O3
+  - sudo make lib
+  - sudo make install
+  - cd src/addon/ESMPy/
+  - python setup.py build --ESMFMKFILE=/usr/local/esmf/lib/libO3/Linux.gfortran.64.mpiuni.default/esmf.mk
+  - python setup.py install
+  - popd
+ 
+  # Build the rest of the environment 
   - pip install -r ci/requirements.txt
+  - pip install cartopy
   - pip install -e .
 
 script:

@@ -1,8 +1,14 @@
 black
+dask
 intake
 matplotlib
+netcdf4
 numpy
 palettable
+pyshp
 pytest
 scipy
+shapely
+six
 xarray
+xesmf
