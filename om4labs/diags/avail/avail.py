@@ -27,7 +27,7 @@ def run(dictArgs):
         cat = intake.open_catalog(catfile)
         return cat
     else:
-        print('Platform not available')
+        print("Platform not available")
 
 
 def parse_and_run(cliargs=None):
@@ -36,7 +36,7 @@ def parse_and_run(cliargs=None):
     catobs = run(dictArgs)
     if catobs is not None:
         for obs in list(catobs):
-            print(f'{obs}: {catobs[obs].description}')
+            print(f"{obs}: {catobs[obs].description}")
 
 
 if __name__ == "__main__":
