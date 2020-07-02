@@ -210,7 +210,8 @@ def run(dictArgs):
     # read the data needed for plots
     x, y, area, model, obs = read(dictArgs)
     # make the plots
-    plot(x, y, area, model, obs, dictArgs)
+    imgbufs = plot(x, y, area, model, obs, dictArgs)
+    return imgbufs
 
 
 def plot(x, y, area, model, obs, dictArgs):
@@ -279,11 +280,14 @@ def plot(x, y, area, model, obs, dictArgs):
 
     if not streamnone:
         return imgbufs
+    else:
+        return None
 
 
 def parse_and_run(cliargs=None):
     cmdLineArgs = parse(cliargs)
-    run(cmdLineArgs)
+    imgbufs = run(cmdLineArgs)
+    return imgbufs
 
 
 if __name__ == "__main__":
