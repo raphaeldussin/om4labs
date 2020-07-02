@@ -69,6 +69,10 @@ def xyplot(
   logscale     If true, use logaritmic coloring scheme. Default False.
   """
 
+    # set visual backend
+    if interactive is False:
+        plt.switch_backend("Agg")
+
     c = cm.dunne_pm()
     c = cm.dunne_rainbow()
 
