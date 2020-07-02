@@ -18,14 +18,17 @@ possible_names["time"] = ["time", "TIME", "latitude"]
 possible_names["depth"] = ["z_l", "depth", "DEPTH"]
 possible_names["interfaces"] = ["z_i"]
 
+
 class DefaultDictParser(argparse.ArgumentParser):
     """ argparse extention that bypasses error and returns a dict of defaults """
+
     def error(self, message):
-        actions = self.__dict__['_actions']
+        actions = self.__dict__["_actions"]
         defaults = {}
         for act in actions[1::]:
-            defaults[act.__dict__['dest']] = act.__dict__['default']
+            defaults[act.__dict__["dest"]] = act.__dict__["default"]
         return defaults
+
 
 def infer_and_assign_coord(ds, da, coordname):
     """ infer what the coord name is and assign it to dataarray """
