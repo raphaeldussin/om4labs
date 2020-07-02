@@ -173,3 +173,5 @@ def xyplot(
         addInteractiveCallbacks()
     if show:
         plt.show(block=False)
+
+    return plt.gcf()

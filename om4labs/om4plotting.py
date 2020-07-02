@@ -12,10 +12,13 @@ def plot_xydiff(x, y, slice1, slice2, diff_kwargs, stream=False):
         img = io.BytesIO()
         diff_kwargs["save"] = img
 
-    m6plot.xyplot(slice1 - slice2, x, y, **diff_kwargs)
+    fig = m6plot.xyplot(slice1 - slice2, x, y, **diff_kwargs)
 
-    if stream:
-        return img
+    # if stream:
+    #    return img
+    # else:
+    print(fig)
+    return fig
 
 
 def plot_xycompare(x, y, slice1, slice2, compare_kwargs, stream=False):
@@ -24,7 +27,9 @@ def plot_xycompare(x, y, slice1, slice2, compare_kwargs, stream=False):
         img = io.BytesIO()
         compare_kwargs["img"] = img
 
-    m6plot.xycompare(slice1, slice2, x, y, **compare_kwargs)
+    fig = m6plot.xycompare(slice1, slice2, x, y, **compare_kwargs)
 
-    if stream:
-        return img
+    # if stream:
+    #    return img
+    # else:
+    return fig

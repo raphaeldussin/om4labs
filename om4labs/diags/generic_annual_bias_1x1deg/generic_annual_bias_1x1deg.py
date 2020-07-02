@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import io
 import numpy as np
 import argparse
 import xarray as xr
@@ -193,10 +194,11 @@ def parse(cliargs=None, template=False):
     )
     parser.add_argument(
         "-S",
-        "--stream",
+        "--style",
         type=str,
         required=False,
-        help="stream output plot (diff/compare)",
+        default="diff",
+        help="output plot style (diff/compare)",
     )
 
     if template is True:
@@ -212,7 +214,14 @@ def run(dictArgs):
     # read the data needed for plots
     x, y, area, model, obs = read(dictArgs)
     # make the plots
-    imgbufs = plot(x, y, area, model, obs, dictArgs)
+    figs = plot(x, y, area, model, obs, dictArgs)
+
+    imgbufs = []
+    for fig in figs:
+        imgbuf = io.BytesIO()
+        fig.savefig(imgbuf, format="png", bbox_inches="tight")
+        imgbufs.append(imgbuf)
+
     return imgbufs
 
 
@@ -270,20 +279,19 @@ def plot(x, y, area, model, obs, dictArgs):
         "save": png_compare,
     }
 
+    figs = []
+
     # make diff plot
     if streamdiff or streamnone:
-        img = plot_xydiff(x, y, model, obs, diff_kwargs, stream=streamdiff)
-        imgbufs = [img]
+        fig = plot_xydiff(x, y, model, obs, diff_kwargs, stream=streamdiff)
+        figs.append(fig)
 
     # make compare plot
     if streamcompare or streamnone:
-        img = plot_xycompare(x, y, model, obs, compare_kwargs, stream=streamcompare)
-        imgbufs = [img]
+        fig = plot_xycompare(x, y, model, obs, compare_kwargs, stream=streamcompare)
+        figs.append(fig)
 
-    if not streamnone:
-        return imgbufs
-    else:
-        return None
+    return figs
 
 
 def parse_and_run(cliargs=None):
