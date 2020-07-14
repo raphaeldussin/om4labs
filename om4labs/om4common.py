@@ -1,6 +1,7 @@
 # need a data_read, data_sel, data_reduce
 
 import numpy as np
+import argparse
 
 try:
     from om4labs.helpers import try_variable_from_list
@@ -16,6 +17,17 @@ possible_names["lat"] = ["lat", "LAT", "latitude", "LATITUDE"]
 possible_names["time"] = ["time", "TIME", "latitude"]
 possible_names["depth"] = ["z_l", "depth", "DEPTH"]
 possible_names["interfaces"] = ["z_i"]
+
+
+class DefaultDictParser(argparse.ArgumentParser):
+    """ argparse extention that bypasses error and returns a dict of defaults """
+
+    def error(self, message):
+        actions = self.__dict__["_actions"]
+        defaults = {}
+        for act in actions[1::]:
+            defaults[act.__dict__["dest"]] = act.__dict__["default"]
+        return defaults
 
 
 def infer_and_assign_coord(ds, da, coordname):

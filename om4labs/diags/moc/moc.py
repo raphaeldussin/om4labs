@@ -176,15 +176,22 @@ def read(infile, basin, gridspec, topog, varname="vmo"):
     # depth coordinate
     depth = ds_topog.deptho.to_masked_array()
     depth = np.where(np.isnan(depth), 0.0, depth)
-    z = get_z(ds, depth, varname)
+    if varname == "msftyyz":
+        zw = np.array(ds["z_i"][:])
+        Zmod = np.zeros((zw.shape[0], depth.shape[0], depth.shape[1]))
+        for k in range(zw.shape[0]):
+            Zmod[k] = -np.minimum(depth, abs(zw[k]))
+        z = Zmod
+    else:
+        z = get_z(ds, depth, varname)
 
     # basin code
     basin_code = ds_basin.basin.to_masked_array()
 
     # vmo
-    vmo = ds[varname].to_masked_array()
+    arr = ds[varname].to_masked_array()
 
-    return x, y, z, basin_code, vmo
+    return x, y, z, basin_code, arr
 
 
 def calculate(vmo, basin_code):
@@ -222,7 +229,8 @@ def plot(y, z, msftyyz, label=None):
         plt.ylabel("Elevation [m]")
 
     print("Making Plot.")
-    z = z.min(axis=-1)
+    if len(z.shape) != 1:
+        z = z.min(axis=-1)
     yy = y[1:, :].max(axis=-1) + 0 * z
 
     psi = msftyyz * 1.0e-9
@@ -272,10 +280,21 @@ def run(args):
     print(f"Matplotlib is using the {mpl.get_backend()} back-end.")
 
     # --- the main show ---
-    x, y, z, basin_code, vmo = read(
-        args["infile"], args["basin"], args["gridspec"], args["topog"]
+    ds = xr.open_mfdataset(args["infile"])
+    if "msftyyz" in list(ds.variables):
+        varname = "msftyyz"
+    elif "vmo" in list(ds.variables):
+        varname = "vmo"
+
+    x, y, z, basin_code, arr = read(
+        args["infile"], args["basin"], args["gridspec"], args["topog"], varname=varname
     )
-    msftyyz = calculate(vmo, basin_code)
+
+    if varname != "msftyyz":
+        msftyyz = calculate(arr, basin_code)
+    else:
+        msftyyz = arr
+
     fig = plot(y, z, msftyyz, args["label"])
     # ---------------------
 
@@ -285,14 +304,16 @@ def run(args):
     else:
         imgbuf = io.BytesIO()
         fig.savefig(imgbuf, format=args["format"], dpi=150, bbox_inches="tight")
-        with open(f"{args['outdir']}/mocfig.{args['format']}", "wb") as f:
-            f.write(imgbuf.getbuffer())
+        # with open(f"{args['outdir']}/mocfig.{args['format']}", "wb") as f:
+        #    f.write(imgbuf.getbuffer())
+        return imgbuf
 
 
 def parse_and_run(cliargs=None):
     args = arguments(cliargs)
     args = args.__dict__
-    run(args)
+    imgbuf = run(args)
+    return imgbuf
 
 
 if __name__ == "__main__":

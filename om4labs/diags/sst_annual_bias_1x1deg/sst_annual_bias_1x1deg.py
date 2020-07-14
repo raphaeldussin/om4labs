@@ -1,15 +1,22 @@
-from om4labs.diags.generic_annual_bias_1x1deg.generic_annual_bias_1x1deg import (
-    parse,
-    run,
-)
+from .. import generic_annual_bias_1x1deg as generic
+
 from om4labs.m6plot.formatting import pmCI, linCI
 
 possible_variable_names = ["thetao", "temp", "ptemp", "TEMP", "PTEMP"]
 
 
 def parse_and_run(cliargs=None):
-    cmdLineArgs = parse(cliargs)
-    dictArgs = vars(cmdLineArgs)  # convert parser args to dict
+    dictArgs = parse(cliargs)
+    imgbufs = run(dictArgs)
+    return imgbufs
+
+
+def parse(cliargs=None, template=False):
+    if template is True:
+        dictArgs = generic.parse(template=True)
+    else:
+        cmdLineArgs = generic.parse(cliargs)
+        dictArgs = vars(cmdLineArgs)  # convert parser args to dict
     # add custom option for data read
     dictArgs["possible_variable_names"] = possible_variable_names
     dictArgs["surface_default_depth"] = 2.5
@@ -20,5 +27,9 @@ def parse_and_run(cliargs=None):
     dictArgs["clim_compare"] = linCI(-2, 29, 0.5)
     dictArgs["cmap_diff"] = "dunnePM"
     dictArgs["cmap_compare"] = "dunneRainbow"
-    # call run from generic
-    run(dictArgs)
+    return dictArgs
+
+
+def run(dictArgs):
+    imgbufs = generic.run(dictArgs)
+    return imgbufs

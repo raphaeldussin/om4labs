@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import io
 import numpy as np
 import argparse
 import xarray as xr
@@ -7,22 +8,13 @@ import warnings
 import pkg_resources as pkgr
 import intake
 
-try:
-    from om4labs import m6plot
-    from om4labs.helpers import get_run_name, try_variable_from_list
-    from om4labs.om4plotting import plot_xydiff, plot_xycompare
-    from om4labs.om4common import read_data, subset_data
-    from om4labs.om4common import simple_average, copy_coordinates
-    from om4labs.om4common import compute_area_regular_grid
-except ImportError:
-    # DORA mode, works without install.
-    # reads from current directory
-    import m6plot
-    from helpers import get_run_name, try_variable_from_list
-    from om4plotting import plot_xydiff, plot_xycompare
-    from om4common import read_data, subset_data
-    from om4common import simple_average, copy_coordinates
-    from om4common import compute_area_regular_grid
+from om4labs import m6plot
+from om4labs.helpers import get_run_name, try_variable_from_list
+from om4labs.om4plotting import plot_xydiff, plot_xycompare
+from om4labs.om4common import read_data, subset_data
+from om4labs.om4common import simple_average, copy_coordinates
+from om4labs.om4common import compute_area_regular_grid
+from om4labs.om4common import DefaultDictParser
 
 imgbufs = []
 
@@ -116,12 +108,20 @@ def read(dictArgs):
     return x, y, area, model, obs
 
 
-def parse(cliargs=None):
+def parse(cliargs=None, template=False):
     """ parse the command line arguments """
-    parser = argparse.ArgumentParser(
-        description="Script for plotting \
-                                                  annual-average bias to obs"
-    )
+
+    if template is True:
+        parser = DefaultDictParser(
+            description="Script for plotting \
+                                                      annual-average bias to obs"
+        )
+    else:
+        parser = argparse.ArgumentParser(
+            description="Script for plotting \
+                                                      annual-average bias to obs"
+        )
+
     parser.add_argument(
         "infile",
         metavar="INFILE",
@@ -194,13 +194,17 @@ def parse(cliargs=None):
     )
     parser.add_argument(
         "-S",
-        "--stream",
+        "--style",
         type=str,
         required=False,
-        help="stream output plot (diff/compare)",
+        default="diff",
+        help="output plot style (diff/compare)",
     )
-    cmdLineArgs = parser.parse_args(cliargs)
-    return cmdLineArgs
+
+    if template is True:
+        return parser.parse_args(None).__dict__
+    else:
+        return parser.parse_args(cliargs)
 
 
 def run(dictArgs):
@@ -210,7 +214,15 @@ def run(dictArgs):
     # read the data needed for plots
     x, y, area, model, obs = read(dictArgs)
     # make the plots
-    plot(x, y, area, model, obs, dictArgs)
+    figs = plot(x, y, area, model, obs, dictArgs)
+
+    imgbufs = []
+    for fig in figs:
+        imgbuf = io.BytesIO()
+        fig.savefig(imgbuf, format="png", bbox_inches="tight")
+        imgbufs.append(imgbuf)
+
+    return imgbufs
 
 
 def plot(x, y, area, model, obs, dictArgs):
@@ -267,23 +279,25 @@ def plot(x, y, area, model, obs, dictArgs):
         "save": png_compare,
     }
 
+    figs = []
+
     # make diff plot
     if streamdiff or streamnone:
-        img = plot_xydiff(x, y, model, obs, diff_kwargs, stream=streamdiff)
-        imgbufs = [img]
+        fig = plot_xydiff(x, y, model, obs, diff_kwargs, stream=streamdiff)
+        figs.append(fig)
 
     # make compare plot
     if streamcompare or streamnone:
-        img = plot_xycompare(x, y, model, obs, compare_kwargs, stream=streamcompare)
-        imgbufs = [img]
+        fig = plot_xycompare(x, y, model, obs, compare_kwargs, stream=streamcompare)
+        figs.append(fig)
 
-    if not streamnone:
-        return imgbufs
+    return figs
 
 
 def parse_and_run(cliargs=None):
     cmdLineArgs = parse(cliargs)
-    run(cmdLineArgs)
+    imgbufs = run(cmdLineArgs)
+    return imgbufs
 
 
 if __name__ == "__main__":
