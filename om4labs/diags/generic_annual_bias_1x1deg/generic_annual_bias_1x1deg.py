@@ -226,6 +226,8 @@ def run(dictArgs):
     figs = plot(x, y, area, model, obs, dictArgs)
     imgbufs = image_handler(figs, dictArgs)
 
+    return imgbufs
+
 
 def plot(x, y, area, model, obs, dictArgs):
     """meta plotting function"""
