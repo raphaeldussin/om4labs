@@ -224,7 +224,7 @@ def run(dictArgs):
     x, y, area, model, obs = read(dictArgs)
     # make the plots
     figs = plot(x, y, area, model, obs, dictArgs)
-    filename = "f{dictArgs['outdir']}/{dictArgs['var']}_{dictArgs['style']}")
+    filename = "f{dictArgs['outdir']}/{dictArgs['var']}_{dictArgs['style']}"
     imgbufs = image_handler(figs, dictArgs, filename=filename)
 
     return imgbufs
