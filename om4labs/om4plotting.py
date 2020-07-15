@@ -17,7 +17,6 @@ def plot_xydiff(x, y, slice1, slice2, diff_kwargs, interactive=False, stream=Fal
     # if stream:
     #    return img
     # else:
-    print(fig)
     return fig
 
 
