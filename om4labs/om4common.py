@@ -2,6 +2,8 @@
 
 import numpy as np
 import argparse
+import signal
+import sys
 
 try:
     from om4labs.helpers import try_variable_from_list
@@ -28,6 +30,44 @@ class DefaultDictParser(argparse.ArgumentParser):
         for act in actions[1::]:
             defaults[act.__dict__["dest"]] = act.__dict__["default"]
         return defaults
+
+
+def image_handler(figs, dictArgs):
+    """Generic routine for image handling"""
+
+    imgbufs = []
+    numfigs = len(figs)
+    print("Number of figures", numfigs)
+    if dictArgs["interactive"] is True:
+        for n, fig in enumerate(figs):
+            fig.show()
+
+        def _signal_handler(sig, frame):
+            print("Complete!")
+            sys.exit(0)
+
+        signal.signal(signal.SIGINT, _signal_handler)
+        print("Press ctrl+c to exit...")
+        signal.pause()
+    else:
+        for n, fig in enumerate(figs):
+            if dictArgs["format"] == "stream":
+                imgbuf = io.BytesIO()
+                fig.savefig(imgbuf, format="png", bbox_inches="tight")
+                imgbufs.append(imgbuf)
+            else:
+                if len(figs) > 1:
+                    modifier = f".{n}"
+                else:
+                    modifier = ""
+                fig.savefig(
+                    f"{dictArgs['outdir']}/{dictArgs['var']}_{dictArgs['style']}{modifier}.png",
+                    format=dictArgs["format"],
+                    dpi=150,
+                    bbox_inches="tight",
+                )
+
+    return imgbufs
 
 
 def infer_and_assign_coord(ds, da, coordname):
