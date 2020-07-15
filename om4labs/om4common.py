@@ -34,7 +34,7 @@ class DefaultDictParser(argparse.ArgumentParser):
         return defaults
 
 
-def image_handler(figs, dictArgs):
+def image_handler(figs, dictArgs, filename="./figure"):
     """Generic routine for image handling"""
 
     imgbufs = []
@@ -63,7 +63,7 @@ def image_handler(figs, dictArgs):
                 else:
                     modifier = ""
                 fig.savefig(
-                    f"{dictArgs['outdir']}/{dictArgs['var']}_{dictArgs['style']}{modifier}.png",
+                    f"{filename}{modifier}.png",
                     format=dictArgs["format"],
                     dpi=150,
                     bbox_inches="tight",
