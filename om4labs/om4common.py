@@ -2,6 +2,7 @@
 
 import numpy as np
 import argparse
+import io
 import signal
 import sys
 
@@ -37,7 +38,6 @@ def image_handler(figs, dictArgs):
 
     imgbufs = []
     numfigs = len(figs)
-    print("Number of figures", numfigs)
     if dictArgs["interactive"] is True:
         for n, fig in enumerate(figs):
             fig.show()
