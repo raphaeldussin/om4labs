@@ -15,6 +15,7 @@ from om4labs.om4common import read_data, subset_data
 from om4labs.om4common import simple_average, copy_coordinates
 from om4labs.om4common import compute_area_regular_grid
 from om4labs.om4common import DefaultDictParser
+from om4labs.om4common import image_handler
 
 imgbufs = []
 
@@ -163,6 +164,14 @@ def parse(cliargs=None, template=False):
         help="output directory for plots",
     )
     parser.add_argument(
+        "-F",
+        "--format",
+        type=str,
+        default="png",
+        required=False,
+        help="output format type",
+    )
+    parser.add_argument(
         "-O",
         "--obsfile",
         type=str,
@@ -215,24 +224,7 @@ def run(dictArgs):
     x, y, area, model, obs = read(dictArgs)
     # make the plots
     figs = plot(x, y, area, model, obs, dictArgs)
-
-    imgbufs = []
-
-    numfigs = len(figs)
-    print('Number of figures',numfigs)
-    if dictArgs['interactive'] is True:
-        for n,fig in enumerate(figs):
-            if n < (numfigs - 2):
-                fig.show(block=False)
-            else:
-                fig.show()
-    else:
-        for fig in figs:
-            imgbuf = io.BytesIO()
-            fig.savefig(imgbuf, format="png", bbox_inches="tight")
-            imgbufs.append(imgbuf)
-
-    return imgbufs
+    imgbufs = image_handler(figs, dictArgs)
 
 
 def plot(x, y, area, model, obs, dictArgs):
@@ -293,12 +285,28 @@ def plot(x, y, area, model, obs, dictArgs):
 
     # make diff plot
     if streamdiff or streamnone:
-        fig = plot_xydiff(x, y, model, obs, diff_kwargs, stream=streamdiff)
+        fig = plot_xydiff(
+            x,
+            y,
+            model,
+            obs,
+            diff_kwargs,
+            interactive=dictArgs["interactive"],
+            stream=streamdiff,
+        )
         figs.append(fig)
 
     # make compare plot
     if streamcompare or streamnone:
-        fig = plot_xycompare(x, y, model, obs, compare_kwargs, stream=streamcompare)
+        fig = plot_xycompare(
+            x,
+            y,
+            model,
+            obs,
+            compare_kwargs,
+            interactive=dictArgs["interactive"],
+            stream=streamcompare,
+        )
         figs.append(fig)
 
     return figs
