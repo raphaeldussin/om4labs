@@ -5,6 +5,8 @@ from . import cm
 from . import coords
 from . import formatting
 from . import stats
+from . import addStatusBar
+from . import addInteractiveCallbacks
 
 
 def xyplot(
