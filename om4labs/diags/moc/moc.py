@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import argparse
+import pkg_resources as pkgr
+import intake
 import io
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -9,6 +11,8 @@ from om4labs import m6plot
 import palettable
 import xarray as xr
 import warnings
+
+from om4labs.om4common import image_handler
 
 warnings.filterwarnings("ignore", message=".*csr_matrix.*")
 warnings.filterwarnings("ignore", message=".*dates out of range.*")
@@ -100,15 +104,29 @@ def generate_basin_masks(basin_code, basin=None):
     return mask
 
 
-def arguments(cliargs=None):
+class DefaultDictParser(argparse.ArgumentParser):
+    def error(self, message):
+        actions = self.__dict__["_actions"]
+        defaults = {}
+        for act in actions[1::]:
+            defaults[act.__dict__["dest"]] = act.__dict__["default"]
+        return defaults
+
+
+def parse(cliargs=None, template=True):
     """
     Function to capture the user-specified command line options
     """
     description = """ """
 
-    parser = argparse.ArgumentParser(
-        description=description, formatter_class=argparse.RawTextHelpFormatter
-    )
+    if template is True:
+        parser = DefaultDictParser(
+            description=description, formatter_class=argparse.RawTextHelpFormatter
+        )
+    else:
+        parser = argparse.ArgumentParser(
+            description=description, formatter_class=argparse.RawTextHelpFormatter
+        )
 
     parser.add_argument(
         "-b", "--basin", type=str, default=None, help="Path to basin code file"
@@ -116,6 +134,18 @@ def arguments(cliargs=None):
 
     parser.add_argument(
         "-g", "--gridspec", type=str, default=None, help="Path to gridspec file"
+    )
+
+    parser.add_argument(
+        "-m", "--model", type=str, default=None, help="Model Class"
+    )
+
+    parser.add_argument(
+        "--platform",
+        type=str,
+        required=False,
+        default="gfdl",
+        help="computing platform, default is gfdl",
     )
 
     parser.add_argument(
@@ -157,17 +187,34 @@ def arguments(cliargs=None):
         "-t", "--topog", type=str, default=None, help="Path to topog file"
     )
 
-    return parser.parse_args(cliargs)
+    if template is True:
+        return parser.parse_args(None).__dict__
+    else:
+        return parser.parse_args(cliargs)
 
 
-def read(infile, basin, gridspec, topog, varname="vmo"):
+def read(dictArgs,varname="vmo"):
     """MOC plotting script"""
 
-    print("Reading input data")
+    infile = dictArgs["infile"]
+
+    if dictArgs["model"] is not None:
+        # use dataset from catalog, either from command line or default
+        cat_platform = f"catalogs/{dictArgs['model']}_catalog_gfdl.yml"
+        catfile = pkgr.resource_filename("om4labs", cat_platform)
+        cat = intake.open_catalog(catfile)
+        ds_basin = cat["basin"].to_dask()
+        ds_topog = cat["topog"].to_dask()
+        ds_gridspec = cat["ocean_hgrid"].to_dask()
+
+    if dictArgs["basin"] is not None:
+        ds_basin = xr.open_dataset(dictArgs["basin"])
+    if dictArgs["gridspec"] is not None:
+        ds_topog = xr.open_dataset(dictArgs["topog"])
+    if dictArgs["topog"] is not None:
+        ds_gridspec = xr.open_dataset(dictArgs["gridspec"])
+
     ds = xr.open_mfdataset(infile, combine="by_coords")
-    ds_basin = xr.open_dataset(basin)
-    ds_topog = xr.open_dataset(topog)
-    ds_gridspec = xr.open_dataset(gridspec)
 
     # horizontal grid
     x = np.array(ds_gridspec.x.to_masked_array())[::2, ::2]
@@ -197,7 +244,6 @@ def read(infile, basin, gridspec, topog, varname="vmo"):
 def calculate(vmo, basin_code):
     """Main computational script"""
 
-    print("Calculating")
     msftyyz = compute_msftyyz(vmo, basin_code)
 
     return msftyyz
@@ -228,7 +274,6 @@ def plot(y, z, msftyyz, label=None):
         cbar.set_label("[Sv]")
         plt.ylabel("Elevation [m]")
 
-    print("Making Plot.")
     if len(z.shape) != 1:
         z = z.min(axis=-1)
     yy = y[1:, :].max(axis=-1) + 0 * z
@@ -268,49 +313,43 @@ def plot(y, z, msftyyz, label=None):
     return fig
 
 
-def run(args):
+def run(dictArgs):
     """Function to call read, calc, and plot in sequence"""
 
     # set visual backend
-    if args["interactive"] is False:
+    if dictArgs["interactive"] is False:
         plt.switch_backend("Agg")
     else:
         plt.switch_backend("TkAgg")
 
-    print(f"Matplotlib is using the {mpl.get_backend()} back-end.")
 
     # --- the main show ---
-    ds = xr.open_mfdataset(args["infile"])
+    ds = xr.open_mfdataset(dictArgs["infile"])
     if "msftyyz" in list(ds.variables):
         varname = "msftyyz"
     elif "vmo" in list(ds.variables):
         varname = "vmo"
 
-    x, y, z, basin_code, arr = read(
-        args["infile"], args["basin"], args["gridspec"], args["topog"], varname=varname
-    )
+    x, y, z, basin_code, arr = read(dictArgs,varname=varname)
 
     if varname != "msftyyz":
         msftyyz = calculate(arr, basin_code)
     else:
         msftyyz = arr
 
-    fig = plot(y, z, msftyyz, args["label"])
+    fig = plot(y, z, msftyyz, dictArgs["label"])
     # ---------------------
 
-    # do something with the figure
-    if args["interactive"] is True:
-        plt.show(fig)
-    else:
-        imgbuf = io.BytesIO()
-        fig.savefig(imgbuf, format=args["format"], dpi=150, bbox_inches="tight")
-        # with open(f"{args['outdir']}/mocfig.{args['format']}", "wb") as f:
-        #    f.write(imgbuf.getbuffer())
-        return imgbuf
+    filename = f"{dictArgs['outdir']}/moc"
+    imgbufs = image_handler([fig], dictArgs, filename=filename)
+
+
+    return imgbufs
+
 
 
 def parse_and_run(cliargs=None):
-    args = arguments(cliargs)
+    args = parse(cliargs)
     args = args.__dict__
     imgbuf = run(args)
     return imgbuf
