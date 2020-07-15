@@ -217,10 +217,20 @@ def run(dictArgs):
     figs = plot(x, y, area, model, obs, dictArgs)
 
     imgbufs = []
-    for fig in figs:
-        imgbuf = io.BytesIO()
-        fig.savefig(imgbuf, format="png", bbox_inches="tight")
-        imgbufs.append(imgbuf)
+
+    numfigs = len(figs)
+    print('Number of figures',numfigs)
+    if dictArgs['interactive'] is True:
+        for n,fig in enumerate(figs):
+            if n < (numfigs - 2):
+                fig.show(block=False)
+            else:
+                fig.show()
+    else:
+        for fig in figs:
+            imgbuf = io.BytesIO()
+            fig.savefig(imgbuf, format="png", bbox_inches="tight")
+            imgbufs.append(imgbuf)
 
     return imgbufs
 
@@ -228,9 +238,9 @@ def run(dictArgs):
 def plot(x, y, area, model, obs, dictArgs):
     """meta plotting function"""
 
-    streamdiff = True if dictArgs["stream"] == "diff" else False
-    streamcompare = True if dictArgs["stream"] == "compare" else False
-    streamnone = True if dictArgs["stream"] is None else False
+    streamdiff = True if dictArgs["style"] == "diff" else False
+    streamcompare = True if dictArgs["style"] == "compare" else False
+    streamnone = True if dictArgs["style"] is None else False
 
     # common plot properties
     pngout = dictArgs["outdir"]
