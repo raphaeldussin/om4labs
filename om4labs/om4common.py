@@ -5,6 +5,7 @@ import argparse
 import io
 import signal
 import sys
+import matplotlib.pyplot as plt
 
 try:
     from om4labs.helpers import try_variable_from_list
@@ -39,8 +40,9 @@ def image_handler(figs, dictArgs):
     imgbufs = []
     numfigs = len(figs)
     if dictArgs["interactive"] is True:
+        plt.ion()
         for n, fig in enumerate(figs):
-            fig.show()
+            plt.show(fig)
 
         def _signal_handler(sig, frame):
             print("Complete!")
