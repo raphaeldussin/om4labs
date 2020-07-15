@@ -1,3 +1,6 @@
+import matplotlib.pyplot as plt
+
+
 def addInteractiveCallbacks():
     """
   Adds interactive features to a plot on screen.
