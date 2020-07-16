@@ -14,9 +14,6 @@ def plot_xydiff(x, y, slice1, slice2, diff_kwargs, interactive=False, stream=Fal
 
     fig = m6plot.xyplot(slice1 - slice2, x, y, interactive=interactive, **diff_kwargs)
 
-    # if stream:
-    #    return img
-    # else:
     return fig
 
 
@@ -26,13 +23,10 @@ def plot_xycompare(
     """ make 3 panel compare plot """
     if stream:
         img = io.BytesIO()
-        compare_kwargs["img"] = img
+        compare_kwargs["save"] = img
 
     fig = m6plot.xycompare(
         slice1, slice2, x, y, interactive=interactive, **compare_kwargs
     )
 
-    # if stream:
-    #    return img
-    # else:
     return fig

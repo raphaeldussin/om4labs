@@ -6,6 +6,8 @@ from . import coords
 from . import formatting
 from . import geoplot
 from . import stats
+from . import addStatusBar
+from . import addInteractiveCallbacks
 
 
 def xycompare(
@@ -89,6 +91,15 @@ def xycompare(
   webversion    If true, set options specific for displaying figures in a web browser. Default False.
   interactive   If true, adds interactive features such as zoom, close and cursor. Default False.
   """
+
+    # set visual backend
+    if interactive is False:
+        plt.switch_backend("Agg")
+    else:
+        plt.switch_backend("qt5agg")
+
+    c = cm.dunne_pm()
+    c = cm.dunne_rainbow()
 
     if (field1.shape) != (field2.shape):
         raise Exception("field1 and field2 must be the same shape")
@@ -395,3 +406,5 @@ def xycompare(
         addInteractiveCallbacks()
     if show:
         plt.show(block=False)
+
+    return plt.gcf()
