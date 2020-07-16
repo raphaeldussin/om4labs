@@ -320,7 +320,7 @@ def run(dictArgs):
     if dictArgs["interactive"] is False:
         plt.switch_backend("Agg")
     else:
-        #plt.switch_backend("TkAgg")
+        # plt.switch_backend("TkAgg")
         plt.switch_backend("qt5agg")
 
 
