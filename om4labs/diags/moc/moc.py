@@ -237,13 +237,20 @@ def read(dictArgs,varname="vmo"):
     else:
         z = get_z(ds, depth, varname)
 
+    # t-cell nominal y coordinate
+    yh = ds_topog.yh.to_masked_array()
+
     # basin code
     basin_code = ds_basin.basin.to_masked_array()
+
+    # basin masks
+    atlantic_arctic_mask = generate_basin_masks(basin_code, basin="atlantic_arctic")
+    indo_pacific_mask = generate_basin_masks(basin_code, basin="indo_pacific")
 
     # vmo
     arr = ds[varname].to_masked_array()
 
-    return x, y, z, basin_code, arr
+    return x, y, yh, z, depth, basin_code, atlantic_arctic_mask, indo_pacific_mask, arr
 
 
 def calculate(vmo, basin_code):
@@ -254,7 +261,7 @@ def calculate(vmo, basin_code):
     return msftyyz
 
 
-def plot(y, z, msftyyz, label=None):
+def plot(y, yh, z, depth, atlantic_arctic_mask, indo_pacific_mask, msftyyz, label=None):
     """Plotting script"""
 
     def _findExtrema(
@@ -269,13 +276,21 @@ def plot(y, z, msftyyz, label=None):
         ax.plot(y[j, i], z[j, i], "kx")
         ax.text(y[j, i], z[j, i], "%.1f" % (psi[j, i]))
 
-    def _plotPsi(y, z, psi, ci, title, cmap=None, xlim=None):
+    def _plotPsi(
+        y, z, psi, ci, title, cmap=None, xlim=None, topomask=None, yh=None, zz=None
+    ):
         """Function to plot zonal mean streamfunction"""
-        psi = np.array(np.where(psi.mask, np.nan, psi))
+        if topomask is not None:
+            psi = np.array(np.where(psi.mask, 0.0, psi))
+        else:
+            psi = np.array(np.where(psi.mask, np.nan, psi))
         plt.contourf(y, z, psi, levels=ci, cmap=cmap, extend="both")
         cbar = plt.colorbar()
         plt.contour(y, z, psi, levels=ci, colors="k", linewidths=0.4)
         plt.contour(y, z, psi, levels=[0], colors="k", linewidths=0.8)
+        if topomask is not None:
+            cMap = mpl.colors.ListedColormap(["gray"])
+            plt.pcolormesh(yh, -1.0 * zz, topomask, cmap=cMap)
         plt.gca().set_yscale("splitscale", zval=[0, -2000, -6500])
         plt.title(title)
         if xlim is not None:
@@ -283,11 +298,27 @@ def plot(y, z, msftyyz, label=None):
         cbar.set_label("[Sv]")
         plt.ylabel("Elevation [m]")
 
+    def _create_topomask(depth, yh, mask=None):
+        if mask is not None:
+            depth = np.where(mask == 1, depth, 0.0)
+        topomask = depth.max(axis=-1)
+        _y = yh
+        _z = np.arange(0, 7100, 100)
+        _yy, _zz = np.meshgrid(_y, _z)
+        topomask = np.tile(topomask[None, :], (len(_z), 1))
+        topomask = np.ma.masked_where(_zz < topomask, topomask)
+        topomask = topomask * 0.0
+        return topomask, _z
+
     if len(z.shape) != 1:
         z = z.min(axis=-1)
     yy = y[1:, :].max(axis=-1) + 0 * z
 
     psi = msftyyz * 1.0e-9
+
+    atlantic_topomask, zz = _create_topomask(depth, yh, atlantic_arctic_mask)
+    indo_pacific_topomask, zz = _create_topomask(depth, yh, indo_pacific_mask)
+    global_topomask, zz = _create_topomask(depth, yh)
 
     ci = m6plot.formatting.pmCI(0.0, 43.0, 3.0)
     cmap = palettable.cmocean.diverging.Balance_20.get_mpl_colormap()
@@ -295,20 +326,52 @@ def plot(y, z, msftyyz, label=None):
     fig = plt.figure(figsize=(8.5, 11))
     ax1 = plt.subplot(3, 1, 1, facecolor="gray")
     psiPlot = psi[0, 0]
-    _plotPsi(yy, z, psiPlot, ci, "Atlantic MOC [Sv]", cmap=cmap, xlim=(-40, 90))
+    _plotPsi(
+        yy,
+        z,
+        psiPlot,
+        ci,
+        "Atlantic MOC [Sv]",
+        cmap=cmap,
+        xlim=(-40, 90),
+        topomask=atlantic_topomask,
+        yh=yh,
+        zz=zz,
+    )
     _findExtrema(ax1, yy, z, psiPlot, min_lat=26.5, max_lat=27.0)
     _findExtrema(ax1, yy, z, psiPlot, max_lat=-33.0)
     _findExtrema(ax1, yy, z, psiPlot)
 
     ax2 = plt.subplot(3, 1, 2, facecolor="gray")
     psiPlot = psi[0, 1]
-    _plotPsi(yy, z, psiPlot, ci, "Indo-Pacific MOC [Sv]", cmap=cmap, xlim=(-40, 65))
+    _plotPsi(
+        yy,
+        z,
+        psiPlot,
+        ci,
+        "Indo-Pacific MOC [Sv]",
+        cmap=cmap,
+        xlim=(-40, 65),
+        topomask=indo_pacific_topomask,
+        yh=yh,
+        zz=zz,
+    )
     _findExtrema(ax2, yy, z, psiPlot, min_depth=2000.0, mult=-1.0)
     _findExtrema(ax2, yy, z, psiPlot)
 
     ax3 = plt.subplot(3, 1, 3, facecolor="gray")
     psiPlot = psi[0, 2]
-    _plotPsi(yy, z, psiPlot, ci, "Global MOC [Sv]", cmap=cmap)
+    _plotPsi(
+        yy,
+        z,
+        psiPlot,
+        ci,
+        "Global MOC [Sv]",
+        cmap=cmap,
+        topomask=global_topomask,
+        yh=yh,
+        zz=zz,
+    )
     _findExtrema(ax3, yy, z, psiPlot, max_lat=-30.0)
     _findExtrema(ax3, yy, z, psiPlot, min_lat=25.0)
     _findExtrema(ax3, yy, z, psiPlot, min_depth=2000.0, mult=-1.0)
@@ -340,14 +403,25 @@ def run(dictArgs):
     elif "vmo" in list(ds.variables):
         varname = "vmo"
 
-    x, y, z, basin_code, arr = read(dictArgs,varname=varname)
+    x, y, yh, z, depth, basin_code, atlantic_arctic_mask, indo_pacific_mask, arr = read(
+        dictArgs, varname=varname
+    )
 
     if varname != "msftyyz":
         msftyyz = calculate(arr, basin_code)
     else:
         msftyyz = arr
 
-    fig = plot(y, z, msftyyz, dictArgs["label"])
+    fig = plot(
+        y,
+        yh,
+        z,
+        depth,
+        atlantic_arctic_mask,
+        indo_pacific_mask,
+        msftyyz,
+        dictArgs["label"],
+    )
     # ---------------------
 
     filename = f"{dictArgs['outdir']}/moc"
