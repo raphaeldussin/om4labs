@@ -269,13 +269,17 @@ def plot(y, z, msftyyz, label=None):
         ax.plot(y[j, i], z[j, i], "kx")
         ax.text(y[j, i], z[j, i], "%.1f" % (psi[j, i]))
 
-    def _plotPsi(y, z, psi, ci, title, cmap=None):
+    def _plotPsi(y, z, psi, ci, title, cmap=None, xlim=None):
         """Function to plot zonal mean streamfunction"""
+        psi = np.array(np.where(psi.mask, np.nan, psi))
         plt.contourf(y, z, psi, levels=ci, cmap=cmap, extend="both")
         cbar = plt.colorbar()
-        plt.contour(y, z, psi, levels=ci, colors="k")
+        plt.contour(y, z, psi, levels=ci, colors="k", linewidths=0.4)
+        plt.contour(y, z, psi, levels=[0], colors="k", linewidths=0.8)
         plt.gca().set_yscale("splitscale", zval=[0, -2000, -6500])
         plt.title(title)
+        if xlim is not None:
+            plt.gca().set_xlim(xlim)
         cbar.set_label("[Sv]")
         plt.ylabel("Elevation [m]")
 
@@ -285,24 +289,24 @@ def plot(y, z, msftyyz, label=None):
 
     psi = msftyyz * 1.0e-9
 
-    ci = m6plot.formatting.pmCI(0.0, 40.0, 5.0)
+    ci = m6plot.formatting.pmCI(0.0, 43.0, 3.0)
     cmap = palettable.cmocean.diverging.Balance_20.get_mpl_colormap()
 
     fig = plt.figure(figsize=(8.5, 11))
-    ax1 = plt.subplot(3, 1, 1)
+    ax1 = plt.subplot(3, 1, 1, facecolor="gray")
     psiPlot = psi[0, 0]
-    _plotPsi(yy, z, psiPlot, ci, "Atlantic MOC [Sv]", cmap=cmap)
+    _plotPsi(yy, z, psiPlot, ci, "Atlantic MOC [Sv]", cmap=cmap, xlim=(-40, 90))
     _findExtrema(ax1, yy, z, psiPlot, min_lat=26.5, max_lat=27.0)
     _findExtrema(ax1, yy, z, psiPlot, max_lat=-33.0)
     _findExtrema(ax1, yy, z, psiPlot)
 
-    ax2 = plt.subplot(3, 1, 2)
+    ax2 = plt.subplot(3, 1, 2, facecolor="gray")
     psiPlot = psi[0, 1]
-    _plotPsi(yy, z, psiPlot, ci, "Indo-Pacific MOC [Sv]", cmap=cmap)
+    _plotPsi(yy, z, psiPlot, ci, "Indo-Pacific MOC [Sv]", cmap=cmap, xlim=(-40, 65))
     _findExtrema(ax2, yy, z, psiPlot, min_depth=2000.0, mult=-1.0)
     _findExtrema(ax2, yy, z, psiPlot)
 
-    ax3 = plt.subplot(3, 1, 3)
+    ax3 = plt.subplot(3, 1, 3, facecolor="gray")
     psiPlot = psi[0, 2]
     _plotPsi(yy, z, psiPlot, ci, "Global MOC [Sv]", cmap=cmap)
     _findExtrema(ax3, yy, z, psiPlot, max_lat=-30.0)
