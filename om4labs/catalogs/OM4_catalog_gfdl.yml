@@ -1,0 +1,34 @@
+plugins:
+  source:
+    - module: intake_xarray
+sources:
+
+  basin:
+    description: "File containing basin masks on native model grid"
+    driver: netcdf
+    args:
+      urlpath: '/archive/gold/datasets/OM4_025/mosaic.v20140610.unpacked/basin_codes.v20140629.nc'
+      xarray_kwargs:
+        decode_times: False
+    metadata:
+      origin_url: ''
+
+  ocean_hgrid:
+    description: "Horizontal grid information from the gridspec"
+    driver: netcdf
+    args:
+      urlpath: '/archive/gold/datasets/OM4_025/mosaic.v20140610.unpacked/ocean_hgrid.nc'
+      xarray_kwargs:
+        decode_times: False
+    metadata:
+      origin_url: ''
+
+  topog:
+    description: "Model topography"
+    driver: netcdf
+    args:
+      urlpath: '/archive/gold/datasets/OM4_025/mosaic.v20140610.unpacked/ocean_topog.nc'
+      xarray_kwargs:
+        decode_times: False
+    metadata:
+      origin_url: ''
