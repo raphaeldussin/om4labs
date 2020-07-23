@@ -221,7 +221,12 @@ def read(dictArgs,varname="vmo"):
     y = np.array(ds_gridspec.y.to_masked_array())[::2, ::2]
 
     # depth coordinate
-    depth = ds_topog.deptho.to_masked_array()
+    if "deptho" in list(ds_topog.variables):
+        depth = ds_topog.deptho.to_masked_array()
+    elif "depth" in list(ds_topog.variables):
+        depth = ds_topog.depth.to_masked_array()
+    else:
+        raise ValueError("Unable to find depth field.")
     depth = np.where(np.isnan(depth), 0.0, depth)
     if varname == "msftyyz":
         zw = np.array(ds["z_i"][:])
