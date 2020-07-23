@@ -22,6 +22,9 @@ SST_compare.png: test_data ../om4labs/diags/sst_annual_bias_1x1deg/sst_annual_bi
 SSS_compare.png: test_data ../om4labs/diags/sss_annual_bias_1x1deg/sss_annual_bias_1x1deg.py
 	om4labs sss_annual_bias_1x1deg -S compare --platform testing test_data/output/ocean_annual_z_d2_1x1deg.0001-0010.ann.nc
 
+seaice.nh.png: test_data ../om4labs/diags/seaice/seaice.py
+	om4labs seaice --platform testing -m OM4p125 -O test_data/obs/OBS_NSIDC_sat_NH_T2Ms_sic.nc test_data/output/ice_1x1deg.003601-004012.siconc_old.nc
+
 clean:
 	rm -f $(IMG)
 
