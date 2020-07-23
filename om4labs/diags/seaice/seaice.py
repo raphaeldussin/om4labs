@@ -172,8 +172,8 @@ def read(dictArgs):
 
     # Append static fields to the return Dataset
     if standard_grid is True:
-        ds["CELL_AREA"] = dstatic["area"]
-        ds["AREA"] = dstatic["area"]
+        ds["CELL_AREA"] = dstatic["area"].fillna(0.0)
+        ds["AREA"] = dstatic["area"].fillna(0.0)
         _lon = dstatic["lon"]
         _lat = dstatic["lat"]
         X, Y = np.meshgrid(_lon, _lat)
