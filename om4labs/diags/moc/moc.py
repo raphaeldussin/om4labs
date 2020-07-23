@@ -13,6 +13,7 @@ import xarray as xr
 import warnings
 
 from om4labs.om4common import image_handler
+from om4labs.om4common import DefaultDictParser
 
 warnings.filterwarnings("ignore", message=".*csr_matrix.*")
 warnings.filterwarnings("ignore", message=".*dates out of range.*")
@@ -104,16 +105,7 @@ def generate_basin_masks(basin_code, basin=None):
     return mask
 
 
-class DefaultDictParser(argparse.ArgumentParser):
-    def error(self, message):
-        actions = self.__dict__["_actions"]
-        defaults = {}
-        for act in actions[1::]:
-            defaults[act.__dict__["dest"]] = act.__dict__["default"]
-        return defaults
-
-
-def parse(cliargs=None, template=True):
+def parse(cliargs=None, template=False):
     """
     Function to capture the user-specified command line options
     """
