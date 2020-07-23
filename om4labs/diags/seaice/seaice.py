@@ -4,9 +4,11 @@
 om4labs: model-simulated sea ice vs. NSIDC obs
 """
 
-__all__ = ["arguments", "read", "calculate", "plot", "run", "parse_and_run"]
+__all__ = ["parse", "read", "calculate", "plot", "run", "parse_and_run"]
 
 import argparse
+import pkg_resources as pkgr
+import intake
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
@@ -14,6 +16,9 @@ import cartopy.crs as ccrs
 import cartopy.feature
 import time
 import warnings
+
+from om4labs.om4common import image_handler
+from om4labs.om4common import DefaultDictParser
 
 warnings.filterwarnings("ignore", message=".*csr_matrix.*")
 warnings.filterwarnings("ignore", message=".*dates out of range.*")
@@ -30,12 +35,19 @@ import palettable
 import xarray as xr
 
 
-def arguments(cliargs=None):
+def parse(cliargs=None, template=False):
     description = """Plot sea ice vs. NSIDC"""
 
-    parser = argparse.ArgumentParser(
-        description=description, formatter_class=argparse.RawTextHelpFormatter
-    )
+    if template is True:
+        parser = DefaultDictParser(
+            description=description, formatter_class=argparse.RawTextHelpFormatter
+        )
+    else:
+        parser = argparse.ArgumentParser(
+            description=description, formatter_class=argparse.RawTextHelpFormatter
+        )
+
+    parser.add_argument("-m", "--model", type=str, default=None, help="Model Class")
 
     parser.add_argument(
         "infile",
@@ -43,6 +55,14 @@ def arguments(cliargs=None):
         type=str,
         nargs="+",
         help="Path to input NetCDF file(s)",
+    )
+
+    parser.add_argument(
+        "--platform",
+        type=str,
+        required=False,
+        default="gfdl",
+        help="computing platform, default is gfdl",
     )
 
     parser.add_argument(
@@ -62,7 +82,7 @@ def arguments(cliargs=None):
     )
 
     parser.add_argument(
-        "-m",
+        "-M",
         "--month",
         type=str,
         default="March",
@@ -97,14 +117,27 @@ def arguments(cliargs=None):
     )
 
     parser.add_argument(
+        "-D",
+        "--dataset",
+        type=str,
+        required=False,
+        default="NSIDC_NH_monthly",
+        help="Name of the observational dataset, \
+              as provided in intake catalog",
+    )
+
+    parser.add_argument(
         "-l", "--label", type=str, default="", help="String label to annotate the plot"
     )
 
     return parser.parse_args(cliargs)
 
 
-def read(infile, obsfile, static):
+# def read(infile, obsfile, static):
+def read(dictArgs):
     """Function to read in the data. Returns xarray datasets"""
+
+    infile = dictArgs["infile"]
 
     # Open ice model output and the static file
     ds = xr.open_mfdataset(infile, combine="by_coords")
@@ -114,17 +147,57 @@ def read(infile, obsfile, static):
             ds["CN"] = ds["CN"] / 100.0
     else:
         ds["CN"] = ds["CN"].sum(dim="ct")
-    dstatic = xr.open_dataset(static)
-    ds["CELL_AREA"] = dstatic["CELL_AREA"]
-    ds["GEOLON"] = dstatic["GEOLON"]
-    ds["GEOLAT"] = dstatic["GEOLAT"]
-    ds["AREA"] = dstatic["CELL_AREA"] * 4.0 * np.pi * (6.378e6 ** 2)
+
+    # Detect if we are native grid or 1x1
+    if (ds.CN.shape[-2] == 180) and (ds.CN.shape[-1] == 360):
+        standard_grid = True
+    else:
+        standard_grid = False
+
+    if dictArgs["model"] is not None:
+        # use dataset from catalog, either from command line or default
+        cat_platform = (
+            f"catalogs/{dictArgs['model']}_catalog_{dictArgs['platform']}.yml"
+        )
+        catfile = pkgr.resource_filename("om4labs", cat_platform)
+        cat = intake.open_catalog(catfile)
+        if standard_grid is True:
+            dstatic = cat["ice_static_1x1"].to_dask()
+        else:
+            dstatic = cat["ice_static"].to_dask()
+
+    # Override static file if provided
+    if dictArgs["static"] is not None:
+        dstatic = xr.open_dataset(dictArgs["static"])
+
+    # Append static fields to the return Dataset
+    if standard_grid is True:
+        ds["CELL_AREA"] = dstatic["area"]
+        ds["AREA"] = dstatic["area"]
+        _lon = dstatic["lon"]
+        _lat = dstatic["lat"]
+        X, Y = np.meshgrid(_lon, _lat)
+        ds["GEOLON"] = xr.DataArray(X, dims=["lat", "lon"])
+        ds["GEOLAT"] = xr.DataArray(Y, dims=["lat", "lon"])
+        ds = ds.rename({"lon": "x", "lat": "y"})
+    else:
+        ds["CELL_AREA"] = dstatic["CELL_AREA"]
+        ds["GEOLON"] = dstatic["GEOLON"]
+        ds["GEOLAT"] = dstatic["GEOLAT"]
+        ds["AREA"] = dstatic["CELL_AREA"] * 4.0 * np.pi * (6.378e6 ** 2)
 
     # Get Valid Mask
     valid_mask = np.where(ds["CELL_AREA"] == 0, True, False)
 
     # Open observed SIC on 25-km EASE grid (coords already named lat and lon)
-    dobs = xr.open_dataset(obsfile)
+    if dictArgs["obsfile"] is not None:
+        dobs = xr.open_dataset(dictArgs["obsfile"])
+    else:
+        cat_platform = "catalogs/obs_catalog_" + dictArgs["platform"] + ".yml"
+        catfile = pkgr.resource_filename("om4labs", cat_platform)
+        cat = intake.open_catalog(catfile)
+        print(catfile)
+        dobs = cat[dictArgs["dataset"]].to_dask()
 
     # Close the static file (no longer used)
     dstatic.close()
@@ -167,6 +240,7 @@ def calculate(ds, dobs, region="nh"):
     obs["ext"] = obs["ext"].sum(axis=(-2, -1)) * 1.0e-12
 
     # Add back in the 2D coordinates
+
     model["ac"]["GEOLON"] = ds["GEOLON"]
     model["ac"]["GEOLAT"] = ds["GEOLAT"]
     model["ac"] = model["ac"].rename({"GEOLON": "lon", "GEOLAT": "lat"})
@@ -367,48 +441,52 @@ def plot(model, obs, valid_mask, label=None, region="nh", month="March"):
     return fig
 
 
-def run(args):
+def run(dictArgs):
     """Function to call read, calc, and plot in sequence"""
 
-    # parameters
-    interactive = args.interactive
-    outdir = args.outdir
-    pltfmt = args.format
-    infile = args.infile
-    static = args.static
-    month = args.month
-    obsfile = args.obsfile
-    region = args.region
-    label = args.label
+    ## parameters
+    # interactive = args.interactive
+    # outdir = args.outdir
+    # pltfmt = args.format
+    # infile = args.infile
+    # static = args.static
+    # month = args.month
+    # obsfile = args.obsfile
+    # region = args.region
+    # label = args.label
 
     # set visual backend
-    if interactive is False:
+    if dictArgs["interactive"] is False:
         plt.switch_backend("Agg")
     else:
-        plt.switch_backend("TkAgg")
-
-    print(f"Matplotlib is using the {mpl.get_backend()} back-end.")
+        # plt.switch_backend("TkAgg")
+        plt.switch_backend("qt5agg")
 
     # --- the main show ---
-    ds, dobs, valid_mask = read(infile, obsfile, static)
-    model, obs = calculate(ds, dobs, region=region)
-    fig = plot(model, obs, valid_mask, label=label, region=region, month=month)
+    ds, dobs, valid_mask = read(dictArgs)
+    model, obs = calculate(ds, dobs, region=dictArgs["region"])
+    fig = plot(
+        model,
+        obs,
+        valid_mask,
+        label=dictArgs["label"],
+        region=dictArgs["region"],
+        month=dictArgs["month"],
+    )
     # ---------------------
 
-    # do something with the figure
-    if interactive is True:
-        plt.show(fig)
-    else:
-        imgbuf = io.BytesIO()
-        fig.savefig(imgbuf, format=pltfmt, dpi=150, bbox_inches="tight")
-        with open(f"icefig.{pltfmt}", "wb") as f:
-            f.write(imgbuf.getbuffer())
+    filename = f"{dictArgs['outdir']}/seaice.{dictArgs['region']}"
+    imgbufs = image_handler([fig], dictArgs, filename=filename)
+
+    return imgbufs
 
 
 def parse_and_run(cliargs=None):
     """ Function to make compatibile with the superwrapper """
-    args = arguments(cliargs)
-    run(args)
+    args = parse(cliargs)
+    args = args.__dict__
+    imgbuf = run(args)
+    return imgbuf
 
 
 if __name__ == "__main__":
