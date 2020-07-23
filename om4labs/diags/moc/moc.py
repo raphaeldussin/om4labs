@@ -238,7 +238,10 @@ def read(dictArgs,varname="vmo"):
         z = get_z(ds, depth, varname)
 
     # t-cell nominal y coordinate
-    yh = ds_topog.yh.to_masked_array()
+    if "yh" in list(ds_topog.variables):
+        yh = ds_topog.yh.to_masked_array()
+    else:
+        yh = ds.yh.to_masked_array()
 
     # basin code
     basin_code = ds_basin.basin.to_masked_array()
