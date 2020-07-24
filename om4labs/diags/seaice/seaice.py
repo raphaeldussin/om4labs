@@ -35,6 +35,10 @@ import numpy as np
 import palettable
 import xarray as xr
 
+import os
+import shutil
+import tempfile
+
 
 def parse(cliargs=None, template=False):
     description = """Plot sea ice vs. NSIDC"""
@@ -131,7 +135,10 @@ def parse(cliargs=None, template=False):
         "-l", "--label", type=str, default="", help="String label to annotate the plot"
     )
 
-    return parser.parse_args(cliargs)
+    if template is True:
+        return parser.parse_args(None).__dict__
+    else:
+        return parser.parse_args(cliargs)
 
 
 # def read(infile, obsfile, static):
@@ -200,7 +207,6 @@ def read(dictArgs):
         cat_platform = "catalogs/obs_catalog_" + dictArgs["platform"] + ".yml"
         catfile = pkgr.resource_filename("om4labs", cat_platform)
         cat = intake.open_catalog(catfile)
-        print(catfile)
         dobs = cat[dictArgs["dataset"]].to_dask()
 
     # Close the static file (no longer used)
@@ -468,7 +474,14 @@ def run(dictArgs):
 
     # --- the main show ---
     ds, dobs, valid_mask = read(dictArgs)
+
+    current_dir = os.getcwd()
+    tmpdir = tempfile.mkdtemp()
+    os.chdir(tmpdir)
     model, obs = calculate(ds, dobs, region=dictArgs["region"])
+    os.chdir(current_dir)
+    shutil.rmtree(tmpdir)
+
     fig = plot(
         model,
         obs,
