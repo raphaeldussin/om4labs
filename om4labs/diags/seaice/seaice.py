@@ -19,6 +19,7 @@ import warnings
 
 from om4labs.om4common import image_handler
 from om4labs.om4common import DefaultDictParser
+from om4labs.om4common import standard_grid_cell_area
 
 warnings.filterwarnings("ignore", message=".*csr_matrix.*")
 warnings.filterwarnings("ignore", message=".*dates out of range.*")
@@ -172,13 +173,16 @@ def read(dictArgs):
 
     # Append static fields to the return Dataset
     if standard_grid is True:
-        ds["CELL_AREA"] = dstatic["area"].fillna(0.0)
-        ds["AREA"] = dstatic["area"].fillna(0.0)
-        _lon = dstatic["lon"]
-        _lat = dstatic["lat"]
+        _lon = np.array(dstatic["lon"].to_masked_array())
+        _lat = np.array(dstatic["lat"].to_masked_array())
         X, Y = np.meshgrid(_lon, _lat)
         ds["GEOLON"] = xr.DataArray(X, dims=["lat", "lon"])
         ds["GEOLAT"] = xr.DataArray(Y, dims=["lat", "lon"])
+        _AREA = standard_grid_cell_area(_lat, _lon)
+        _MASK = np.array(dstatic["mask"].fillna(0.0).to_masked_array())
+        _AREA = _AREA * _MASK
+        ds["CELL_AREA"] = xr.DataArray(_AREA, dims=["lat", "lon"])
+        ds["AREA"] = xr.DataArray(_AREA, dims=["lat", "lon"])
         ds = ds.rename({"lon": "x", "lat": "y"})
     else:
         ds["CELL_AREA"] = dstatic["CELL_AREA"]
@@ -187,7 +191,7 @@ def read(dictArgs):
         ds["AREA"] = dstatic["CELL_AREA"] * 4.0 * np.pi * (6.378e6 ** 2)
 
     # Get Valid Mask
-    valid_mask = np.where(ds["CELL_AREA"] == 0, True, False)
+    valid_mask = np.where(ds["CELL_AREA"] == 0.0, True, False)
 
     # Open observed SIC on 25-km EASE grid (coords already named lat and lon)
     if dictArgs["obsfile"] is not None:
