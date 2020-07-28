@@ -31,7 +31,10 @@ class VerticalSplitScale(mscale.ScaleBase):
 
         thresh: The degree above which to crop the data.
         """
-        mscale.ScaleBase.__init__(self, axis)
+        if int(mpl_version[0]) >= 3:
+            mscale.ScaleBase.__init__(self, axis)
+        else:
+            mscale.ScaleBase.__init__(self)
         # thresh = kwargs.pop("thresh", (85 / 180.0) * np.pi)
         # if thresh >= np.pi / 2.0:
         #    raise ValueError("thresh must be less than pi/2")
@@ -158,7 +161,7 @@ class VerticalSplitScale(mscale.ScaleBase):
             inverse transform for this transform.
             """
             return VerticalSplitScale.InvertedVerticalSplitScaleTransform(
-                self.zval, self.zfrac
+                self.zval[::-1], self.zfrac[::-1]
             )
 
     class InvertedVerticalSplitScaleTransform(mtransforms.Transform):
@@ -177,7 +180,9 @@ class VerticalSplitScale(mscale.ScaleBase):
             return np.interp(a, self.zfrac, -self.zval)
 
         def inverted(self):
-            return VerticalSplitScale.VerticalSplitScaleTransform(self.zval, self.zfrac)
+            return VerticalSplitScale.VerticalSplitScaleTransform(
+                self.zval[::-1], self.zfrac[::-1]
+            )
 
 
 # Now that the Scale class has been defined, it must be registered so
