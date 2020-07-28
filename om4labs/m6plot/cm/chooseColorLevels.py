@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import BoundaryNorm, ListedColormap, LogNorm
 from matplotlib.ticker import MaxNLocator
 
+
 def chooseColorLevels(
     sMin,
     sMax,
