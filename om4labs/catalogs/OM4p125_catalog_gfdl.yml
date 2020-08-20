@@ -32,3 +32,13 @@ sources:
         decode_times: False
     metadata:
       origin_url: ''
+
+  ice_static_1x1:
+    description: "Ice Model 1x1 Static File"
+    driver: netcdf
+    args:
+      urlpath: '/archive/Niki.Zadeh/xanadu_esm4_20190304_devgfdl_20200330/CM4_2010Control_C_noBLING_c192_OM4p125/gfdl.ncrc4-intel18-prod-openmp/pp/ice_1x1deg/ice_1x1deg.static.nc'
+      xarray_kwargs:
+        decode_times: False
+    metadata:
+      origin_url: ''

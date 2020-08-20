@@ -24,3 +24,25 @@ sources:
         decode_times: False
     metadata:
       origin_url: ''
+  
+  NSIDC_NH_monthly:
+    description: "NSIDC Northern Hemisphere monthly climatology"
+    driver: netcdf
+    args:
+      urlpath: '/gfdlhome/jpk/sea-ice-obs/OBS_NSIDC_sat_NH_T2Ms_sic.nc'
+      chunks: {'time': 12}
+      xarray_kwargs:
+        decode_times: False
+    metadata:
+      origin_url: ''
+
+  NSIDC_SH_monthly:
+    description: "NSIDC Southern Hemisphere monthly climatology"
+    driver: netcdf
+    args:
+      urlpath: '/gfdlhome/jpk/sea-ice-obs/OBS_NSIDC_sat_SH_T2Ms_sic.nc'
+      chunks: {'time': 12}
+      xarray_kwargs:
+        decode_times: False
+    metadata:
+      origin_url: ''
