@@ -127,3 +127,8 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# package-specific directories
+testing/test_data
+testing/*.png
+testing/bilinear*.nc
