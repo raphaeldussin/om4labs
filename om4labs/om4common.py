@@ -2,6 +2,10 @@
 
 import numpy as np
 import argparse
+import io
+import signal
+import sys
+import matplotlib.pyplot as plt
 
 try:
     from om4labs.helpers import try_variable_from_list
@@ -30,6 +34,44 @@ class DefaultDictParser(argparse.ArgumentParser):
         return defaults
 
 
+def image_handler(figs, dictArgs, filename="./figure"):
+    """Generic routine for image handling"""
+
+    imgbufs = []
+    numfigs = len(figs)
+    if dictArgs["interactive"] is True:
+        plt.ion()
+        for n, fig in enumerate(figs):
+            plt.show(fig)
+
+        def _signal_handler(sig, frame):
+            print("Complete!")
+            sys.exit(0)
+
+        signal.signal(signal.SIGINT, _signal_handler)
+        print("Press ctrl+c to exit...")
+        signal.pause()
+    else:
+        for n, fig in enumerate(figs):
+            if dictArgs["format"] == "stream":
+                imgbuf = io.BytesIO()
+                fig.savefig(imgbuf, format="png", bbox_inches="tight")
+                imgbufs.append(imgbuf)
+            else:
+                if len(figs) > 1:
+                    modifier = f".{n}"
+                else:
+                    modifier = ""
+                fig.savefig(
+                    f"{filename}{modifier}.png",
+                    format=dictArgs["format"],
+                    dpi=150,
+                    bbox_inches="tight",
+                )
+
+    return imgbufs
+
+
 def infer_and_assign_coord(ds, da, coordname):
     """ infer what the coord name is and assign it to dataarray """
     assigned_coordname = try_variable_from_list(
@@ -56,6 +98,27 @@ def read_data(ds, possible_variable_names):
     da = infer_and_assign_coord(ds, da, "interfaces")
 
     return da
+
+
+def standard_grid_cell_area(lat, lon, rE=6371.0e3):
+    """ computes the cell area for a standard spherical grid """
+    dLat = lat[1] - lat[0]
+    dLon = lon[1] - lon[0]
+    area = np.empty((len(lat), len(lon)))
+    for j in range(0, len(lat)):
+        for i in range(0, len(lon)):
+            lon1 = lon[i] + dLon / 2
+            lon0 = lon[i] - dLon / 2
+            lat1 = lat[j] + dLat / 2
+            lat0 = lat[j] - dLat / 2
+            area[j, i] = (
+                (np.pi / 180.0)
+                * rE
+                * rE
+                * np.abs(np.sin(np.radians(lat0)) - np.sin(np.radians(lat1)))
+                * np.abs(lon0 - lon1)
+            )
+    return area
 
 
 def subset_data(da, coordname, subset):

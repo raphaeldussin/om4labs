@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import argparse
+import pkg_resources as pkgr
+import intake
 import io
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -9,6 +11,9 @@ from om4labs import m6plot
 import palettable
 import xarray as xr
 import warnings
+
+from om4labs.om4common import image_handler
+from om4labs.om4common import DefaultDictParser
 
 warnings.filterwarnings("ignore", message=".*csr_matrix.*")
 warnings.filterwarnings("ignore", message=".*dates out of range.*")
@@ -100,15 +105,20 @@ def generate_basin_masks(basin_code, basin=None):
     return mask
 
 
-def arguments(cliargs=None):
+def parse(cliargs=None, template=False):
     """
     Function to capture the user-specified command line options
     """
     description = """ """
 
-    parser = argparse.ArgumentParser(
-        description=description, formatter_class=argparse.RawTextHelpFormatter
-    )
+    if template is True:
+        parser = DefaultDictParser(
+            description=description, formatter_class=argparse.RawTextHelpFormatter
+        )
+    else:
+        parser = argparse.ArgumentParser(
+            description=description, formatter_class=argparse.RawTextHelpFormatter
+        )
 
     parser.add_argument(
         "-b", "--basin", type=str, default=None, help="Path to basin code file"
@@ -116,6 +126,18 @@ def arguments(cliargs=None):
 
     parser.add_argument(
         "-g", "--gridspec", type=str, default=None, help="Path to gridspec file"
+    )
+
+    parser.add_argument(
+        "-m", "--model", type=str, default=None, help="Model Class"
+    )
+
+    parser.add_argument(
+        "--platform",
+        type=str,
+        required=False,
+        default="gfdl",
+        help="computing platform, default is gfdl",
     )
 
     parser.add_argument(
@@ -157,24 +179,46 @@ def arguments(cliargs=None):
         "-t", "--topog", type=str, default=None, help="Path to topog file"
     )
 
-    return parser.parse_args(cliargs)
+    if template is True:
+        return parser.parse_args(None).__dict__
+    else:
+        return parser.parse_args(cliargs)
 
 
-def read(infile, basin, gridspec, topog, varname="vmo"):
+def read(dictArgs,varname="vmo"):
     """MOC plotting script"""
 
-    print("Reading input data")
+    infile = dictArgs["infile"]
+
+    if dictArgs["model"] is not None:
+        # use dataset from catalog, either from command line or default
+        cat_platform = f"catalogs/{dictArgs['model']}_catalog_gfdl.yml"
+        catfile = pkgr.resource_filename("om4labs", cat_platform)
+        cat = intake.open_catalog(catfile)
+        ds_basin = cat["basin"].to_dask()
+        ds_topog = cat["topog"].to_dask()
+        ds_gridspec = cat["ocean_hgrid"].to_dask()
+
+    if dictArgs["basin"] is not None:
+        ds_basin = xr.open_dataset(dictArgs["basin"])
+    if dictArgs["gridspec"] is not None:
+        ds_topog = xr.open_dataset(dictArgs["topog"])
+    if dictArgs["topog"] is not None:
+        ds_gridspec = xr.open_dataset(dictArgs["gridspec"])
+
     ds = xr.open_mfdataset(infile, combine="by_coords")
-    ds_basin = xr.open_dataset(basin)
-    ds_topog = xr.open_dataset(topog)
-    ds_gridspec = xr.open_dataset(gridspec)
 
     # horizontal grid
     x = np.array(ds_gridspec.x.to_masked_array())[::2, ::2]
     y = np.array(ds_gridspec.y.to_masked_array())[::2, ::2]
 
     # depth coordinate
-    depth = ds_topog.deptho.to_masked_array()
+    if "deptho" in list(ds_topog.variables):
+        depth = ds_topog.deptho.to_masked_array()
+    elif "depth" in list(ds_topog.variables):
+        depth = ds_topog.depth.to_masked_array()
+    else:
+        raise ValueError("Unable to find depth field.")
     depth = np.where(np.isnan(depth), 0.0, depth)
     if varname == "msftyyz":
         zw = np.array(ds["z_i"][:])
@@ -185,25 +229,34 @@ def read(infile, basin, gridspec, topog, varname="vmo"):
     else:
         z = get_z(ds, depth, varname)
 
+    # t-cell nominal y coordinate
+    if "yh" in list(ds_topog.variables):
+        yh = ds_topog.yh.to_masked_array()
+    else:
+        yh = ds.yh.to_masked_array()
+
     # basin code
     basin_code = ds_basin.basin.to_masked_array()
+
+    # basin masks
+    atlantic_arctic_mask = generate_basin_masks(basin_code, basin="atlantic_arctic")
+    indo_pacific_mask = generate_basin_masks(basin_code, basin="indo_pacific")
 
     # vmo
     arr = ds[varname].to_masked_array()
 
-    return x, y, z, basin_code, arr
+    return x, y, yh, z, depth, basin_code, atlantic_arctic_mask, indo_pacific_mask, arr
 
 
 def calculate(vmo, basin_code):
     """Main computational script"""
 
-    print("Calculating")
     msftyyz = compute_msftyyz(vmo, basin_code)
 
     return msftyyz
 
 
-def plot(y, z, msftyyz, label=None):
+def plot(y, yh, z, depth, atlantic_arctic_mask, indo_pacific_mask, msftyyz, label=None):
     """Plotting script"""
 
     def _findExtrema(
@@ -218,43 +271,102 @@ def plot(y, z, msftyyz, label=None):
         ax.plot(y[j, i], z[j, i], "kx")
         ax.text(y[j, i], z[j, i], "%.1f" % (psi[j, i]))
 
-    def _plotPsi(y, z, psi, ci, title, cmap=None):
+    def _plotPsi(
+        y, z, psi, ci, title, cmap=None, xlim=None, topomask=None, yh=None, zz=None
+    ):
         """Function to plot zonal mean streamfunction"""
+        if topomask is not None:
+            psi = np.array(np.where(psi.mask, 0.0, psi))
+        else:
+            psi = np.array(np.where(psi.mask, np.nan, psi))
         plt.contourf(y, z, psi, levels=ci, cmap=cmap, extend="both")
         cbar = plt.colorbar()
-        plt.contour(y, z, psi, levels=ci, colors="k")
+        plt.contour(y, z, psi, levels=ci, colors="k", linewidths=0.4)
+        plt.contour(y, z, psi, levels=[0], colors="k", linewidths=0.8)
+        if topomask is not None:
+            cMap = mpl.colors.ListedColormap(["gray"])
+            plt.pcolormesh(yh, -1.0 * zz, topomask, cmap=cMap)
         plt.gca().set_yscale("splitscale", zval=[0, -2000, -6500])
         plt.title(title)
+        if xlim is not None:
+            plt.gca().set_xlim(xlim)
         cbar.set_label("[Sv]")
         plt.ylabel("Elevation [m]")
 
-    print("Making Plot.")
+    def _create_topomask(depth, yh, mask=None):
+        if mask is not None:
+            depth = np.where(mask == 1, depth, 0.0)
+        topomask = depth.max(axis=-1)
+        _y = yh
+        _z = np.arange(0, 7100, 100)
+        _yy, _zz = np.meshgrid(_y, _z)
+        topomask = np.tile(topomask[None, :], (len(_z), 1))
+        topomask = np.ma.masked_where(_zz < topomask, topomask)
+        topomask = topomask * 0.0
+        return topomask, _z
+
     if len(z.shape) != 1:
         z = z.min(axis=-1)
     yy = y[1:, :].max(axis=-1) + 0 * z
 
     psi = msftyyz * 1.0e-9
 
-    ci = m6plot.formatting.pmCI(0.0, 40.0, 5.0)
+    atlantic_topomask, zz = _create_topomask(depth, yh, atlantic_arctic_mask)
+    indo_pacific_topomask, zz = _create_topomask(depth, yh, indo_pacific_mask)
+    global_topomask, zz = _create_topomask(depth, yh)
+
+    ci = m6plot.formatting.pmCI(0.0, 43.0, 3.0)
     cmap = palettable.cmocean.diverging.Balance_20.get_mpl_colormap()
 
     fig = plt.figure(figsize=(8.5, 11))
-    ax1 = plt.subplot(3, 1, 1)
+    ax1 = plt.subplot(3, 1, 1, facecolor="gray")
     psiPlot = psi[0, 0]
-    _plotPsi(yy, z, psiPlot, ci, "Atlantic MOC [Sv]", cmap=cmap)
+    _plotPsi(
+        yy,
+        z,
+        psiPlot,
+        ci,
+        "Atlantic MOC [Sv]",
+        cmap=cmap,
+        xlim=(-40, 90),
+        topomask=atlantic_topomask,
+        yh=yh,
+        zz=zz,
+    )
     _findExtrema(ax1, yy, z, psiPlot, min_lat=26.5, max_lat=27.0)
     _findExtrema(ax1, yy, z, psiPlot, max_lat=-33.0)
     _findExtrema(ax1, yy, z, psiPlot)
 
-    ax2 = plt.subplot(3, 1, 2)
+    ax2 = plt.subplot(3, 1, 2, facecolor="gray")
     psiPlot = psi[0, 1]
-    _plotPsi(yy, z, psiPlot, ci, "Indo-Pacific MOC [Sv]", cmap=cmap)
+    _plotPsi(
+        yy,
+        z,
+        psiPlot,
+        ci,
+        "Indo-Pacific MOC [Sv]",
+        cmap=cmap,
+        xlim=(-40, 65),
+        topomask=indo_pacific_topomask,
+        yh=yh,
+        zz=zz,
+    )
     _findExtrema(ax2, yy, z, psiPlot, min_depth=2000.0, mult=-1.0)
     _findExtrema(ax2, yy, z, psiPlot)
 
-    ax3 = plt.subplot(3, 1, 3)
+    ax3 = plt.subplot(3, 1, 3, facecolor="gray")
     psiPlot = psi[0, 2]
-    _plotPsi(yy, z, psiPlot, ci, "Global MOC [Sv]", cmap=cmap)
+    _plotPsi(
+        yy,
+        z,
+        psiPlot,
+        ci,
+        "Global MOC [Sv]",
+        cmap=cmap,
+        topomask=global_topomask,
+        yh=yh,
+        zz=zz,
+    )
     _findExtrema(ax3, yy, z, psiPlot, max_lat=-30.0)
     _findExtrema(ax3, yy, z, psiPlot, min_lat=25.0)
     _findExtrema(ax3, yy, z, psiPlot, min_depth=2000.0, mult=-1.0)
@@ -268,26 +380,26 @@ def plot(y, z, msftyyz, label=None):
     return fig
 
 
-def run(args):
+def run(dictArgs):
     """Function to call read, calc, and plot in sequence"""
 
     # set visual backend
-    if args["interactive"] is False:
+    if dictArgs["interactive"] is False:
         plt.switch_backend("Agg")
     else:
-        plt.switch_backend("TkAgg")
+        # plt.switch_backend("TkAgg")
+        plt.switch_backend("qt5agg")
 
-    print(f"Matplotlib is using the {mpl.get_backend()} back-end.")
 
     # --- the main show ---
-    ds = xr.open_mfdataset(args["infile"])
+    ds = xr.open_mfdataset(dictArgs["infile"])
     if "msftyyz" in list(ds.variables):
         varname = "msftyyz"
     elif "vmo" in list(ds.variables):
         varname = "vmo"
 
-    x, y, z, basin_code, arr = read(
-        args["infile"], args["basin"], args["gridspec"], args["topog"], varname=varname
+    x, y, yh, z, depth, basin_code, atlantic_arctic_mask, indo_pacific_mask, arr = read(
+        dictArgs, varname=varname
     )
 
     if varname != "msftyyz":
@@ -295,22 +407,28 @@ def run(args):
     else:
         msftyyz = arr
 
-    fig = plot(y, z, msftyyz, args["label"])
+    fig = plot(
+        y,
+        yh,
+        z,
+        depth,
+        atlantic_arctic_mask,
+        indo_pacific_mask,
+        msftyyz,
+        dictArgs["label"],
+    )
     # ---------------------
 
-    # do something with the figure
-    if args["interactive"] is True:
-        plt.show(fig)
-    else:
-        imgbuf = io.BytesIO()
-        fig.savefig(imgbuf, format=args["format"], dpi=150, bbox_inches="tight")
-        # with open(f"{args['outdir']}/mocfig.{args['format']}", "wb") as f:
-        #    f.write(imgbuf.getbuffer())
-        return imgbuf
+    filename = f"{dictArgs['outdir']}/moc"
+    imgbufs = image_handler([fig], dictArgs, filename=filename)
+
+
+    return imgbufs
+
 
 
 def parse_and_run(cliargs=None):
-    args = arguments(cliargs)
+    args = parse(cliargs)
     args = args.__dict__
     imgbuf = run(args)
     return imgbuf

@@ -1,3 +1,7 @@
+import matplotlib.pyplot as plt
+import numpy as np
+
+
 def addStatusBar(xCoord, yCoord, zData):
     """
   Reformats status bar message
@@ -33,15 +37,15 @@ def addStatusBar(xCoord, yCoord, zData):
                 key=lambda l: abs((yCoord[l, i] + yCoord[l + 1, i]) / 2.0 - y),
             )
         elif len(xCoord.shape) == 2 and len(yCoord.shape) == 2:
-            idx = numpy.abs(
-                numpy.fabs(
+            idx = np.abs(
+                np.fabs(
                     xCoord[0:-1, 0:-1]
                     + xCoord[1:, 1:]
                     + xCoord[0:-1, 1:]
                     + xCoord[1:, 0:-1]
                     - 4 * x
                 )
-                + numpy.fabs(
+                + np.fabs(
                     yCoord[0:-1, 0:-1]
                     + yCoord[1:, 1:]
                     + yCoord[0:-1, 1:]
@@ -49,12 +53,12 @@ def addStatusBar(xCoord, yCoord, zData):
                     - 4 * y
                 )
             ).argmin()
-            j, i = numpy.unravel_index(idx, zData.shape)
+            j, i = np.unravel_index(idx, zData.shape)
         else:
             raise Exception("Combindation of coordinates shapes is VERY UNUSUAL!")
         if not i is None:
             val = zData[j, i]
-            if val is numpy.ma.masked:
+            if val is np.ma.masked:
                 return "x,y=%.3f,%.3f  f(%i,%i)=NaN" % (x, y, i + 1, j + 1)
             else:
                 return "x,y=%.3f,%.3f  f(%i,%i)=%g" % (x, y, i + 1, j + 1, val)
