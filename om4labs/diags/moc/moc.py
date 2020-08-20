@@ -128,9 +128,7 @@ def parse(cliargs=None, template=False):
         "-g", "--gridspec", type=str, default=None, help="Path to gridspec file"
     )
 
-    parser.add_argument(
-        "-m", "--model", type=str, default=None, help="Model Class"
-    )
+    parser.add_argument("-m", "--model", type=str, default=None, help="Model Class")
 
     parser.add_argument(
         "--platform",
@@ -185,14 +183,16 @@ def parse(cliargs=None, template=False):
         return parser.parse_args(cliargs)
 
 
-def read(dictArgs,varname="vmo"):
+def read(dictArgs, varname="vmo"):
     """MOC plotting script"""
 
     infile = dictArgs["infile"]
 
     if dictArgs["model"] is not None:
         # use dataset from catalog, either from command line or default
-        cat_platform = f"catalogs/{dictArgs['model']}_catalog_gfdl.yml"
+        cat_platform = (
+            f"catalogs/{dictArgs['model']}_catalog_{dictArgs['platform']}.yml"
+        )
         catfile = pkgr.resource_filename("om4labs", cat_platform)
         cat = intake.open_catalog(catfile)
         ds_basin = cat["basin"].to_dask()
@@ -390,13 +390,13 @@ def run(dictArgs):
         # plt.switch_backend("TkAgg")
         plt.switch_backend("qt5agg")
 
-
     # --- the main show ---
-    ds = xr.open_mfdataset(dictArgs["infile"])
+    ds = xr.open_mfdataset(dictArgs["infile"], combine="by_coords")
     if "msftyyz" in list(ds.variables):
         varname = "msftyyz"
     elif "vmo" in list(ds.variables):
         varname = "vmo"
+    ds.close()
 
     x, y, yh, z, depth, basin_code, atlantic_arctic_mask, indo_pacific_mask, arr = read(
         dictArgs, varname=varname
@@ -422,9 +422,7 @@ def run(dictArgs):
     filename = f"{dictArgs['outdir']}/moc"
     imgbufs = image_handler([fig], dictArgs, filename=filename)
 
-
     return imgbufs
-
 
 
 def parse_and_run(cliargs=None):
