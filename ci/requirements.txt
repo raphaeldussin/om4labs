@@ -1,6 +1,6 @@
 black
 dask
-intake
+intake-xarray
 matplotlib
 netcdf4
 numpy

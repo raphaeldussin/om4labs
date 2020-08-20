@@ -7,7 +7,7 @@ sources:
     description: "File containing basin masks on native model grid"
     driver: netcdf
     args:
-      urlpath: 'test_data/model_grids/OM4p125/ocean_static_d2.nc'
+      urlpath: '/archive/gold/datasets/OM4_05/mosaic.v20151203.unpacked/basin_codes.nc'
       xarray_kwargs:
         decode_times: False
     metadata:
@@ -17,7 +17,7 @@ sources:
     description: "Horizontal grid information from the gridspec"
     driver: netcdf
     args:
-      urlpath: 'test_data/model_grids/OM4p125/ocean_hgrid_d2.nc'
+      urlpath: '/archive/gold/datasets/OM4_05/mosaic.v20151203.unpacked/ocean_hgrid.nc'
       xarray_kwargs:
         decode_times: False
     metadata:
@@ -27,19 +27,8 @@ sources:
     description: "Model topography"
     driver: netcdf
     args:
-      urlpath: 'test_data/model_grids/OM4p125/ocean_static_d2.nc'
+      urlpath: '/archive/gold/datasets/OM4_05/mosaic.v20151203.unpacked/ocean_topog.nc'
       xarray_kwargs:
         decode_times: False
     metadata:
       origin_url: ''
-
-  ice_static_1x1:
-    description: "Ice Model 1x1 Static File"
-    driver: netcdf
-    args:
-      urlpath: 'test_data/model_grids/OM4p125/ice_1x1deg.static.nc'
-      xarray_kwargs:
-        decode_times: False
-    metadata:
-      origin_url: ''
-

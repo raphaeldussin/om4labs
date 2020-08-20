@@ -7,7 +7,7 @@ sources:
     description: "World Ocean Atlas 2013 annual climatology T/S"
     driver: netcdf
     args:
-      urlpath: 'data/obs/WOA13_ptemp+salinity_annual_35levels.nc'
+      urlpath: 'test_data/obs/WOA13_ptemp+salinity_annual_35levels.nc'
       chunks: {'time': 1}
       xarray_kwargs:
         decode_times: False
@@ -18,7 +18,7 @@ sources:
     description: "World Ocean Atlas 2013 monthly climatology T/S"
     driver: netcdf
     args:
-      urlpath: 'data/obs/WOA13_ptemp+salinity_monthly_35levels.nc'
+      urlpath: 'test_data/obs/WOA13_ptemp+salinity_monthly_35levels.nc'
       chunks: {'time': 12}
       xarray_kwargs:
         decode_times: False
