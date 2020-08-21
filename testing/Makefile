@@ -9,7 +9,7 @@ test_data:
 	rm -f test_data.tar.gz
 
 heat_transport.png: test_data ../om4labs/diags/heat_transport/heat_transport.py
-	om4labs heat_transport --model OM4p5 --platform testing \
+	om4labs heat_transport --model OM4p5 --platform testing -l OM4p5 \
 	test_data/output/OM4p5/ocean_monthly.0001-0005.ann.nc
 
 moc.png: test_data ../om4labs/diags/moc/moc.py

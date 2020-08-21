@@ -250,7 +250,7 @@ def plot(dictArgs,yq,trans_global,trans_atlantic,trans_pacific):
     ECMWF_Atlantic = fObs.ATLe.to_masked_array()
     ECMWF_IndoPac = fObs.INDPACe.to_masked_array()
 
-    fig = plt.figure(figsize=(8.5,11))
+    fig = plt.figure(figsize=(6,10))
     
     # Global Heat Transport
     ax1 = plt.subplot(3,1,1)
@@ -261,8 +261,8 @@ def plot(dictArgs,yq,trans_global,trans_atlantic,trans_pacific):
     plt.plot(yobs,ECMWF_Global,'k.',linewidth=0.5,label='ECMWF')
     plt.ylim(-2.5,3.0)
     plt.grid(True)
-    plt.xlabel(r'Latitude [$\degree$N]')
-    plt.legend(loc=0,fontsize=10)
+    plt.legend(loc=2,fontsize=10)
+    ax1.text(0.01,1.02,'a. Global Poleward Heat Transport',ha='left',transform=ax1.transAxes)
 
     #if diffusive is None: annotatePlot('Warning: Diffusive component of transport is missing.')
 
@@ -274,10 +274,9 @@ def plot(dictArgs,yq,trans_global,trans_atlantic,trans_pacific):
     GW.atl.annotate(ax2)
     plt.plot(yobs,NCEP_Atlantic,'k--',linewidth=0.5,label='NCEP')
     plt.plot(yobs,ECMWF_Atlantic,'k.',linewidth=0.5,label='ECMWF')
-    plt.ylim(-2.5,3.0)
+    plt.ylim(-0.5,2.0)
     plt.grid(True)
-    plt.xlabel(r'Latitude [$\degree$N]')
-    plt.legend(loc=0,fontsize=10)
+    ax2.text(0.01,1.02,'b. Atlantic Poleward Heat Transport',ha='left',transform=ax2.transAxes)
 
     # Indo-pacific Heat Transport
     ax3 = plt.subplot(3,1,3)
@@ -287,15 +286,20 @@ def plot(dictArgs,yq,trans_global,trans_atlantic,trans_pacific):
     GW.indpac.annotate(ax3)
     plt.plot(yobs,NCEP_IndoPac,'k--',linewidth=0.5,label='NCEP')
     plt.plot(yobs,ECMWF_IndoPac,'k.',linewidth=0.5,label='ECMWF')
-    plt.ylim(-2.5,3.0)
+    plt.ylim(-2.5,1.5)
     plt.grid(True)
     plt.xlabel(r'Latitude [$\degree$N]')
-    plt.legend(loc=0,fontsize=10)
+    ax3.text(0.01,1.02,'c. Indo-Pacific Poleward Heat Transport',ha='left',transform=ax3.transAxes)
+
+    for ax in [ax1,ax2]:
+        ax.set_xticklabels([])
+
+    plt.subplots_adjust(hspace=0.3)
 
     # Annotations
-    fig.text(0.1,0.85,r"Trenberth, K. E. and J. M. Caron, 2001: Estimates of Meridional Atmosphere and Ocean Heat Transports. J.Climate, 14, 3433-3443.", fontsize=8)
-    fig.text(0.1,0.825,r"Ganachaud, A. and C. Wunsch, 2000: Improved estimates of global ocean circulation, heat transport and mixing from hydrographic data.", fontsize=8)
-    fig.text(0.13,0.8,r"Nature, 408, 453-457", fontsize=8)
+    fig.text(0.05,0.05,r"Trenberth, K. E. and J. M. Caron, 2001: Estimates of Meridional Atmosphere and Ocean Heat Transports. J.Climate, 14, 3433-3443.", fontsize=6)
+    fig.text(0.05,0.04,r"Ganachaud, A. and C. Wunsch, 2000: Improved estimates of global ocean circulation, heat transport and mixing from hydrographic data.", fontsize=6)
+    fig.text(0.05,0.03,r"Nature, 408, 453-457", fontsize=6)
 
     if dictArgs['label'] is not None:
         plt.suptitle(dictArgs['label'])
