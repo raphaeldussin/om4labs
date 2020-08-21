@@ -8,6 +8,10 @@ test_data:
 	tar -xzvf test_data.tar.gz
 	rm -f test_data.tar.gz
 
+heat_transport.png: test_data ../om4labs/diags/heat_transport/heat_transport.py
+	om4labs heat_transport --model OM4p5 --platform testing \
+	test_data/output/OM4p5/ocean_monthly.0001-0005.ann.nc
+
 moc.png: test_data ../om4labs/diags/moc/moc.py
 	om4labs moc --model OM4p125 --platform testing \
 	test_data/output/ocean_month_z_d2_refined.0036-0040.ann.nc
