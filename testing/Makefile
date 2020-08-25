@@ -1,5 +1,5 @@
 IMG = SST_diff.png SST_compare.png SSS_diff.png SSS_compare.png \
-      moc.png seaice.nh.png
+      moc.png seaice.nh.png heat_transport.png
 
 all: $(IMG)
 
