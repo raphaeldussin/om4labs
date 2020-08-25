@@ -291,9 +291,6 @@ def plot(dictArgs,yq,trans_global,trans_atlantic,trans_pacific):
     plt.xlabel(r'Latitude [$\degree$N]')
     ax3.text(0.01,1.02,'c. Indo-Pacific Poleward Heat Transport',ha='left',transform=ax3.transAxes)
 
-    for ax in [ax1,ax2]:
-        ax.set_xticklabels([])
-
     plt.subplots_adjust(hspace=0.3)
 
     # Annotations
