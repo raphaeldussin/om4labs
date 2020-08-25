@@ -38,32 +38,35 @@ def generate_basin_masks(basin_code, basin=None):
         mask[(basin_code >= 1)] = 1.0
     return mask
 
-def compute(advective, diffusive=None, vmask=None, rho0=1.035e3, Cp=3989.):
+
+def compute(advective, diffusive=None, vmask=None, rho0=1.035e3, Cp=3989.0):
     """Converts vertically integrated temperature advection into heat transport"""
 
     if diffusive is not None:
-      HT = advective + diffusive
+        HT = advective + diffusive
     else:
-      HT = advective
+        HT = advective
     HT = HT.mean(dim="time")
 
     if advective.units == "Celsius meter3 second-1":
-      HT = HT * (rho0 * Cp)
-      HT = HT * 1.e-15  # convert to PW
-    elif advective.units == "W m-2":  # bug in MOM6 units (issue #934), keep for retrocompatibility
-      HT = HT * 1.e-15
+        HT = HT * (rho0 * Cp)
+        HT = HT * 1.0e-15  # convert to PW
+    elif (
+        advective.units == "W m-2"
+    ):  # bug in MOM6 units (issue #934), keep for retrocompatibility
+        HT = HT * 1.0e-15
     elif advective.units == "W":
-      HT = HT * 1.e-15
+        HT = HT * 1.0e-15
     else:
-      print('Unknown units')
+        print("Unknown units")
 
     HT = HT.to_masked_array()
 
     if vmask is not None:
-        HT = HT*vmask
+        HT = HT * vmask
 
     HT = HT.sum(axis=-1)
-    HT = HT.squeeze() # sum in x-direction
+    HT = HT.squeeze()  # sum in x-direction
 
     return HT
 
@@ -189,7 +192,16 @@ def read(dictArgs, adv_varname="T_ady_2d", dif_varname="T_diffy_2d"):
     else:
         diffusive = None
 
-    return x, y, yq, basin_code, atlantic_arctic_mask, indo_pacific_mask, advective, diffusive
+    return (
+        x,
+        y,
+        yq,
+        basin_code,
+        atlantic_arctic_mask,
+        indo_pacific_mask,
+        advective,
+        diffusive,
+    )
 
 
 def calculate(advective, diffusive=None, basin_code=None):
@@ -199,40 +211,54 @@ def calculate(advective, diffusive=None, basin_code=None):
 
     return msftyyz
 
+
 class GWObs:
     class _gw:
-        def __init__(self,lat,trans,err):
+        def __init__(self, lat, trans, err):
             self.lat = lat
             self.trans = trans
             self.err = err
             self.minerr = trans - err
             self.maxerr = trans + err
-        def annotate(self,ax):
-            for n in range(0,len(self.minerr)):
+
+        def annotate(self, ax):
+            for n in range(0, len(self.minerr)):
                 if n == 0:
-                    ax.plot([self.lat[n],self.lat[n]], [self.minerr[n],self.maxerr[n]], 'c', linewidth=2.0, label='G&W')
+                    ax.plot(
+                        [self.lat[n], self.lat[n]],
+                        [self.minerr[n], self.maxerr[n]],
+                        "c",
+                        linewidth=2.0,
+                        label="G&W",
+                    )
                 else:
-                    ax.plot([self.lat[n],self.lat[n]], [self.minerr[n],self.maxerr[n]], 'c', linewidth=2.0)
-                ax.scatter(self.lat,self.trans,marker='s',facecolor='cyan')
+                    ax.plot(
+                        [self.lat[n], self.lat[n]],
+                        [self.minerr[n], self.maxerr[n]],
+                        "c",
+                        linewidth=2.0,
+                    )
+                ax.scatter(self.lat, self.trans, marker="s", facecolor="cyan")
 
     def __init__(self):
         self.gbl = self._gw(
-                       np.array([-30., -19., 24., 47.]),
-                       np.array([-0.6, -0.8, 1.8, 0.6]),
-                       np.array([0.3, 0.6, 0.3, 0.1]),
-                       )
+            np.array([-30.0, -19.0, 24.0, 47.0]),
+            np.array([-0.6, -0.8, 1.8, 0.6]),
+            np.array([0.3, 0.6, 0.3, 0.1]),
+        )
         self.atl = self._gw(
-                       np.array([-45., -30., -19., -11., -4.5, 7.5, 24., 47.]),
-                       np.array([0.66, 0.35, 0.77, 0.9, 1., 1.26, 1.27, 0.6]),
-                       np.array([0.12, 0.15, 0.2, 0.4, 0.55, 0.31, 0.15, 0.09]),
-                       )
+            np.array([-45.0, -30.0, -19.0, -11.0, -4.5, 7.5, 24.0, 47.0]),
+            np.array([0.66, 0.35, 0.77, 0.9, 1.0, 1.26, 1.27, 0.6]),
+            np.array([0.12, 0.15, 0.2, 0.4, 0.55, 0.31, 0.15, 0.09]),
+        )
         self.indpac = self._gw(
-                       np.array([-30., -18., 24., 47.]),
-                       np.array([-0.9, -1.6, 0.52, 0.]),
-                       np.array([0.3, 0.6, 0.2, 0.05,]),
-                       )
+            np.array([-30.0, -18.0, 24.0, 47.0]),
+            np.array([-0.9, -1.6, 0.52, 0.0]),
+            np.array([0.3, 0.6, 0.2, 0.05,]),
+        )
 
-def plot(dictArgs,yq,trans_global,trans_atlantic,trans_pacific):
+
+def plot(dictArgs, yq, trans_global, trans_atlantic, trans_pacific):
 
     # Load observations for plotting
     GW = GWObs()
@@ -250,60 +276,89 @@ def plot(dictArgs,yq,trans_global,trans_atlantic,trans_pacific):
     ECMWF_Atlantic = fObs.ATLe.to_masked_array()
     ECMWF_IndoPac = fObs.INDPACe.to_masked_array()
 
-    fig = plt.figure(figsize=(6,10))
-    
-    # Global Heat Transport
-    ax1 = plt.subplot(3,1,1)
-    plt.plot(yq, yq*0., 'k', linewidth=0.5)
-    plt.plot(yq, trans_global, 'r', linewidth=1.5,label='Model')
-    GW.gbl.annotate(ax1)
-    plt.plot(yobs,NCEP_Global,'k--',linewidth=0.5,label='NCEP')
-    plt.plot(yobs,ECMWF_Global,'k.',linewidth=0.5,label='ECMWF')
-    plt.ylim(-2.5,3.0)
-    plt.grid(True)
-    plt.legend(loc=2,fontsize=10)
-    ax1.text(0.01,1.02,'a. Global Poleward Heat Transport',ha='left',transform=ax1.transAxes)
+    fig = plt.figure(figsize=(6, 10))
 
-    #if diffusive is None: annotatePlot('Warning: Diffusive component of transport is missing.')
+    # Global Heat Transport
+    ax1 = plt.subplot(3, 1, 1)
+    plt.plot(yq, yq * 0.0, "k", linewidth=0.5)
+    plt.plot(yq, trans_global, "r", linewidth=1.5, label="Model")
+    GW.gbl.annotate(ax1)
+    plt.plot(yobs, NCEP_Global, "k--", linewidth=0.5, label="NCEP")
+    plt.plot(yobs, ECMWF_Global, "k.", linewidth=0.5, label="ECMWF")
+    plt.ylim(-2.5, 3.0)
+    plt.grid(True)
+    plt.legend(loc=2, fontsize=10)
+    ax1.text(
+        0.01,
+        1.02,
+        "a. Global Poleward Heat Transport",
+        ha="left",
+        transform=ax1.transAxes,
+    )
+
+    # if diffusive is None: annotatePlot('Warning: Diffusive component of transport is missing.')
 
     # Atlantic Heat Transport
-    ax2 = plt.subplot(3,1,2)
-    plt.plot(yq, yq*0., 'k', linewidth=0.5)
-    trans_atlantic[yq<-34] = np.nan
-    plt.plot(yq, trans_atlantic, 'r', linewidth=1.5,label='Model')
+    ax2 = plt.subplot(3, 1, 2)
+    plt.plot(yq, yq * 0.0, "k", linewidth=0.5)
+    trans_atlantic[yq < -34] = np.nan
+    plt.plot(yq, trans_atlantic, "r", linewidth=1.5, label="Model")
     GW.atl.annotate(ax2)
-    plt.plot(yobs,NCEP_Atlantic,'k--',linewidth=0.5,label='NCEP')
-    plt.plot(yobs,ECMWF_Atlantic,'k.',linewidth=0.5,label='ECMWF')
-    plt.ylim(-0.5,2.0)
+    plt.plot(yobs, NCEP_Atlantic, "k--", linewidth=0.5, label="NCEP")
+    plt.plot(yobs, ECMWF_Atlantic, "k.", linewidth=0.5, label="ECMWF")
+    plt.ylim(-0.5, 2.0)
     plt.grid(True)
-    ax2.text(0.01,1.02,'b. Atlantic Poleward Heat Transport',ha='left',transform=ax2.transAxes)
+    ax2.text(
+        0.01,
+        1.02,
+        "b. Atlantic Poleward Heat Transport",
+        ha="left",
+        transform=ax2.transAxes,
+    )
 
     # Indo-pacific Heat Transport
-    ax3 = plt.subplot(3,1,3)
-    plt.plot(yq, yq*0., 'k', linewidth=0.5)
-    trans_pacific[yq<-34] = np.nan
-    plt.plot(yq, trans_pacific, 'r', linewidth=1.5,label='Model')
+    ax3 = plt.subplot(3, 1, 3)
+    plt.plot(yq, yq * 0.0, "k", linewidth=0.5)
+    trans_pacific[yq < -34] = np.nan
+    plt.plot(yq, trans_pacific, "r", linewidth=1.5, label="Model")
     GW.indpac.annotate(ax3)
-    plt.plot(yobs,NCEP_IndoPac,'k--',linewidth=0.5,label='NCEP')
-    plt.plot(yobs,ECMWF_IndoPac,'k.',linewidth=0.5,label='ECMWF')
-    plt.ylim(-2.5,1.5)
+    plt.plot(yobs, NCEP_IndoPac, "k--", linewidth=0.5, label="NCEP")
+    plt.plot(yobs, ECMWF_IndoPac, "k.", linewidth=0.5, label="ECMWF")
+    plt.ylim(-2.5, 1.5)
     plt.grid(True)
-    plt.xlabel(r'Latitude [$\degree$N]')
-    ax3.text(0.01,1.02,'c. Indo-Pacific Poleward Heat Transport',ha='left',transform=ax3.transAxes)
+    plt.xlabel(r"Latitude [$\degree$N]")
+    ax3.text(
+        0.01,
+        1.02,
+        "c. Indo-Pacific Poleward Heat Transport",
+        ha="left",
+        transform=ax3.transAxes,
+    )
 
     plt.subplots_adjust(hspace=0.3)
 
     # Annotations
-    fig.text(0.05,0.05,r"Trenberth, K. E. and J. M. Caron, 2001: Estimates of Meridional Atmosphere and Ocean Heat Transports. J.Climate, 14, 3433-3443.", fontsize=6)
-    fig.text(0.05,0.04,r"Ganachaud, A. and C. Wunsch, 2000: Improved estimates of global ocean circulation, heat transport and mixing from hydrographic data.", fontsize=6)
-    fig.text(0.05,0.03,r"Nature, 408, 453-457", fontsize=6)
+    fig.text(
+        0.05,
+        0.05,
+        r"Trenberth, K. E. and J. M. Caron, 2001: Estimates of Meridional Atmosphere and Ocean Heat Transports. J.Climate, 14, 3433-3443.",
+        fontsize=6,
+    )
+    fig.text(
+        0.05,
+        0.04,
+        r"Ganachaud, A. and C. Wunsch, 2000: Improved estimates of global ocean circulation, heat transport and mixing from hydrographic data.",
+        fontsize=6,
+    )
+    fig.text(0.05, 0.03, r"Nature, 408, 453-457", fontsize=6)
 
-    if dictArgs['label'] is not None:
-        plt.suptitle(dictArgs['label'])
+    if dictArgs["label"] is not None:
+        plt.suptitle(dictArgs["label"])
 
-    #HTplot = heatTrans(advective, diffusive, vmask=m*numpy.roll(m,-1,axis=-2))
+    # HTplot = heatTrans(advective, diffusive, vmask=m*numpy.roll(m,-1,axis=-2))
 
-    return fig 
+    return fig
+
 
 def run(dictArgs):
     """Function to call read, calc, and plot in sequence"""
@@ -316,14 +371,23 @@ def run(dictArgs):
         plt.switch_backend("qt5agg")
 
     # --- the main show ---
-    x, y, yq, basin_code, atlantic_arctic_mask, indo_pacific_mask, advective, diffusive = read(dictArgs)
-   
-    trans_global   = compute(advective, diffusive)
-    trans_atlantic = compute(advective, diffusive, vmask=atlantic_arctic_mask)
-    trans_pacific  = compute(advective, diffusive, vmask=indo_pacific_mask)
+    (
+        x,
+        y,
+        yq,
+        basin_code,
+        atlantic_arctic_mask,
+        indo_pacific_mask,
+        advective,
+        diffusive,
+    ) = read(dictArgs)
 
-    fig = plot(dictArgs,yq,trans_global,trans_atlantic,trans_pacific)
- 
+    trans_global = compute(advective, diffusive)
+    trans_atlantic = compute(advective, diffusive, vmask=atlantic_arctic_mask)
+    trans_pacific = compute(advective, diffusive, vmask=indo_pacific_mask)
+
+    fig = plot(dictArgs, yq, trans_global, trans_atlantic, trans_pacific)
+
     filename = f"{dictArgs['outdir']}/heat_transport"
     imgbufs = image_handler([fig], dictArgs, filename=filename)
 
