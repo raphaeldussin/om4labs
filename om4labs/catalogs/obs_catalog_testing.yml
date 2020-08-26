@@ -46,3 +46,14 @@ sources:
         decode_times: False
     metadata:
       origin_url: ''
+
+  Trenberth_and_Caron:
+    description: "Trenberth and Caron Heat Transport"
+    driver: netcdf
+    args:
+      urlpath: 'test_data/obs/Trenberth_and_Caron_Heat_Transport.nc'
+      xarray_kwargs:
+        decode_times: False
+    metadata:
+      origin_url: ''
+

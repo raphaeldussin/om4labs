@@ -1,5 +1,5 @@
 IMG = SST_diff.png SST_compare.png SSS_diff.png SSS_compare.png \
-      moc.png seaice.nh.png
+      moc.png seaice.nh.png heat_transport.png
 
 all: $(IMG)
 
@@ -7,6 +7,10 @@ test_data:
 	curl -o test_data.tar.gz ftp://ftp.gfdl.noaa.gov/pub/John.Krasting/om4labs/test_data.tar.gz
 	tar -xzvf test_data.tar.gz
 	rm -f test_data.tar.gz
+
+heat_transport.png: test_data ../om4labs/diags/heat_transport/heat_transport.py
+	om4labs heat_transport --model OM4p5 --platform testing -l OM4p5 \
+	test_data/output/OM4p5/ocean_monthly.0001-0005.ann.nc
 
 moc.png: test_data ../om4labs/diags/moc/moc.py
 	om4labs moc --model OM4p125 --platform testing \
