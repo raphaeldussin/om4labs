@@ -1,7 +1,7 @@
 def dunne_pm(N=256):
     """
-  Plus-minus  colormap from John Dunne.
-  """
+    Plus-minus  colormap from John Dunne.
+    """
     cdict = {
         "red": [
             (0.00, 0.3, 0.3),

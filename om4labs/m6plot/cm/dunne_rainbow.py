@@ -1,7 +1,7 @@
 def dunne_rainbow(N=256):
     """
-  Spectral/rainbow colormap from John Dunne.
-  """
+    Spectral/rainbow colormap from John Dunne.
+    """
     cdict = {
         "red": [
             (0.00, 0.95, 0.95),

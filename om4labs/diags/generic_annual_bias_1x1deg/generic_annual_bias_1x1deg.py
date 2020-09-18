@@ -217,8 +217,8 @@ def parse(cliargs=None, template=False):
 
 
 def run(dictArgs):
-    """ main can be called from either command line and then use parser from run()
-    or DORA can build the args and run it directly """
+    """main can be called from either command line and then use parser from run()
+    or DORA can build the args and run it directly"""
 
     # read the data needed for plots
     x, y, area, model, obs = read(dictArgs)

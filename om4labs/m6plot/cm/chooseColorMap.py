@@ -1,7 +1,7 @@
 def chooseColorMap(sMin, sMax, difference=None):
     """
-  Based on the min/max extremes of the data, choose a colormap that fits the data.
-  """
+    Based on the min/max extremes of the data, choose a colormap that fits the data.
+    """
     if difference == True:
         return "dunnePM"
     elif sMin < 0 and sMax > 0:

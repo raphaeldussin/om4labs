@@ -9,9 +9,9 @@ from . import stats
 
 def createXYcoords(s, x, y):
     """
-  Checks that x and y are appropriate 2D corner coordinates
-  and tries to make some if they are not.
-  """
+    Checks that x and y are appropriate 2D corner coordinates
+    and tries to make some if they are not.
+    """
     nj, ni = s.shape
     if x is None:
         xCoord = numpy.arange(0.0, ni + 1)
@@ -43,8 +43,8 @@ def createXYcoords(s, x, y):
 
 def createXYlabels(x, y, xlabel, xunits, ylabel, yunits):
     """
-  Checks that x and y labels are appropriate and tries to make some if they are not.
-  """
+    Checks that x and y labels are appropriate and tries to make some if they are not.
+    """
     if x is None:
         if xlabel is None:
             xlabel = "i"
@@ -99,38 +99,38 @@ def xyplot(
     logscale=False,
 ):
     """
-  Renders plot of scalar field, field(x,y).
+    Renders plot of scalar field, field(x,y).
 
-  Arguments:
-  field        Scalar 2D array to be plotted.
-  x            x coordinate (1D or 2D array). If x is the same size as field then x is treated as
-               the cell center coordinates.
-  y            y coordinate (1D or 2D array). If x is the same size as field then y is treated as
-               the cell center coordinates.
-  area         2D array of cell areas (used for statistics). Default None.
-  xlabel       The label for the x axis. Default 'Longitude'.
-  xunits       The units for the x axis. Default 'degrees E'.
-  ylabel       The label for the y axis. Default 'Latitude'.
-  yunits       The units for the y axis. Default 'degrees N'.
-  title        The title to place at the top of the panel. Default ''.
-  suptitle     The super-title to place at the top of the figure. Default ''.
-  clim         A tuple of (min,max) color range OR a list of contour levels. Default None.
-  sigma         Sigma range for difference plot autocolor levels. Default is to span a 2. sigma range
-  colormap     The name of the colormap to use. Default None.
-  extend       Can be one of 'both', 'neither', 'max', 'min'. Default None.
-  centerlabels If True, will move the colorbar labels to the middle of the interval. Default False.
-  nbins        The number of colors levels (used is clim is missing or only specifies the color range).
-  landcolor    An rgb tuple to use for the color of land (no data). Default [.5,.5,.5].
-  aspect       The aspect ratio of the figure, given as a tuple (W,H). Default [16,9].
-  resolution   The vertical resolution of the figure given in pixels. Default 720.
-  axis         The axis handle to plot to. Default None.
-  ignore       A value to use as no-data (NaN). Default None.
-  save         Name of file to save figure in. Default None.
-  debug        If true, report stuff for debugging. Default False.
-  show         If true, causes the figure to appear on screen. Used for testing. Default False.
-  interactive  If true, adds interactive features such as zoom, close and cursor. Default False.
-  logscale     If true, use logaritmic coloring scheme. Default False.
-  """
+    Arguments:
+    field        Scalar 2D array to be plotted.
+    x            x coordinate (1D or 2D array). If x is the same size as field then x is treated as
+                 the cell center coordinates.
+    y            y coordinate (1D or 2D array). If x is the same size as field then y is treated as
+                 the cell center coordinates.
+    area         2D array of cell areas (used for statistics). Default None.
+    xlabel       The label for the x axis. Default 'Longitude'.
+    xunits       The units for the x axis. Default 'degrees E'.
+    ylabel       The label for the y axis. Default 'Latitude'.
+    yunits       The units for the y axis. Default 'degrees N'.
+    title        The title to place at the top of the panel. Default ''.
+    suptitle     The super-title to place at the top of the figure. Default ''.
+    clim         A tuple of (min,max) color range OR a list of contour levels. Default None.
+    sigma         Sigma range for difference plot autocolor levels. Default is to span a 2. sigma range
+    colormap     The name of the colormap to use. Default None.
+    extend       Can be one of 'both', 'neither', 'max', 'min'. Default None.
+    centerlabels If True, will move the colorbar labels to the middle of the interval. Default False.
+    nbins        The number of colors levels (used is clim is missing or only specifies the color range).
+    landcolor    An rgb tuple to use for the color of land (no data). Default [.5,.5,.5].
+    aspect       The aspect ratio of the figure, given as a tuple (W,H). Default [16,9].
+    resolution   The vertical resolution of the figure given in pixels. Default 720.
+    axis         The axis handle to plot to. Default None.
+    ignore       A value to use as no-data (NaN). Default None.
+    save         Name of file to save figure in. Default None.
+    debug        If true, report stuff for debugging. Default False.
+    show         If true, causes the figure to appear on screen. Used for testing. Default False.
+    interactive  If true, adds interactive features such as zoom, close and cursor. Default False.
+    logscale     If true, use logaritmic coloring scheme. Default False.
+    """
 
     c = cm.dunne_pm()
     c = cm.dunne_rainbow()

@@ -4,8 +4,8 @@ import numpy
 
 def calc(s, area, s2=None, debug=False):
     """
-  Calculates mean, standard deviation and root-mean-square of s.
-  """
+    Calculates mean, standard deviation and root-mean-square of s.
+    """
     sMin = numpy.ma.min(s)
     sMax = numpy.ma.max(s)
     if area is None:

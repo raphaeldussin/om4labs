@@ -9,8 +9,8 @@ def setFigureSize(
     debug=False,
 ):
     """
-  Set the figure size based on vertical resolution and aspect ratio (tuple of W,H).
-  """
+    Set the figure size based on vertical resolution and aspect ratio (tuple of W,H).
+    """
     if (not horiztonalresolution is None) and (not verticalresolution is None):
         if aspect is None:
             aspect = [horiztonalresolution, verticalresolution]

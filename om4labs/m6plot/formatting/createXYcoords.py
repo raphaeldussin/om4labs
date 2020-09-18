@@ -5,9 +5,9 @@ from ..coords import *
 
 def createXYcoords(s, x, y):
     """
-  Checks that x and y are appropriate 2D corner coordinates
-  and tries to make some if they are not.
-  """
+    Checks that x and y are appropriate 2D corner coordinates
+    and tries to make some if they are not.
+    """
     nj, ni = s.shape
     if x is None:
         xCoord = numpy.arange(0.0, ni + 1)
@@ -39,8 +39,8 @@ def createXYcoords(s, x, y):
 
 def createXYlabels(x, y, xlabel, xunits, ylabel, yunits):
     """
-  Checks that x and y labels are appropriate and tries to make some if they are not.
-  """
+    Checks that x and y labels are appropriate and tries to make some if they are not.
+    """
     if x is None:
         if xlabel is None:
             xlabel = "i"
