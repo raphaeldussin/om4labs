@@ -1,7 +1,7 @@
 def drawNinoBoxes(m, region="all"):
     """
-  Function to draw ENSO region boxes on a basemap instance
-  """
+    Function to draw ENSO region boxes on a basemap instance
+    """
     if region == "nino4" or region == "all":
         polyLon = [-200.0, -200.0, -150.0, -150.0, -200.0]
         polyLat = [-5.0, 5.0, 5.0, -5.0, -5.0]

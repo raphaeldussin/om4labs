@@ -8,25 +8,25 @@ from scipy.io import netcdf
 
 def section2quadmesh(x, z, q, representation="pcm"):
     """
-  Creates the appropriate quadmesh coordinates to plot a scalar q(1:nk,1:ni) at
-  horizontal positions x(1:ni+1) and between interfaces at z(nk+1,ni), using
-  various representations of the topography.
+    Creates the appropriate quadmesh coordinates to plot a scalar q(1:nk,1:ni) at
+    horizontal positions x(1:ni+1) and between interfaces at z(nk+1,ni), using
+    various representations of the topography.
 
-  Returns X(2*ni+1), Z(nk+1,2*ni+1) and Q(nk,2*ni) to be passed to pcolormesh.
+    Returns X(2*ni+1), Z(nk+1,2*ni+1) and Q(nk,2*ni) to be passed to pcolormesh.
 
-  TBD: Optionally, x can be dimensioned as x(ni) in which case it will be extraplated as if it had 
-  had dimensions x(ni+1).
-  
-  Optional argument:
-  
-  representation='pcm' (default) yields a step-wise visualization, appropriate for
-           z-coordinate models.
-  representation='plm' yields a piecewise-linear visualization more representative
-           of general-coordinate (and isopycnal) models.
-  representation='linear' is the aesthetically most pleasing but does not
-           represent the data conservatively.
+    TBD: Optionally, x can be dimensioned as x(ni) in which case it will be extraplated as if it had
+    had dimensions x(ni+1).
 
-  """
+    Optional argument:
+
+    representation='pcm' (default) yields a step-wise visualization, appropriate for
+             z-coordinate models.
+    representation='plm' yields a piecewise-linear visualization more representative
+             of general-coordinate (and isopycnal) models.
+    representation='linear' is the aesthetically most pleasing but does not
+             represent the data conservatively.
+
+    """
 
     if x.ndim != 1:
         raise Exception("The x argument must be a vector")
@@ -144,11 +144,11 @@ def get_z(rg, depth, var_name):
 
 def rho_Wright97(S, T, P=0):
     """
-  Returns the density of seawater for the given salinity, potential temperature
-  and pressure.
+    Returns the density of seawater for the given salinity, potential temperature
+    and pressure.
 
-  Units: salinity in PSU, potential temperature in degrees Celsius and pressure in Pascals.
-  """
+    Units: salinity in PSU, potential temperature in degrees Celsius and pressure in Pascals.
+    """
     a0 = 7.057924e-4
     a1 = 3.480336e-7
     a2 = -1.112733e-7
@@ -172,16 +172,16 @@ def rho_Wright97(S, T, P=0):
 
 def ice9(i, j, source, xcyclic=True, tripolar=True):
     """
-  An iterative (stack based) implementation of "Ice 9".
+    An iterative (stack based) implementation of "Ice 9".
 
-  The flood fill starts at [j,i] and treats any positive value of "source" as
-  passable. Zero and negative values block flooding.
+    The flood fill starts at [j,i] and treats any positive value of "source" as
+    passable. Zero and negative values block flooding.
 
-  xcyclic = True allows cyclic behavior in the last index. (default)
-  tripolar = True allows a fold across the top-most edge. (default)
+    xcyclic = True allows cyclic behavior in the last index. (default)
+    tripolar = True allows a fold across the top-most edge. (default)
 
-  Returns an array of 0's and 1's.
-  """
+    Returns an array of 0's and 1's.
+    """
     wetMask = 0 * source
     (nj, ni) = wetMask.shape
     stack = set()
@@ -215,12 +215,12 @@ def ice9Wrapper(x, y, depth, xy0):
 
 def maskFromDepth(depth, zCellTop):
     """
-  Generates a "wet mask" for a z-coordinate model based on relative location of
-  the ocean bottom to the upper interface of the cell.
+    Generates a "wet mask" for a z-coordinate model based on relative location of
+    the ocean bottom to the upper interface of the cell.
 
-  depth (2d) is positiveo
-  zCellTop (scalar) is a negative position of the upper interface of the cell..
-  """
+    depth (2d) is positiveo
+    zCellTop (scalar) is a negative position of the upper interface of the cell..
+    """
     wet = 0 * depth
     wet[depth > -zCellTop] = 1
     return wet
@@ -264,8 +264,8 @@ def moc_maskedarray(vh, mask=None):
 
 def nearestJI(x, y, xy0):
     """
-  Find (j,i) of cell with center nearest to (x0,y0).
-  """
+    Find (j,i) of cell with center nearest to (x0,y0).
+    """
     x0, y0 = xy0
     return np.unravel_index(((x - x0) ** 2 + (y - y0) ** 2).argmin(), x.shape)
 
@@ -279,8 +279,8 @@ def readNCFromTar(tar, file, var):
 
 def southOf(x, y, xy0, xy1):
     """
-  Returns 1 for point south/east of the line that passes through xy0-xy1, 0 otherwise.
-  """
+    Returns 1 for point south/east of the line that passes through xy0-xy1, 0 otherwise.
+    """
     x0 = xy0[0]
     y0 = xy0[1]
     x1 = xy1[0]

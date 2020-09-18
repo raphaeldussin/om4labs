@@ -15,15 +15,15 @@ def chooseColorLevels(
     autocenter=False,
 ):
     """
-  If nbins is a positive integer, choose sensible color levels with nbins colors.
-  If clim is a 2-element tuple, create color levels within the clim range
-  or if clim is a vector, use clim as contour levels.
-  If clim provides more than 2 color interfaces, nbins must be absent.
-  If clim is absent, the sMin,sMax are used as the color range bounds.
-  If autocenter is True and clim is None then the automatic color levels are centered.
+    If nbins is a positive integer, choose sensible color levels with nbins colors.
+    If clim is a 2-element tuple, create color levels within the clim range
+    or if clim is a vector, use clim as contour levels.
+    If clim provides more than 2 color interfaces, nbins must be absent.
+    If clim is absent, the sMin,sMax are used as the color range bounds.
+    If autocenter is True and clim is None then the automatic color levels are centered.
 
-  Returns cmap, norm and extend.
-  """
+    Returns cmap, norm and extend.
+    """
     if nbins is None and clim is None:
         raise Exception("At least one of clim or nbins is required.")
     if clim is not None:

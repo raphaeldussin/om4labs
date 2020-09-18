@@ -4,8 +4,8 @@ import numpy as np
 
 def addStatusBar(xCoord, yCoord, zData):
     """
-  Reformats status bar message
-  """
+    Reformats status bar message
+    """
 
     class hiddenStore:
         def __init__(self, axis):

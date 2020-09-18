@@ -5,7 +5,7 @@ import xarray as xr
 
 def try_variable_from_list(vars_in_file, query_vars):
     """test variables from query_vars to find which one
-       is present in vars_in_file """
+    is present in vars_in_file"""
     for var in query_vars:
         if var in vars_in_file:
             return var

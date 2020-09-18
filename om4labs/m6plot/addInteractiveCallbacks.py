@@ -3,11 +3,11 @@ import matplotlib.pyplot as plt
 
 def addInteractiveCallbacks():
     """
-  Adds interactive features to a plot on screen.
-  Key 'q' to close window.
-  Zoom button to center.
-  Zoom wheel to zoom in and out.
-  """
+    Adds interactive features to a plot on screen.
+    Key 'q' to close window.
+    Zoom button to center.
+    Zoom wheel to zoom in and out.
+    """
 
     def keyPress(event):
         if event.key == "Q":

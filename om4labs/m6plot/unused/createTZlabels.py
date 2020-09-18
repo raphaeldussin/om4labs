@@ -1,7 +1,7 @@
 def createTZlabels(t, z, tlabel, tunits, zlabel, zunits):
     """
-  Checks that y and z labels are appropriate and tries to make some if they are not.
-  """
+    Checks that y and z labels are appropriate and tries to make some if they are not.
+    """
     if t is None:
         if tlabel is None:
             tlabel = "t"

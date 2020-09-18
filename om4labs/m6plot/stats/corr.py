@@ -4,9 +4,9 @@ import math
 
 def corr(s1, s2, area):
     """
-  Calculates the correlation coefficient between s1 and s2, assuming s1 and s2 have
-  not mean. That is s1 = S - mean(S), etc.
-  """
+    Calculates the correlation coefficient between s1 and s2, assuming s1 and s2 have
+    not mean. That is s1 = S - mean(S), etc.
+    """
     weight = area.copy()
     if not numpy.ma.getmask(s1).any() == numpy.ma.nomask:
         weight[s1.mask] = 0.0

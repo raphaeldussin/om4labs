@@ -3,22 +3,22 @@ import numpy as np
 
 def section2quadmesh(x, z, q, representation="pcm"):
     """
-  Creates the appropriate quadmesh coordinates to plot a scalar q(1:nk,1:ni) at
-  horizontal positions x(1:ni+1) and between interfaces at z(nk+1,ni), using
-  various representations of the topography.
-  Returns X(2*ni+1), Z(nk+1,2*ni+1) and Q(nk,2*ni) to be passed to pcolormesh.
-  TBD: Optionally, x can be dimensioned as x(ni) in which case it will be extraplated as if it had 
-  had dimensions x(ni+1).
-  
-  Optional argument:
-  
-  representation='pcm' (default) yields a step-wise visualization, appropriate for
-           z-coordinate models.
-  representation='plm' yields a piecewise-linear visualization more representative
-           of general-coordinate (and isopycnal) models.
-  representation='linear' is the aesthetically most pleasing but does not
-           represent the data conservatively.
-  """
+    Creates the appropriate quadmesh coordinates to plot a scalar q(1:nk,1:ni) at
+    horizontal positions x(1:ni+1) and between interfaces at z(nk+1,ni), using
+    various representations of the topography.
+    Returns X(2*ni+1), Z(nk+1,2*ni+1) and Q(nk,2*ni) to be passed to pcolormesh.
+    TBD: Optionally, x can be dimensioned as x(ni) in which case it will be extraplated as if it had
+    had dimensions x(ni+1).
+
+    Optional argument:
+
+    representation='pcm' (default) yields a step-wise visualization, appropriate for
+             z-coordinate models.
+    representation='plm' yields a piecewise-linear visualization more representative
+             of general-coordinate (and isopycnal) models.
+    representation='linear' is the aesthetically most pleasing but does not
+             represent the data conservatively.
+    """
 
     if x.ndim != 1:
         raise Exception("The x argument must be a vector")

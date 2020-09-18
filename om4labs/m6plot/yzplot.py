@@ -33,36 +33,36 @@ def yzplot(
     interactive=False,
 ):
     """
-  Renders section plot of scalar field, field(x,z).
+    Renders section plot of scalar field, field(x,z).
 
-  Arguments:
-  field       Scalar 2D array to be plotted.
-  y           y (or x) coordinate (1D array). If y is the same size as field then x is treated as
-              the cell center coordinates.
-  z           z coordinate (1D or 2D array). If z is the same size as field then y is treated as
-              the cell center coordinates.
-  ylabel      The label for the x axis. Default 'Latitude'.
-  yunits      The units for the x axis. Default 'degrees N'.
-  zlabel      The label for the z axis. Default 'Elevation'.
-  zunits      The units for the z axis. Default 'm'.
-  splitscale    A list of depths to define equal regions of projection in the vertical, e.g. [0.,-1000,-6500]
-  title       The title to place at the top of the panel. Default ''.
-  suptitle    The super-title to place at the top of the figure. Default ''.
-  clim        A tuple of (min,max) color range OR a list of contour levels. Default None.
-  colormap    The name of the colormap to use. Default None.
-  extend      Can be one of 'both', 'neither', 'max', 'min'. Default None.
-  centerlabels If True, will move the colorbar labels to the middle of the interval. Default False.
-  nbins       The number of colors levels (used is clim is missing or only specifies the color range).
-  landcolor   An rgb tuple to use for the color of land (no data). Default [.5,.5,.5].
-  aspect      The aspect ratio of the figure, given as a tuple (W,H). Default [16,9].
-  resolution  The vertical resolution of the figure given in pixels. Default 720.
-  axis         The axis handle to plot to. Default None.
-  ignore      A value to use as no-data (NaN). Default None.
-  save        Name of file to save figure in. Default None.
-  debug       If true, report stuff for debugging. Default False.
-  show        If true, causes the figure to appear on screen. Used for testing. Default False.
-  interactive If true, adds interactive features such as zoom, close and cursor. Default False.
-  """
+    Arguments:
+    field       Scalar 2D array to be plotted.
+    y           y (or x) coordinate (1D array). If y is the same size as field then x is treated as
+                the cell center coordinates.
+    z           z coordinate (1D or 2D array). If z is the same size as field then y is treated as
+                the cell center coordinates.
+    ylabel      The label for the x axis. Default 'Latitude'.
+    yunits      The units for the x axis. Default 'degrees N'.
+    zlabel      The label for the z axis. Default 'Elevation'.
+    zunits      The units for the z axis. Default 'm'.
+    splitscale    A list of depths to define equal regions of projection in the vertical, e.g. [0.,-1000,-6500]
+    title       The title to place at the top of the panel. Default ''.
+    suptitle    The super-title to place at the top of the figure. Default ''.
+    clim        A tuple of (min,max) color range OR a list of contour levels. Default None.
+    colormap    The name of the colormap to use. Default None.
+    extend      Can be one of 'both', 'neither', 'max', 'min'. Default None.
+    centerlabels If True, will move the colorbar labels to the middle of the interval. Default False.
+    nbins       The number of colors levels (used is clim is missing or only specifies the color range).
+    landcolor   An rgb tuple to use for the color of land (no data). Default [.5,.5,.5].
+    aspect      The aspect ratio of the figure, given as a tuple (W,H). Default [16,9].
+    resolution  The vertical resolution of the figure given in pixels. Default 720.
+    axis         The axis handle to plot to. Default None.
+    ignore      A value to use as no-data (NaN). Default None.
+    save        Name of file to save figure in. Default None.
+    debug       If true, report stuff for debugging. Default False.
+    show        If true, causes the figure to appear on screen. Used for testing. Default False.
+    interactive If true, adds interactive features such as zoom, close and cursor. Default False.
+    """
 
     c = cm.dunne_pm()
     c = cm.dunne_rainbow()

@@ -1,7 +1,7 @@
 def createXYlabels(x, y, xlabel, xunits, ylabel, yunits):
     """
-  Checks that x and y labels are appropriate and tries to make some if they are not.
-  """
+    Checks that x and y labels are appropriate and tries to make some if they are not.
+    """
     if x is None:
         if xlabel is None:
             xlabel = "i"

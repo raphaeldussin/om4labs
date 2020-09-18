@@ -3,8 +3,8 @@ import numpy
 
 def boundaryStats(a):
     """
-  Returns the minimum and maximum values of a only on the boundaries of the array.
-  """
+    Returns the minimum and maximum values of a only on the boundaries of the array.
+    """
     amin = numpy.amin(a[0, :])
     amin = min(amin, numpy.amin(a[1:, -1]))
     amin = min(amin, numpy.amin(a[-1, :-1]))
