@@ -1,9 +1,11 @@
 """
 A collection of useful functions...
 """
+import pandas as pd
 import numpy as np
 import tarfile
 from scipy.io import netcdf
+import pkg_resources
 
 
 def section2quadmesh(x, z, q, representation="pcm"):
@@ -208,9 +210,9 @@ def ice9(i, j, source, xcyclic=True, tripolar=True):
     return wetMask
 
 
-def ice9Wrapper(x, y, depth, xy0):
+def ice9Wrapper(x, y, depth, xy0, tripolar=True):
     ji = nearestJI(x, y, xy0)
-    return ice9(ji[1], ji[0], depth)
+    return ice9(ji[1], ji[0], depth, tripolar=tripolar)
 
 
 def maskFromDepth(depth, zCellTop):
@@ -293,22 +295,38 @@ def southOf(x, y, xy0, xy1):
     return Y
 
 
-def genBasinMasks(x, y, depth, verbose=False):
+def genBasinMasks(
+    x,
+    y,
+    depth,
+    external_mask=1.0,
+    seed=(0, -35),
+    verbose=False,
+    woa_edits=True,
+    tripolar=True,
+    mask_unassigned=False,
+):
+    """
+  Routine to objectively identify basin masks using flood-filling
+  algorithms.
+  """
     if verbose:
         print("Generating global wet mask ...")
     wet = ice9Wrapper(
-        x, y, depth, (0, -35)
+        x, y, depth, seed, tripolar=tripolar
     )  # All ocean points seeded from South Atlantic
     if verbose:
         print("done.")
 
+    original_wetmask = wet
+    wet = wet * external_mask
     code = 0 * wet
 
     if verbose:
         print("Finding Cape of Good Hope ...")
     tmp = 1 - wet
     tmp[x < -30] = 0
-    tmp = ice9Wrapper(x, y, tmp, (20, -30.0))
+    tmp = ice9Wrapper(x, y, tmp, (20, -30.0), tripolar=tripolar)
     yCGH = (tmp * y).min()
     if verbose:
         print("done.", yCGH)
@@ -317,7 +335,7 @@ def genBasinMasks(x, y, depth, verbose=False):
         print("Finding Melbourne ...")
     tmp = 1 - wet
     tmp[x > -180] = 0
-    tmp = ice9Wrapper(x, y, tmp, (-220, -25.0))
+    tmp = ice9Wrapper(x, y, tmp, (-220, -25.0), tripolar=tripolar)
     yMel = (tmp * y).min()
     if verbose:
         print("done.", yMel)
@@ -325,35 +343,35 @@ def genBasinMasks(x, y, depth, verbose=False):
     if verbose:
         print("Processing Persian Gulf ...")
     tmp = wet * (1 - southOf(x, y, (55.0, 23.0), (56.5, 27.0)))
-    tmp = ice9Wrapper(x, y, tmp, (53.0, 25.0))
+    tmp = ice9Wrapper(x, y, tmp, (53.0, 25.0), tripolar=tripolar)
     code[tmp > 0] = 11
     wet = wet - tmp  # Removed named points
 
     if verbose:
         print("Processing Red Sea ...")
     tmp = wet * (1 - southOf(x, y, (40.0, 11.0), (45.0, 13.0)))
-    tmp = ice9Wrapper(x, y, tmp, (40.0, 18.0))
+    tmp = ice9Wrapper(x, y, tmp, (40.5, 19.5), tripolar=tripolar)
     code[tmp > 0] = 10
     wet = wet - tmp  # Removed named points
 
     if verbose:
         print("Processing Black Sea ...")
     tmp = wet * (1 - southOf(x, y, (26.0, 42.0), (32.0, 40.0)))
-    tmp = ice9Wrapper(x, y, tmp, (32.0, 43.0))
+    tmp = ice9Wrapper(x, y, tmp, (32.0, 43.0), tripolar=tripolar)
     code[tmp > 0] = 7
     wet = wet - tmp  # Removed named points
 
     if verbose:
         print("Processing Mediterranean ...")
     tmp = wet * (southOf(x, y, (-5.7, 35.5), (-5.7, 36.5)))
-    tmp = ice9Wrapper(x, y, tmp, (4.0, 38.0))
+    tmp = ice9Wrapper(x, y, tmp, (4.0, 38.0), tripolar=tripolar)
     code[tmp > 0] = 6
     wet = wet - tmp  # Removed named points
 
     if verbose:
         print("Processing Baltic ...")
     tmp = wet * (southOf(x, y, (8.6, 56.0), (8.6, 60.0)))
-    tmp = ice9Wrapper(x, y, tmp, (10.0, 58.0))
+    tmp = ice9Wrapper(x, y, tmp, (10.0, 58.0), tripolar=tripolar)
     code[tmp > 0] = 9
     wet = wet - tmp  # Removed named points
 
@@ -367,7 +385,7 @@ def genBasinMasks(x, y, depth, verbose=False):
         )
         * (1 - southOf(x, y, (-70.0, 58.0), (-70.0, 65.0)))
     )
-    tmp = ice9Wrapper(x, y, tmp, (-85.0, 60.0))
+    tmp = ice9Wrapper(x, y, tmp, (-85.0, 60.0), tripolar=tripolar)
     code[tmp > 0] = 8
     wet = wet - tmp  # Removed named points
 
@@ -383,9 +401,26 @@ def genBasinMasks(x, y, depth, verbose=False):
         + southOf(x, y, (20.0, 0.0), (20.0, 90.0))  # Barents Sea
         + (1 - southOf(x, y, (-280.0, 55.0), (-200.0, 65.0)))
     )
-    tmp = ice9Wrapper(x, y, tmp, (0.0, 85.0))
+    tmp = ice9Wrapper(x, y, tmp, (0.0, 85.0), tripolar=tripolar)
     code[tmp > 0] = 4
     wet = wet - tmp  # Removed named points
+
+    if external_mask is not None:
+        wet = wet * external_mask
+        if woa_edits is True:
+            # edits below are specific to the WOA'13 land mask and allow
+            # for connectivity through Hudson Strait
+            for point in [
+                (155, 223),
+                (154, 223),
+                (153, 223),
+                (153, 227),
+                (153, 228),
+                (151, 228),
+                (151, 235),
+                (150, 235),
+            ]:
+                wet[point] = 1.0
 
     if verbose:
         print("Processing Pacific ...")
@@ -396,33 +431,32 @@ def genBasinMasks(x, y, depth, verbose=False):
         - southOf(x, y, (-243.7, 1), (-243.7, 0)) * southOf(x, y, (0, -8.4), (1, -8.4))
         - southOf(x, y, (-234.5, 1), (-234.5, 0)) * southOf(x, y, (0, -8.9), (1, -8.9))
     )
-    tmp = ice9Wrapper(x, y, tmp, (-150.0, 0.0))
+    tmp = ice9Wrapper(x, y, tmp, (-150.0, 0.0), tripolar=tripolar)
     code[tmp > 0] = 3
     wet = wet - tmp  # Removed named points
 
     if verbose:
         print("Processing Atlantic ...")
     tmp = wet * (1 - southOf(x, y, (0.0, yCGH), (360.0, yCGH)))
-    tmp = ice9Wrapper(x, y, tmp, (-20.0, 0.0))
+    tmp = ice9Wrapper(x, y, tmp, (-20.0, 0.0), tripolar=tripolar)
     code[tmp > 0] = 2
     wet = wet - tmp  # Removed named points
 
     if verbose:
         print("Processing Indian ...")
     tmp = wet * (1 - southOf(x, y, (0.0, yCGH), (360.0, yCGH)))
-    tmp = ice9Wrapper(x, y, tmp, (55.0, 0.0))
+    tmp = ice9Wrapper(x, y, tmp, (55.0, 0.0), tripolar=tripolar)
     code[tmp > 0] = 5
     wet = wet - tmp  # Removed named points
 
     if verbose:
         print("Processing Southern Ocean ...")
-    tmp = ice9Wrapper(x, y, wet, (0.0, -55.0))
+    tmp = ice9Wrapper(x, y, wet, (0.0, -55.0), tripolar=tripolar)
     code[tmp > 0] = 1
     wet = wet - tmp  # Removed named points
 
-    if verbose:
-        print("Remapping Persian Gulf points to the Indian Ocean for OMIP/CMIP6 ...")
-    code[code == 11] = 5
+    # if verbose: print('Remapping Persian Gulf points to the Indian Ocean for OMIP/CMIP6 ...')
+    # code[code==11] = 5
 
     code[wet > 0] = -9
     (j, i) = np.unravel_index(wet.argmax(), x.shape)
@@ -430,28 +464,63 @@ def genBasinMasks(x, y, depth, verbose=False):
         if verbose:
             print("There are leftover points unassigned to a basin code")
         while j:
-            print(x[j, i], y[j, i], [j, i])
+            if verbose:
+                print(x[j, i], y[j, i], [j, i])
             wet[j, i] = 0
             (j, i) = np.unravel_index(wet.argmax(), x.shape)
     else:
         if verbose:
             print("All points assigned a basin code")
 
+    if mask_unassigned is True:
+        code[code == -9] = 0.0
+
+    if external_mask is not None:
+        code = code * external_mask
+
     if verbose:
         print(
             """
 Basin codes:
 -----------------------------------------------------------
-  (1) Southern Ocean      (6) Mediterranean Sea
-  (2) Atlantic Ocean      (7) Black Sea
-  (3) Pacific Ocean       (8) Hudson Bay
-  (4) Arctic Ocean        (9) Baltic Sea
-  (5) Indian Ocean       (10) Red Sea
+  (1) Southern Ocean %s
+  (2) Atlantic Ocean %s
+  (3) Pacific Ocean %s
+  (4) Arctic Ocean %s
+  (5) Indian Ocean %s
+  (6) Mediterranean Sea %s
+  (7) Black Sea %s
+  (8) Hudson Bay %s
+  (9) Baltic Sea %s
+  (10) Red Sea %s
+  (11) Persian Gulf %s
 
     """
+            % (
+                len(code[code == 1]),
+                len(code[code == 2]),
+                len(code[code == 3]),
+                len(code[code == 4]),
+                len(code[code == 5]),
+                len(code[code == 6]),
+                len(code[code == 7]),
+                len(code[code == 8]),
+                len(code[code == 9]),
+                len(code[code == 10]),
+                len(code[code == 11]),
+            )
         )
 
-    return code
+    return code, tmp, original_wetmask
+
+
+def generate_woamask(f=None):
+    if f is None:
+        f = pkg_resources.resource_filename("om4labs", "resources/landsea_01.msk")
+    df_lsm = pd.read_csv(f, comment="#")
+    lsm = df_lsm["Bottom_Standard_Level"].to_numpy().reshape(180, 360)
+    lsm = np.where(lsm > 1.0, 1.0, 0)
+    return lsm
 
 
 # Tests
