@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import tarfile
 from scipy.io import netcdf
+from scipy import ndimage as nd
 import pkg_resources
 
 
@@ -170,6 +171,29 @@ def rho_Wright97(S, T, P=0):
     p0 = b0 + b4 * S + T * (b1 + T * (b2 + b3 * T) + b5 * S)
     Lambda = c0 + c4 * S + T * (c1 + T * (c2 + c3 * T) + c5 * S)
     return (P + p0) / (Lambda + al0 * (P + p0))
+
+
+def fill(data, invalid=None):
+    """
+    Replace the value of invalid 'data' cells (indicated by 'invalid') 
+    by the value of the nearest valid data cell
+
+    Input:
+        data:    numpy array of any dimension
+        invalid: a binary array of same shape as 'data'. 
+                 data value are replaced where invalid is True
+                 If None (default), use: invalid  = np.isnan(data)
+
+    Output: 
+        Return a filled array. 
+    """
+    if invalid is None:
+        invalid = np.isnan(data)
+
+    ind = nd.distance_transform_edt(
+        invalid, return_distances=False, return_indices=True
+    )
+    return data[tuple(ind)]
 
 
 def ice9(i, j, source, xcyclic=True, tripolar=True):
@@ -371,7 +395,7 @@ def genBasinMasks(
     if verbose:
         print("Processing Baltic ...")
     tmp = wet * (southOf(x, y, (8.6, 56.0), (8.6, 60.0)))
-    #tmp = ice9Wrapper(x, y, tmp, (10.0, 58.0), tripolar=tripolar)
+    # tmp = ice9Wrapper(x, y, tmp, (10.0, 58.0), tripolar=tripolar)
     tmp = ice9Wrapper(x, y, tmp, (19.0, 56.0), tripolar=tripolar)
     code[tmp > 0] = 9
     wet = wet - tmp  # Removed named points
@@ -512,7 +536,7 @@ Basin codes:
             )
         )
 
-    return code, tmp, original_wetmask
+    return code, original_wetmask
 
 
 def generate_woamask(f=None):
@@ -522,6 +546,56 @@ def generate_woamask(f=None):
     lsm = df_lsm["Bottom_Standard_Level"].to_numpy().reshape(180, 360)
     lsm = np.where(lsm > 1.0, 1.0, 0)
     return lsm
+
+
+def gen_1x1_basinmask(x, y, depth, verbose=False):
+    """ Generates a 1x1 degree grid basin mask """
+
+    if len(x.shape) == 1 and len(y.shape) == 1:
+        x, y = np.meshgrid(x, y)
+
+    ext_mask = generate_woamask()
+
+    if min(x[:, -1]) >= 0.0:
+        roll_longitude = True
+
+    if roll_longitude is True:
+        x = np.roll(x, -60, axis=-1)
+        x = np.where(x > 60, x - 360, x)
+        depth = np.roll(depth, -60, axis=-1)
+        ext_mask = np.roll(ext_mask, -60, axis=-1)
+
+    code, wet = genBasinMasks(
+        x, y, depth, verbose=verbose, tripolar=False, external_mask=ext_mask
+    )
+
+    code_masked = code.copy()
+
+    # Include Canadian Archipelago in Arctic
+    ca_arch = np.logical_and(np.logical_and(x < -75, y > 65), code == -9)
+    code_masked[ca_arch] = 4
+    code[ca_arch] = 4
+
+    # Ensure Suez Canal and South are in Red Sea
+    suez = np.logical_and(
+        np.logical_and(np.logical_and(y > 27, y < 30), np.logical_and(x > 33, x < 37)),
+        code == 0,
+    )
+    code_masked[suez] = 10
+    code[suez] = 10
+
+    # Set land and unassigned points to missing and do nearest-neighbor fill
+    code_masked[code == -9] = np.nan
+    code_masked[code == 0] = np.nan
+    code_filled = fill(code_masked)
+
+    # Reapply model's wet mask
+    code_filled = code_filled * wet
+
+    if roll_longitude is True:
+        code_filled = np.roll(code_filled, 60, axis=-1)
+
+    return np.array(code_filled)
 
 
 # Tests
