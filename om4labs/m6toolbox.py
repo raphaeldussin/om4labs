@@ -371,7 +371,8 @@ def genBasinMasks(
     if verbose:
         print("Processing Baltic ...")
     tmp = wet * (southOf(x, y, (8.6, 56.0), (8.6, 60.0)))
-    tmp = ice9Wrapper(x, y, tmp, (10.0, 58.0), tripolar=tripolar)
+    #tmp = ice9Wrapper(x, y, tmp, (10.0, 58.0), tripolar=tripolar)
+    tmp = ice9Wrapper(x, y, tmp, (19.0, 56.0), tripolar=tripolar)
     code[tmp > 0] = 9
     wet = wet - tmp  # Removed named points
 
