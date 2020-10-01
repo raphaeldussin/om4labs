@@ -17,11 +17,35 @@ from om4labs.om4common import compute_area_regular_grid
 from om4labs.om4common import DefaultDictParser
 from om4labs.om4common import image_handler
 
+from om4labs.m6toolbox import gen_1x1_basinmask
+
 imgbufs = []
 
 
 def read(dictArgs):
     """ read data from model and obs files, process data and return it """
+
+    if dictArgs["model"] is not None:
+        # use dataset from catalog, either from command line or default
+        cat_platform = (
+            f"catalogs/{dictArgs['model']}_catalog_{dictArgs['platform']}.yml"
+        )
+        catfile = pkgr.resource_filename("om4labs", cat_platform)
+        cat = intake.open_catalog(catfile)
+        ds_static = cat["ocean_static_1x1"].to_dask()
+
+    if dictArgs["static"] is not None:
+        ds_static = xr.open_dataset(dictArgs["static"])
+
+    # depth coordinate
+    if "deptho" in list(ds_static.variables):
+        depth = ds_static.deptho.to_masked_array()
+    elif "depth" in list(ds_static.variables):
+        depth = ds_static.depth.to_masked_array()
+    else:
+        raise ValueError("Unable to find depth field.")
+    depth = np.where(np.isnan(depth), 0.0, depth)
+    depth = depth * -1.
 
     dsmodel = xr.open_mfdataset(
         dictArgs["infile"], combine="by_coords", decode_times=False
@@ -60,8 +84,6 @@ def read(dictArgs):
     datamodel = datamodel.squeeze()
     dataobs = dataobs.squeeze()
 
-    print(datamodel)
-
     # check final data is 3d
     assert len(datamodel.dims) == 3
     assert len(dataobs.dims) == 3
@@ -79,8 +101,12 @@ def read(dictArgs):
     # dump values
     model = datamodel.to_masked_array()
     obs = dataobs.to_masked_array()
+    x = datamodel["assigned_lon"].values
     y = datamodel["assigned_lat"].values
     z = datamodel["assigned_depth"].values
+
+    # convert z to negative values
+    z = z * -1
 
     # compute area
     if "areacello" in dsmodel.variables:
@@ -91,7 +117,7 @@ def read(dictArgs):
         else:
             raise IOError("no cell area provided")
 
-    return y, z, area, model, obs
+    return x, y, z, depth, area, model, obs
 
 
 def parse(cliargs=None, template=False):
@@ -140,6 +166,9 @@ def parse(cliargs=None, template=False):
         help="Super-title for experiment. \
                               Default is to read from netCDF file",
     )
+
+    parser.add_argument("-m", "--model", type=str, default=None, help="Model Class")
+
     parser.add_argument(
         "-o",
         "--outdir",
@@ -194,6 +223,9 @@ def parse(cliargs=None, template=False):
         default="diff",
         help="output plot style (diff/compare)",
     )
+    parser.add_argument(
+        "--static", "--static", type=str, default=None, help="Path to static file"
+    )
 
     if template is True:
         return parser.parse_args(None).__dict__
@@ -206,17 +238,45 @@ def run(dictArgs):
     or DORA can build the args and run it directly """
 
     # read the data needed for plots
-    y, z, area, model, obs = read(dictArgs)
-    print(model)
-    # make the plots
-    figs = plot(y, z, area, model, obs, dictArgs)
-    filename = f"{dictArgs['outdir']}/{dictArgs['var']}_yz_{dictArgs['style']}"
+    x, y, z, depth, area, model, obs = read(dictArgs)
+
+    # generate basin masks
+    code = gen_1x1_basinmask(x,y,depth*-1)
+    code = np.tile(code[None,:,:],(len(z),1,1))
+
+    figs = []
+    filename = []
+
+    # global
+    figs.append(plot(y, z, depth, area, model.mean(axis=-1), obs.mean(axis=-1), dictArgs)[0])
+    filename.append(f"{dictArgs['outdir']}/{dictArgs['var']}_yz_gbl_{dictArgs['style']}")
+
+    # atlantic
+    mask = code * 0
+    mask[(code == 2) | (code == 4)] = 1
+    _model = np.ma.masked_where(mask==0,model).mean(axis=-1)
+    _obs = np.ma.masked_where(mask==0,obs).mean(axis=-1)
+    _depth = np.ma.masked_where(mask[0]==0,depth)
+    _area = np.ma.masked_where(mask[0]==0,area)
+    figs.append(plot(y, z, _depth, _area, _model, _obs, dictArgs)[0])
+    filename.append(f"{dictArgs['outdir']}/{dictArgs['var']}_yz_atl_{dictArgs['style']}")
+
+    # indopacific
+    mask = code * 0
+    mask[(code == 3) | (code == 5)] = 1
+    _model = np.ma.masked_where(mask==0,model).mean(axis=-1)
+    _obs = np.ma.masked_where(mask==0,obs).mean(axis=-1)
+    _depth = np.ma.masked_where(mask[0]==0,depth)
+    _area = np.ma.masked_where(mask[0]==0,area)
+    figs.append(plot(y, z, _depth, _area, _model, _obs, dictArgs)[0])
+    filename.append(f"{dictArgs['outdir']}/{dictArgs['var']}_yz_pac_{dictArgs['style']}")
+
     imgbufs = image_handler(figs, dictArgs, filename=filename)
 
     return imgbufs
 
 
-def plot(y, z, area, model, obs, dictArgs):
+def plot(y, z, depth, area, model, obs, dictArgs):
     """meta plotting function"""
 
     streamdiff = True if dictArgs["style"] == "diff" else False
@@ -247,16 +307,19 @@ def plot(y, z, area, model, obs, dictArgs):
 
     diff_kwargs = {
         "area": area,
+        "depth": depth,
         "suptitle": suptitle,
         "title": title_diff,
         "clim": clim_diff,
         "colormap": cmap_diff,
+        "splitscale": [0,-2000,-6500],
         "centerlabels": True,
         "extend": "both",
         "save": png_diff,
     }
     compare_kwargs = {
         "area": area,
+        "depth": depth,
         "suptitle": suptitle,
         "title1": title1_compare,
         "title2": title2_compare,
