@@ -39,6 +39,14 @@ def image_handler(figs, dictArgs, filename="./figure"):
 
     imgbufs = []
     numfigs = len(figs)
+
+    if not isinstance(filename, list):
+        filename = [filename]
+
+    assert (
+        len(filename) == numfigs
+    ), "Number of figure handles and file names do not match."
+
     if dictArgs["interactive"] is True:
         plt.ion()
         for n, fig in enumerate(figs):
@@ -58,12 +66,8 @@ def image_handler(figs, dictArgs, filename="./figure"):
                 fig.savefig(imgbuf, format="png", bbox_inches="tight")
                 imgbufs.append(imgbuf)
             else:
-                if len(figs) > 1:
-                    modifier = f".{n}"
-                else:
-                    modifier = ""
                 fig.savefig(
-                    f"{filename}{modifier}.png",
+                    f"{filename[n]}.png",
                     format=dictArgs["format"],
                     dpi=150,
                     bbox_inches="tight",
