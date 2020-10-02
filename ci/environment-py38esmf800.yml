@@ -1,0 +1,23 @@
+name: repro
+channels:
+  - conda-forge
+dependencies:
+  - python=3.8
+  - black
+  - cartopy
+  - dask
+  - intake-xarray
+  - esmf=8.0.0
+  - esmpy=8.0.0
+  - matplotlib
+  - netcdf4
+  - numpy
+  - palettable
+  - pyshp
+  - pytest
+  - scipy
+  - shapely
+  - six
+  - xarray
+  - xesmf
+  - xgcm
