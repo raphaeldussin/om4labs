@@ -37,6 +37,10 @@ def read(dictArgs):
     if dictArgs["static"] is not None:
         ds_static = xr.open_dataset(dictArgs["static"])
 
+    # Compute basin codes
+    codes = generate_basin_codes(ds_static, lon="lon", lat="lat")
+    codes = np.array(codes)
+
     # depth coordinate
     if "deptho" in list(ds_static.variables):
         depth = ds_static.deptho.to_masked_array()
@@ -117,7 +121,7 @@ def read(dictArgs):
         else:
             raise IOError("no cell area provided")
 
-    return x, y, z, depth, area, model, obs
+    return y, z, depth, area, codes, model, obs
 
 
 def parse(cliargs=None, template=False):
@@ -238,11 +242,10 @@ def run(dictArgs):
     or DORA can build the args and run it directly """
 
     # read the data needed for plots
-    x, y, z, depth, area, model, obs = read(dictArgs)
+    y, z, depth, area, code, model, obs = read(dictArgs)
 
-    # generate basin masks
-    code = gen_1x1_basinmask(x,y,depth*-1)
-    code = np.tile(code[None,:,:],(len(z),1,1))
+    if len(code.shape) == 2:
+    code = np.tile(code[None, :, :], (len(z), 1, 1))
 
     figs = []
     filename = []
@@ -351,8 +354,8 @@ def plot(y, z, depth, area, model, obs, dictArgs):
     # make compare plot
     if streamcompare or streamnone:
         fig = plot_yzcompare(
-            x,
             y,
+            z,
             model,
             obs,
             compare_kwargs,
