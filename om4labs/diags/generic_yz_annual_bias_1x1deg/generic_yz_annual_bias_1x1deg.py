@@ -17,6 +17,8 @@ from om4labs.om4common import compute_area_regular_grid
 from om4labs.om4common import DefaultDictParser
 from om4labs.om4common import image_handler
 
+from cmip_basins import generate_basin_codes
+
 from om4labs.m6toolbox import gen_1x1_basinmask
 
 imgbufs = []
@@ -245,7 +247,7 @@ def run(dictArgs):
     y, z, depth, area, code, model, obs = read(dictArgs)
 
     if len(code.shape) == 2:
-    code = np.tile(code[None, :, :], (len(z), 1, 1))
+        code = np.tile(code[None, :, :], (len(z), 1, 1))
 
     figs = []
     filename = []
