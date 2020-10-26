@@ -13,6 +13,9 @@ dependencies:
   - netcdf4
   - numpy
   - palettable
+  - pip
+  - pip:
+    - git+https://github.com/jkrasting/cmip_basins.git
   - pyshp
   - pytest
   - scipy
