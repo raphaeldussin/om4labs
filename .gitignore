@@ -132,3 +132,6 @@ dmypy.json
 testing/test_data
 testing/*.png
 testing/bilinear*.nc
+
+# Visual Studio
+.vscode
