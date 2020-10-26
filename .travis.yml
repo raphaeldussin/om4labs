@@ -17,10 +17,6 @@ before_install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - git clone https://github.com/jkrasting/cmip_basins.git
-  - pushd cmip_basins
-  - pip install -e .
-  - popd
 
 install:
   - conda env create --file ci/environment-$CONDA_ENV.yml
