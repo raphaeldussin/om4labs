@@ -26,7 +26,7 @@ class DefaultDictParser(argparse.ArgumentParser):
 
 
 def default_diag_parser(description="", template=False, exclude=None):
-    """ Establishes a default ArgumentParser object with default values.
+    """Establishes a default ArgumentParser object with default values.
     Options may be omitted if desired. The default set includes:
 
     Baseline options:
@@ -36,7 +36,8 @@ def default_diag_parser(description="", template=False, exclude=None):
     INFILE:  path; dataset, list of datasets, or regular expression
     pointing to input files
 
-    -l, --label:        str; string to use in plot titles (typically the experiment name)
+    -l, --label:        str; string to use in plot titles
+                        (typically the experiment name)
     -o, --outdir:       path; directory to store plots.  Will create if not present
     -i, --interactive:  bool; displays figures to screen if present
     -v, --verbose:      turn on verbose output.  Need to consider multiple
@@ -50,7 +51,7 @@ def default_diag_parser(description="", template=False, exclude=None):
     1x1 spherical grid, do not have a gridSpec tar file.  In this case, an
     ocean.static dataset may be provided
 
-    -g, --gridspec:	    path;  gridspec tarfile
+    -g, --gridspec:     path;  gridspec tarfile
     -s, --static:       path;  ocean.static dataset
 
     Intake catalogs:
@@ -146,7 +147,10 @@ def default_diag_parser(description="", template=False, exclude=None):
 
     if "verbose" not in exclude:
         parser.add_argument(
-            "-v", "--verbose", action="store_false", help="Verbose output",
+            "-v",
+            "--verbose",
+            action="store_false",
+            help="Verbose output",
         )
 
     if "suptitle" not in exclude:
@@ -204,7 +208,10 @@ def default_diag_parser(description="", template=False, exclude=None):
     if "basin" not in exclude:
         # override arguments
         parser.add_argument(
-            "--basin", type=str, default=None, help="Path to basin code file",
+            "--basin",
+            type=str,
+            default=None,
+            help="Path to basin code file",
         )
 
     if "obsfile" not in exclude:
@@ -217,12 +224,18 @@ def default_diag_parser(description="", template=False, exclude=None):
 
     if "hgrid" not in exclude:
         parser.add_argument(
-            "--hgrid", type=str, default=None, help="Path to hgrid file",
+            "--hgrid",
+            type=str,
+            default=None,
+            help="Path to hgrid file",
         )
 
     if "topog" not in exclude:
         parser.add_argument(
-            "--topog", type=str, default=None, help="Path to topography file",
+            "--topog",
+            type=str,
+            default=None,
+            help="Path to topography file",
         )
 
     return parser
