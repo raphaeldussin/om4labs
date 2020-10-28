@@ -60,7 +60,7 @@ def default_diag_parser(description="", template=False, exclude=None):
     configurations and for paths to observational datasets.  These will be the
     preferred paths:
 
-    -m, --model:        str; model configuration (e.g. OM4p25, OM4p5, OM4p125)
+    -c, --config:       str; model configuration (e.g. OM4p25, OM4p5, OM4p125)
     -p, --platform:     str; name of system. Used to find intake catalogs
                         (e.g. gfdl, orion, gaea)
 
@@ -187,10 +187,10 @@ def default_diag_parser(description="", template=False, exclude=None):
         )
 
     # intake catalog-related options
-    if "configuration" not in exclude:
+    if "config" not in exclude:
         parser.add_argument(
             "-c",
-            "--configuration",
+            "--config",
             type=str,
             default=None,
             help="Model configuration, default is OM4",
