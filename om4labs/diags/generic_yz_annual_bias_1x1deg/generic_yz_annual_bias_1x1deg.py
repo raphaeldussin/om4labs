@@ -51,7 +51,7 @@ def read(dictArgs):
     else:
         raise ValueError("Unable to find depth field.")
     depth = np.where(np.isnan(depth), 0.0, depth)
-    depth = depth * -1.
+    depth = depth * -1.0
 
     dsmodel = xr.open_mfdataset(
         dictArgs["infile"], combine="by_coords", decode_times=False
@@ -118,7 +118,7 @@ def read(dictArgs):
     if "areacello" in dsmodel.variables:
         area = dsmodel["areacello"].values
     else:
-        if (model.shape[-2],model.shape[-1]) == (180, 360):
+        if (model.shape[-2], model.shape[-1]) == (180, 360):
             area = compute_area_regular_grid(dsmodel)
         else:
             raise IOError("no cell area provided")
@@ -240,8 +240,8 @@ def parse(cliargs=None, template=False):
 
 
 def run(dictArgs):
-    """ main can be called from either command line and then use parser from run()
-    or DORA can build the args and run it directly """
+    """main can be called from either command line and then use parser from run()
+    or DORA can build the args and run it directly"""
 
     # read the data needed for plots
     y, z, depth, area, code, model, obs = read(dictArgs)
@@ -253,28 +253,36 @@ def run(dictArgs):
     filename = []
 
     # global
-    figs.append(plot(y, z, depth, area, model.mean(axis=-1), obs.mean(axis=-1), dictArgs)[0])
-    filename.append(f"{dictArgs['outdir']}/{dictArgs['var']}_yz_gbl_{dictArgs['style']}")
+    figs.append(
+        plot(y, z, depth, area, model.mean(axis=-1), obs.mean(axis=-1), dictArgs)[0]
+    )
+    filename.append(
+        f"{dictArgs['outdir']}/{dictArgs['var']}_yz_gbl_{dictArgs['style']}"
+    )
 
     # atlantic
     mask = code * 0
     mask[(code == 2) | (code == 4)] = 1
-    _model = np.ma.masked_where(mask==0,model).mean(axis=-1)
-    _obs = np.ma.masked_where(mask==0,obs).mean(axis=-1)
-    _depth = np.ma.masked_where(mask[0]==0,depth)
-    _area = np.ma.masked_where(mask[0]==0,area)
+    _model = np.ma.masked_where(mask == 0, model).mean(axis=-1)
+    _obs = np.ma.masked_where(mask == 0, obs).mean(axis=-1)
+    _depth = np.ma.masked_where(mask[0] == 0, depth)
+    _area = np.ma.masked_where(mask[0] == 0, area)
     figs.append(plot(y, z, _depth, _area, _model, _obs, dictArgs)[0])
-    filename.append(f"{dictArgs['outdir']}/{dictArgs['var']}_yz_atl_{dictArgs['style']}")
+    filename.append(
+        f"{dictArgs['outdir']}/{dictArgs['var']}_yz_atl_{dictArgs['style']}"
+    )
 
     # indopacific
     mask = code * 0
     mask[(code == 3) | (code == 5)] = 1
-    _model = np.ma.masked_where(mask==0,model).mean(axis=-1)
-    _obs = np.ma.masked_where(mask==0,obs).mean(axis=-1)
-    _depth = np.ma.masked_where(mask[0]==0,depth)
-    _area = np.ma.masked_where(mask[0]==0,area)
+    _model = np.ma.masked_where(mask == 0, model).mean(axis=-1)
+    _obs = np.ma.masked_where(mask == 0, obs).mean(axis=-1)
+    _depth = np.ma.masked_where(mask[0] == 0, depth)
+    _area = np.ma.masked_where(mask[0] == 0, area)
     figs.append(plot(y, z, _depth, _area, _model, _obs, dictArgs)[0])
-    filename.append(f"{dictArgs['outdir']}/{dictArgs['var']}_yz_pac_{dictArgs['style']}")
+    filename.append(
+        f"{dictArgs['outdir']}/{dictArgs['var']}_yz_pac_{dictArgs['style']}"
+    )
 
     imgbufs = image_handler(figs, dictArgs, filename=filename)
 
@@ -317,7 +325,7 @@ def plot(y, z, depth, area, model, obs, dictArgs):
         "title": title_diff,
         "clim": clim_diff,
         "colormap": cmap_diff,
-        "splitscale": [0,-2000,-6500],
+        "splitscale": [0, -2000, -6500],
         "centerlabels": True,
         "extend": "both",
         "save": png_diff,

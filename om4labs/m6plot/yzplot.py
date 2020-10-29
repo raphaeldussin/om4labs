@@ -83,7 +83,7 @@ def yzplot(
 
     # Check coordinate dimensions
     if len(y.shape) == 1 and len(z.shape) == 1:
-        assert (len(z),len(y)) == field.shape
+        assert (len(z), len(y)) == field.shape
     elif len(y) == z.shape[-1]:
         y = coords.expand(y)
     elif len(y) == z.shape[-1] + 1:
@@ -93,7 +93,7 @@ def yzplot(
             "Length of y coordinate should be equal or 1 longer than horizontal length of z"
         )
 
-    # Ignore a user-defined value if provided   
+    # Ignore a user-defined value if provided
     if ignore is not None:
         maskedField = np.ma.masked_array(field, mask=[field == ignore])
     else:
@@ -108,11 +108,11 @@ def yzplot(
         # Compute interfaces that are used for generating weights in the
         # stats routines
         y = coords.expand(y)
-        interfaces = [0.]
-        for n in range(0,len(z)):
-            interfaces.append(z[n]-np.abs((z[n]-interfaces[n])))
+        interfaces = [0.0]
+        for n in range(0, len(z)):
+            interfaces.append(z[n] - np.abs((z[n] - interfaces[n])))
         z = np.array(interfaces)
-        z = np.tile(z[:,None],(1,len(y)-1))
+        z = np.tile(z[:, None], (1, len(y) - 1))
 
     else:
         # Do vertical coordinate transformation on native output
@@ -125,7 +125,6 @@ def yzplot(
         maskedField, stats.yzWeight(y, z), debug=debug
     )
 
-
     # Choose colormap
     if nbins is None and (clim is None or len(clim) == 2):
         nbins = 35
@@ -137,16 +136,15 @@ def yzplot(
 
     # Create a topography mask
     if depth is not None:
-        depth = np.tile(depth[None,:,:],(len(_z),1,1))
+        depth = np.tile(depth[None, :, :], (len(_z), 1, 1))
         depth = depth.min(axis=-1)
-        ztile = np.tile(_z[:,None],(1,depth.shape[-1]))
-        topomask = np.where(np.less(ztile,depth),0.,1.)
-        topomask = np.ma.masked_where(np.equal(topomask,0.),topomask)
+        ztile = np.tile(_z[:, None], (1, depth.shape[-1]))
+        topomask = np.where(np.less(ztile, depth), 0.0, 1.0)
+        topomask = np.ma.masked_where(np.equal(topomask, 0.0), topomask)
     else:
-        topomask = 1.
+        topomask = 1.0
 
     field2 = field2 * topomask
-
 
     if axis is None:
         formatting.setFigureSize(aspect, resolution, debug=debug)
@@ -164,8 +162,8 @@ def yzplot(
         for zzz in splitscale[1:-1]:
             plt.axhline(zzz, color="k", linestyle="--")
         axis.set_yscale("splitscale", zval=splitscale)
-    #plt.xlim(yLims)
-    #plt.ylim(zLims)
+    # plt.xlim(yLims)
+    # plt.ylim(zLims)
     axis.annotate(
         "max=%.5g\nmin=%.5g" % (sMax, sMin),
         xy=(0.0, 1.01),
@@ -199,7 +197,7 @@ def yzplot(
     if len(suptitle) > 0:
         plt.suptitle(suptitle)
 
-    plt.savefig('testing.png')
+    plt.savefig("testing.png")
 
     if save is not None:
         plt.savefig(save)
