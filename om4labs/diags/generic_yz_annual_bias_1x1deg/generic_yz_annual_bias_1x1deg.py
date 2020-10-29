@@ -19,8 +19,6 @@ from om4labs.om4common import image_handler
 
 from cmip_basins import generate_basin_codes
 
-from om4labs.m6toolbox import gen_1x1_basinmask
-
 imgbufs = []
 
 
