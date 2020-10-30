@@ -113,8 +113,10 @@ def read(dictArgs):
 def parse(cliargs=None, template=False):
     """ parse the command line arguments """
 
-    description="Script for plotting annual-average bias to obs"
-    parser = default_diag_parser(description=description,template=template,exclude=['basin','topog'])
+    description = "Script for plotting annual-average bias to obs"
+    parser = default_diag_parser(
+        description=description, template=template, exclude=["basin", "topog"]
+    )
 
     parser.add_argument(
         "--depth",
@@ -123,7 +125,7 @@ def parse(cliargs=None, template=False):
         required=False,
         help="depth of field compared to obs",
     )
-    
+
     parser.add_argument(
         "--dataset",
         type=str,

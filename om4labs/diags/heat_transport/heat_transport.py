@@ -77,7 +77,9 @@ def parse(cliargs=None, template=False):
     """
     description = """ """
 
-    parser = default_diag_parser(description=description,template=template,exclude=['obsfile','topog'])
+    parser = default_diag_parser(
+        description=description, template=template, exclude=["obsfile", "topog"]
+    )
 
     if template is True:
         return parser.parse_args(None).__dict__

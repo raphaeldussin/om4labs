@@ -43,7 +43,9 @@ import tempfile
 def parse(cliargs=None, template=False):
     description = """Plot sea ice vs. NSIDC"""
 
-    parser = default_diag_parser(description=description,template=template,exclude=['basin','topog'])
+    parser = default_diag_parser(
+        description=description, template=template, exclude=["basin", "topog"]
+    )
 
     parser.add_argument(
         "--month",
