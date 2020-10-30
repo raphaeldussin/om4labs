@@ -204,14 +204,6 @@ def read(dictArgs, adv_varname="T_ady_2d", dif_varname="T_diffy_2d"):
     )
 
 
-def calculate(advective, diffusive=None, basin_code=None):
-    """Main computational script"""
-
-    msftyyz = compute_msftyyz(vmo, basin_code)
-
-    return msftyyz
-
-
 class GWObs:
     class _gw:
         def __init__(self, lat, trans, err):
