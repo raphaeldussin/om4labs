@@ -197,8 +197,6 @@ def yzplot(
     if len(suptitle) > 0:
         plt.suptitle(suptitle)
 
-    plt.savefig("testing.png")
-
     if save is not None:
         plt.savefig(save)
     if interactive:
