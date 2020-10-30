@@ -39,7 +39,7 @@ seaice.nh.png: test_data ../om4labs/diags/seaice/seaice.py
 	test_data/output/ice_1x1deg.003601-004012.siconc_old.nc
 
 $(THETAO_BIAS): test_data ../om4labs/diags/generic_yz_annual_bias_1x1deg/generic_yz_annual_bias_1x1deg.py
-	om4labs thetao_yz_annual_bias_1x1deg --model OM4p125 -S diff --platform testing \
+	om4labs thetao_yz_annual_bias_1x1deg --config OM4p125 --style diff --platform testing \
 	test_data/output/ocean_annual_z_d2_1x1deg.0001-0010.ann.nc
 
 clean:
