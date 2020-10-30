@@ -251,33 +251,23 @@ def run(dictArgs):
     filename = []
 
     # global
-    figs.append(
-        plot(y, z, depth, area, model.mean(axis=-1), obs.mean(axis=-1), dictArgs)[0]
-    )
+    figs.append(plot(y, z, depth, area, model, obs, dictArgs)[0])
     filename.append(
         f"{dictArgs['outdir']}/{dictArgs['var']}_yz_gbl_{dictArgs['style']}"
     )
 
     # atlantic
-    mask = code * 0
-    mask[(code == 2) | (code == 4)] = 1
-    _model = np.ma.masked_where(mask == 0, model).mean(axis=-1)
-    _obs = np.ma.masked_where(mask == 0, obs).mean(axis=-1)
-    _depth = np.ma.masked_where(mask[0] == 0, depth)
-    _area = np.ma.masked_where(mask[0] == 0, area)
-    figs.append(plot(y, z, _depth, _area, _model, _obs, dictArgs)[0])
+    figs.append(
+        plot(y, z, depth, area, model, obs, dictArgs, code=code, basin="atlantic")[0]
+    )
     filename.append(
         f"{dictArgs['outdir']}/{dictArgs['var']}_yz_atl_{dictArgs['style']}"
     )
 
     # indopacific
-    mask = code * 0
-    mask[(code == 3) | (code == 5)] = 1
-    _model = np.ma.masked_where(mask == 0, model).mean(axis=-1)
-    _obs = np.ma.masked_where(mask == 0, obs).mean(axis=-1)
-    _depth = np.ma.masked_where(mask[0] == 0, depth)
-    _area = np.ma.masked_where(mask[0] == 0, area)
-    figs.append(plot(y, z, _depth, _area, _model, _obs, dictArgs)[0])
+    figs.append(
+        plot(y, z, depth, area, model, obs, dictArgs, code=code, basin="indopac")[0]
+    )
     filename.append(
         f"{dictArgs['outdir']}/{dictArgs['var']}_yz_pac_{dictArgs['style']}"
     )
@@ -287,8 +277,33 @@ def run(dictArgs):
     return imgbufs
 
 
-def plot(y, z, depth, area, model, obs, dictArgs):
+def plot(y, z, depth, area, model, obs, dictArgs, code=None, basin=None):
     """meta plotting function"""
+
+    if (code is not None) or (basin is not None):
+        assert (code is not None) and (
+            basin is not None
+        ), "code and basin must be specified together"
+
+        mask = {}
+
+        _tmp = code * 0
+        _tmp[(code == 2) | (code == 4)] = 1
+        mask["atlantic"] = _tmp
+
+        _tmp = code * 0
+        _tmp[(code == 3) | (code == 5)] = 1
+        mask["indopac"] = _tmp
+
+        assert basin in list(mask.keys()), "unspecified basin requested"
+
+        model = np.ma.masked_where(mask[basin] == 0, model)
+        obs = np.ma.masked_where(mask[basin] == 0, obs)
+        depth = np.ma.masked_where(mask[basin][0] == 0, depth)
+        area = np.ma.masked_where(mask[basin][0] == 0, area)
+
+    model = model.mean(axis=-1)
+    obs = obs.mean(axis=-1)
 
     streamdiff = True if dictArgs["style"] == "diff" else False
     streamcompare = True if dictArgs["style"] == "compare" else False
