@@ -13,7 +13,7 @@ import xarray as xr
 import warnings
 
 from om4labs.om4common import image_handler
-from om4labs.om4common import DefaultDictParser
+from om4labs.om4parser import default_diag_parser
 
 warnings.filterwarnings("ignore", message=".*csr_matrix.*")
 warnings.filterwarnings("ignore", message=".*dates out of range.*")
@@ -77,71 +77,7 @@ def parse(cliargs=None, template=False):
     """
     description = """ """
 
-    if template is True:
-        parser = DefaultDictParser(
-            description=description, formatter_class=argparse.RawTextHelpFormatter
-        )
-    else:
-        parser = argparse.ArgumentParser(
-            description=description, formatter_class=argparse.RawTextHelpFormatter
-        )
-
-    parser.add_argument(
-        "-b", "--basin", type=str, default=None, help="Path to basin code file"
-    )
-
-    parser.add_argument(
-        "-g", "--gridspec", type=str, default=None, help="Path to gridspec file"
-    )
-
-    parser.add_argument("-m", "--model", type=str, default=None, help="Model Class")
-
-    parser.add_argument(
-        "--platform",
-        type=str,
-        required=False,
-        default="gfdl",
-        help="computing platform, default is gfdl",
-    )
-
-    parser.add_argument(
-        "infile",
-        metavar="INFILE",
-        type=str,
-        nargs="+",
-        help="Path to input NetCDF file(s)",
-    )
-
-    parser.add_argument(
-        "-i",
-        "--interactive",
-        action="store_true",
-        help="Interactive mode displays plot to screen. Default is False",
-    )
-
-    parser.add_argument(
-        "-l", "--label", type=str, default="", help="String label to annotate the plot"
-    )
-
-    parser.add_argument(
-        "-o",
-        "--outdir",
-        type=str,
-        default="./",
-        help="Output directory. Default is current directory",
-    )
-
-    parser.add_argument(
-        "-f",
-        "--format",
-        type=str,
-        default="png",
-        help="Output format for plots. Default is png",
-    )
-
-    parser.add_argument(
-        "-t", "--topog", type=str, default=None, help="Path to topog file"
-    )
+    parser = default_diag_parser(description=description,template=template,exclude=['obsfile','topog'])
 
     if template is True:
         return parser.parse_args(None).__dict__
@@ -154,10 +90,10 @@ def read(dictArgs, adv_varname="T_ady_2d", dif_varname="T_diffy_2d"):
 
     infile = dictArgs["infile"]
 
-    if dictArgs["model"] is not None:
+    if dictArgs["config"] is not None:
         # use dataset from catalog, either from command line or default
         cat_platform = (
-            f"catalogs/{dictArgs['model']}_catalog_{dictArgs['platform']}.yml"
+            f"catalogs/{dictArgs['config']}_catalog_{dictArgs['platform']}.yml"
         )
         catfile = pkgr.resource_filename("om4labs", cat_platform)
         cat = intake.open_catalog(catfile)
