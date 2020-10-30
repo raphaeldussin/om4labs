@@ -46,7 +46,8 @@ def compute(advective, diffusive=None, vmask=None, rho0=1.035e3, Cp=3989.0):
         HT = advective + diffusive
     else:
         HT = advective
-    HT = HT.mean(dim="time")
+    if len(HT.time) > 1:
+        HT = HT.mean(dim="time")
 
     if advective.units == "Celsius meter3 second-1":
         HT = HT * (rho0 * Cp)
