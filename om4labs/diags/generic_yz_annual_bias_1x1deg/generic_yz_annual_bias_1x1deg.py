@@ -14,8 +14,9 @@ from om4labs.om4plotting import plot_yzdiff, plot_yzcompare
 from om4labs.om4common import read_data, subset_data
 from om4labs.om4common import simple_average, copy_coordinates
 from om4labs.om4common import compute_area_regular_grid
-from om4labs.om4common import DefaultDictParser
 from om4labs.om4common import image_handler
+
+from om4labs.om4parser import default_diag_parser
 
 from cmip_basins import generate_basin_codes
 
@@ -25,10 +26,10 @@ imgbufs = []
 def read(dictArgs):
     """ read data from model and obs files, process data and return it """
 
-    if dictArgs["model"] is not None:
+    if dictArgs["config"] is not None:
         # use dataset from catalog, either from command line or default
         cat_platform = (
-            f"catalogs/{dictArgs['model']}_catalog_{dictArgs['platform']}.yml"
+            f"catalogs/{dictArgs['config']}_catalog_{dictArgs['platform']}.yml"
         )
         catfile = pkgr.resource_filename("om4labs", cat_platform)
         cat = intake.open_catalog(catfile)
@@ -127,78 +128,10 @@ def read(dictArgs):
 def parse(cliargs=None, template=False):
     """ parse the command line arguments """
 
-    if template is True:
-        parser = DefaultDictParser(
-            description="Script for plotting \
-                                                      annual-average bias to obs"
-        )
-    else:
-        parser = argparse.ArgumentParser(
-            description="Script for plotting \
-                                                      annual-average bias to obs"
-        )
+    description = "Script for plotting latitude-depth bias to obs"
+    parser = default_diag_parser(description=description, template=template)
 
     parser.add_argument(
-        "infile",
-        metavar="INFILE",
-        type=str,
-        nargs="+",
-        help="Annually-averaged file(s) containing model data",
-    )
-    parser.add_argument(
-        "-d",
-        "--depth",
-        type=float,
-        default=None,
-        required=False,
-        help="depth of field compared to obs",
-    )
-    parser.add_argument(
-        "-l",
-        "--label",
-        type=str,
-        default="",
-        required=False,
-        help="Label to add to the plot",
-    )
-    parser.add_argument(
-        "-s",
-        "--suptitle",
-        type=str,
-        default="",
-        required=False,
-        help="Super-title for experiment. \
-                              Default is to read from netCDF file",
-    )
-
-    parser.add_argument("-m", "--model", type=str, default=None, help="Model Class")
-
-    parser.add_argument(
-        "-o",
-        "--outdir",
-        type=str,
-        default=".",
-        required=False,
-        help="output directory for plots",
-    )
-    parser.add_argument(
-        "-F",
-        "--format",
-        type=str,
-        default="png",
-        required=False,
-        help="output format type",
-    )
-    parser.add_argument(
-        "-O",
-        "--obsfile",
-        type=str,
-        nargs="+",
-        required=False,
-        help="File(s) containing obs data to compare against",
-    )
-    parser.add_argument(
-        "-D",
         "--dataset",
         type=str,
         required=False,
@@ -206,29 +139,13 @@ def parse(cliargs=None, template=False):
         help="Name of the observational dataset, \
               as provided in intake catalog",
     )
+
     parser.add_argument(
-        "-i",
-        "--interactive",
-        action="store_true",
-        help="Interactive mode displays plot to screen. Default is False",
-    )
-    parser.add_argument(
-        "--platform",
-        type=str,
-        required=False,
-        default="gfdl",
-        help="computing platform, default is gfdl",
-    )
-    parser.add_argument(
-        "-S",
         "--style",
         type=str,
         required=False,
         default="diff",
         help="output plot style (diff/compare)",
-    )
-    parser.add_argument(
-        "--static", "--static", type=str, default=None, help="Path to static file"
     )
 
     if template is True:
