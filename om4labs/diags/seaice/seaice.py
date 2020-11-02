@@ -18,7 +18,7 @@ import time
 import warnings
 
 from om4labs.om4common import image_handler
-from om4labs.om4common import DefaultDictParser
+from om4labs.om4parser import default_diag_parser
 from om4labs.om4common import standard_grid_cell_area
 
 warnings.filterwarnings("ignore", message=".*csr_matrix.*")
@@ -43,51 +43,11 @@ import tempfile
 def parse(cliargs=None, template=False):
     description = """Plot sea ice vs. NSIDC"""
 
-    if template is True:
-        parser = DefaultDictParser(
-            description=description, formatter_class=argparse.RawTextHelpFormatter
-        )
-    else:
-        parser = argparse.ArgumentParser(
-            description=description, formatter_class=argparse.RawTextHelpFormatter
-        )
-
-    parser.add_argument("-m", "--model", type=str, default=None, help="Model Class")
-
-    parser.add_argument(
-        "infile",
-        metavar="INFILE",
-        type=str,
-        nargs="+",
-        help="Path to input NetCDF file(s)",
+    parser = default_diag_parser(
+        description=description, template=template, exclude=["basin", "topog"]
     )
 
     parser.add_argument(
-        "--platform",
-        type=str,
-        required=False,
-        default="gfdl",
-        help="computing platform, default is gfdl",
-    )
-
-    parser.add_argument(
-        "-o",
-        "--outdir",
-        type=str,
-        default="./",
-        help="Output directory. Default is current directory",
-    )
-
-    parser.add_argument(
-        "-f",
-        "--format",
-        type=str,
-        default="png",
-        help="Output format for plots. Default is png",
-    )
-
-    parser.add_argument(
-        "-M",
         "--month",
         type=str,
         default="March",
@@ -95,44 +55,10 @@ def parse(cliargs=None, template=False):
     )
 
     parser.add_argument(
-        "-i",
-        "--interactive",
-        action="store_true",
-        help="Interactive mode displays plot to screen. Default is False",
-    )
-
-    parser.add_argument(
-        "-s", "--static", type=str, default=None, help="Path to static file"
-    )
-
-    parser.add_argument(
-        "-r",
         "--region",
         type=str,
         default="nh",
         help="Region for analysis. Default is nh. Options are nh and sh",
-    )
-
-    parser.add_argument(
-        "-O",
-        "--obsfile",
-        type=str,
-        default=None,
-        help="Path to file containing observations",
-    )
-
-    parser.add_argument(
-        "-D",
-        "--dataset",
-        type=str,
-        required=False,
-        default="NSIDC_NH_monthly",
-        help="Name of the observational dataset, \
-              as provided in intake catalog",
-    )
-
-    parser.add_argument(
-        "-l", "--label", type=str, default="", help="String label to annotate the plot"
     )
 
     if template is True:
@@ -162,10 +88,10 @@ def read(dictArgs):
     else:
         standard_grid = False
 
-    if dictArgs["model"] is not None:
+    if dictArgs["config"] is not None:
         # use dataset from catalog, either from command line or default
         cat_platform = (
-            f"catalogs/{dictArgs['model']}_catalog_{dictArgs['platform']}.yml"
+            f"catalogs/{dictArgs['config']}_catalog_{dictArgs['platform']}.yml"
         )
         catfile = pkgr.resource_filename("om4labs", cat_platform)
         cat = intake.open_catalog(catfile)
