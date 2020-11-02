@@ -2,6 +2,9 @@ from . import cm
 from . import coords
 from . import formatting
 from . import stats
+from . import addStatusBar
+from . import addInteractiveCallbacks
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -10,6 +13,8 @@ def yzplot(
     field,
     y=None,
     z=None,
+    area=None,
+    depth=None,
     ylabel=None,
     yunits=None,
     zlabel=None,
@@ -67,13 +72,19 @@ def yzplot(
     c = cm.dunne_pm()
     c = cm.dunne_rainbow()
 
+    _z = z.copy()
+
     # Create coordinates if not provided
     ylabel, yunits, zlabel, zunits = formatting.createYZlabels(
         y, z, ylabel, yunits, zlabel, zunits
     )
     if debug:
         print("y,z label/units=", ylabel, yunits, zlabel, zunits)
-    if len(y) == z.shape[-1]:
+
+    # Check coordinate dimensions
+    if len(y.shape) == 1 and len(z.shape) == 1:
+        assert (len(z), len(y)) == field.shape
+    elif len(y) == z.shape[-1]:
         y = coords.expand(y)
     elif len(y) == z.shape[-1] + 1:
         y = y
@@ -81,18 +92,38 @@ def yzplot(
         raise Exception(
             "Length of y coordinate should be equal or 1 longer than horizontal length of z"
         )
+
+    # Ignore a user-defined value if provided
     if ignore is not None:
         maskedField = np.ma.masked_array(field, mask=[field == ignore])
     else:
         maskedField = field.copy()
-    yCoord, zCoord, field2 = coords.section2quadmesh(y, z, maskedField)
+
+    if len(y.shape) == 1 and len(z.shape) == 1:
+        # Use raw coordinate and array data for plotting
+        yCoord = y
+        zCoord = z
+        field2 = maskedField
+
+        # Compute interfaces that are used for generating weights in the
+        # stats routines
+        y = coords.expand(y)
+        interfaces = [0.0]
+        for n in range(0, len(z)):
+            interfaces.append(z[n] - np.abs((z[n] - interfaces[n])))
+        z = np.array(interfaces)
+        z = np.tile(z[:, None], (1, len(y) - 1))
+
+    else:
+        # Do vertical coordinate transformation on native output
+        yCoord, zCoord, field2 = coords.section2quadmesh(y, z, maskedField)
+        yLims = np.amin(yCoord), np.amax(yCoord)
+        zLims = coords.boundaryStats(zCoord)
 
     # Diagnose statistics
     sMin, sMax, sMean, sStd, sRMS = stats.calc(
         maskedField, stats.yzWeight(y, z), debug=debug
     )
-    yLims = np.amin(yCoord), np.amax(yCoord)
-    zLims = coords.boundaryStats(zCoord)
 
     # Choose colormap
     if nbins is None and (clim is None or len(clim) == 2):
@@ -103,10 +134,23 @@ def yzplot(
         sMin, sMax, colormap, clim=clim, nbins=nbins, extend=extend
     )
 
+    # Create a topography mask
+    if depth is not None:
+        depth = np.tile(depth[None, :, :], (len(_z), 1, 1))
+        depth = depth.min(axis=-1)
+        ztile = np.tile(_z[:, None], (1, depth.shape[-1]))
+        topomask = np.where(np.less(ztile, depth), 0.0, 1.0)
+        topomask = np.ma.masked_where(np.equal(topomask, 0.0), topomask)
+    else:
+        topomask = 1.0
+
+    field2 = field2 * topomask
+
     if axis is None:
         formatting.setFigureSize(aspect, resolution, debug=debug)
         # plt.gcf().subplots_adjust(left=.10, right=.99, wspace=0, bottom=.09, top=.9, hspace=0)
         axis = plt.gca()
+
     plt.pcolormesh(yCoord, zCoord, field2, cmap=cmap, norm=norm)
     if interactive:
         addStatusBar(yCoord, zCoord, field2)
@@ -118,8 +162,8 @@ def yzplot(
         for zzz in splitscale[1:-1]:
             plt.axhline(zzz, color="k", linestyle="--")
         axis.set_yscale("splitscale", zval=splitscale)
-    plt.xlim(yLims)
-    plt.ylim(zLims)
+    # plt.xlim(yLims)
+    # plt.ylim(zLims)
     axis.annotate(
         "max=%.5g\nmin=%.5g" % (sMax, sMin),
         xy=(0.0, 1.01),
@@ -159,3 +203,5 @@ def yzplot(
         addInteractiveCallbacks()
     if show:
         plt.show(block=False)
+
+    return plt.gcf()
