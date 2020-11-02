@@ -39,7 +39,7 @@ def generate_basin_masks(basin_code, basin=None):
     return mask
 
 
-def compute(advective, diffusive=None, vmask=None, rho0=1.035e3, Cp=3989.0):
+def calculate(advective, diffusive=None, vmask=None, rho0=1.035e3, Cp=3989.0):
     """Converts vertically integrated temperature advection into heat transport"""
 
     if diffusive is not None:
@@ -202,14 +202,6 @@ def read(dictArgs, adv_varname="T_ady_2d", dif_varname="T_diffy_2d"):
         advective,
         diffusive,
     )
-
-
-def calculate(advective, diffusive=None, basin_code=None):
-    """Main computational script"""
-
-    msftyyz = compute_msftyyz(vmo, basin_code)
-
-    return msftyyz
 
 
 class GWObs:
@@ -389,9 +381,9 @@ def run(dictArgs):
         diffusive,
     ) = read(dictArgs)
 
-    trans_global = compute(advective, diffusive)
-    trans_atlantic = compute(advective, diffusive, vmask=atlantic_arctic_mask)
-    trans_pacific = compute(advective, diffusive, vmask=indo_pacific_mask)
+    trans_global = calculate(advective, diffusive)
+    trans_atlantic = calculate(advective, diffusive, vmask=atlantic_arctic_mask)
+    trans_pacific = calculate(advective, diffusive, vmask=indo_pacific_mask)
 
     fig = plot(dictArgs, yq, trans_global, trans_atlantic, trans_pacific)
 
