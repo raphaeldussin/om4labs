@@ -69,6 +69,12 @@ def yzplot(
     interactive If true, adds interactive features such as zoom, close and cursor. Default False.
     """
 
+    # set visual backend
+    if interactive is False:
+        plt.switch_backend("Agg")
+    else:
+        plt.switch_backend("qt5agg")
+
     c = cm.dunne_pm()
     c = cm.dunne_rainbow()
 
