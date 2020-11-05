@@ -1,0 +1,59 @@
+plugins:
+  source:
+    - module: intake_xarray
+sources:
+
+  WOA13_annual_TS:
+    description: "World Ocean Atlas 2013 annual climatology T/S"
+    driver: netcdf
+    args:
+      urlpath: '/mnt/data/dora-dev/external/om4labs/testing/test_data/obs/WOA13_ptemp+salinity_annual_35levels.nc'
+      chunks: {'time': 1}
+      xarray_kwargs:
+        decode_times: False
+    metadata:
+      origin_url: ''
+
+  WOA13_monthly_TS:
+    description: "World Ocean Atlas 2013 monthly climatology T/S"
+    driver: netcdf
+    args:
+      urlpath: '/mnt/data/dora-dev/external/om4labs/testing/test_data/obs/WOA13_ptemp+salinity_monthly_35levels.nc'
+      chunks: {'time': 12}
+      xarray_kwargs:
+        decode_times: False
+    metadata:
+      origin_url: ''
+  
+  NSIDC_NH_monthly:
+    description: "NSIDC Northern Hemisphere monthly climatology"
+    driver: netcdf
+    args:
+      urlpath: '/mnt/data/dora-dev/external/om4labs/testing/test_data/obs/OBS_NSIDC_sat_NH_T2Ms_sic.nc'
+      chunks: {'time': 12}
+      xarray_kwargs:
+        decode_times: False
+    metadata:
+      origin_url: ''
+
+  NSIDC_SH_monthly:
+    description: "NSIDC Southern Hemisphere monthly climatology"
+    driver: netcdf
+    args:
+      urlpath: '/mnt/data/dora-dev/external/om4labs/testing/test_data/obs/OBS_NSIDC_sat_SH_T2Ms_sic.nc'
+      chunks: {'time': 12}
+      xarray_kwargs:
+        decode_times: False
+    metadata:
+      origin_url: ''
+
+  Trenberth_and_Caron:
+    description: "Trenberth and Caron Heat Transport"
+    driver: netcdf
+    args:
+      urlpath: '/mnt/data/dora-dev/external/om4labs/testing/test_data/obs/Trenberth_and_Caron_Heat_Transport.nc'
+      xarray_kwargs:
+        decode_times: False
+    metadata:
+      origin_url: ''
+
