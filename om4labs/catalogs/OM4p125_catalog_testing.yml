@@ -43,3 +43,13 @@ sources:
     metadata:
       origin_url: ''
 
+  ocean_static_1x1:
+    description: "Ocean Model 1x1 Static File"
+    driver: netcdf
+    args:
+      urlpath: 'test_data/model_grids/OM4p125/ocean_1x1deg.static.nc'
+      xarray_kwargs:
+        decode_times: False
+    metadata:
+      origin_url: ''
+
