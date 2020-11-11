@@ -2,10 +2,12 @@
 
 import numpy as np
 import argparse
+import intake
 import io
 import signal
 import sys
 import matplotlib.pyplot as plt
+import pkg_resources as pkgr
 import tarfile as tf
 import xarray as xr
 
@@ -240,8 +242,16 @@ def horizontal_grid(dictArgs, point_type="t"):
         geolon = subsample_supergrid(ds, "x", point_type)
         area = sum_on_supergrid(ds, "area", point_type)
 
-    # elif dictArgs["platform"] is not None and dictArgs["catalog"] is not None:
-    #    # open intake catalog datasets and get the arrays
+    elif dictArgs["platform"] is not None and dictArgs["config"] is not None:
+        if verbose:
+            print(
+                f"Using {dictArgs['platform']} {dictArgs['config']} intake catalog for horizontal grid."
+            )
+        cat = open_intake_catalog(dictArgs["platform"], dictArgs["config"])
+        ds = cat["ocean_hgrid"].to_dask()
+        geolat = subsample_supergrid(ds, "y", point_type)
+        geolon = subsample_supergrid(ds, "x", point_type)
+        area = sum_on_supergrid(ds, "area", point_type)
 
     assert geolon is not None, "Unable to obtain geolon"
     assert geolat is not None, "Unable to obtain geolat"
@@ -252,3 +262,10 @@ def horizontal_grid(dictArgs, point_type="t"):
     area = np.array(area.to_masked_array())
 
     return geolat, geolon, area
+
+
+def open_intake_catalog(platform, config):
+    cat_platform = f"catalogs/{config}_catalog_{platform}.yml"
+    catfile = pkgr.resource_filename("om4labs", cat_platform)
+    cat = intake.open_catalog(catfile)
+    return cat
