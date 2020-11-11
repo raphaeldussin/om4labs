@@ -6,6 +6,7 @@ import io
 import signal
 import sys
 import matplotlib.pyplot as plt
+import xarray as xr
 
 try:
     from om4labs.helpers import try_variable_from_list
@@ -14,6 +15,8 @@ except ImportError:
     # reads from current directory
     from helpers import try_variable_from_list
 
+from static_downsampler.static import sum_on_supergrid
+from static_downsampler.static import subsample_supergrid
 
 possible_names = {}
 possible_names["lon"] = ["lon", "LON", "longitude", "LONGITUDE"]
@@ -168,3 +171,62 @@ def compute_area_regular_grid(ds, Rearth=6378e3):
     dy = dy2d
     area = dx * dy
     return area
+
+
+def horizontal_grid(dictArgs, point_type="t"):
+
+    verbose = dictArgs["verbose"]
+
+    geolon = None
+    geolat = None
+    area = None
+
+    point_type = point_type.upper()
+
+    if dictArgs["hgrid"] is not None:
+        if verbose:
+            print("Using optional hgrid file for horizontal grid.")
+        ds = xr.open_dataset(dictArgs["hgrid"])
+        geolat = subsample_supergrid(ds, "y", point_type)
+        geolon = subsample_supergrid(ds, "x", point_type)
+        area = sum_on_supergrid(ds, "area", point_type)
+
+    elif dictArgs["static"] is not None:
+        if verbose:
+            print("Using optional static file for horizontal grid.")
+
+        ds = xr.open_dataset(dictArgs["static"])
+
+        if point_type == "T":
+            geolat = ds["geolat"]
+            geolon = ds["geolon"]
+            area = ds["areacello"]
+
+        elif point_type == "U":
+            geolat = ds["geolat_u"]
+            geolon = ds["geolon_u"]
+            area = ds["areacello_cu"]
+
+        elif point_type == "V":
+            geolat = ds["geolat_v"]
+            geolon = ds["geolon_v"]
+            area = ds["areacello_cv"]
+
+        else:
+            raise ValueError("Unknown point type. Must be T, U, or V")
+
+    # elif dictArgs["gridspec"] is not None:
+    #    # open the ocean_hgrid.nc inside gridspec.tar and get the arrays
+
+    # elif dictArgs["platform"] is not None and dictArgs["catalog"] is not None:
+    #    # open intake catalog datasets and get the arrays
+
+    assert geolon is not None, "Unable to obtain geolon"
+    assert geolat is not None, "Unable to obtain geolat"
+    assert area is not None, "Unable to obtain area"
+
+    geolat = np.array(geolat.to_masked_array())
+    geolon = np.array(geolon.to_masked_array())
+    area = np.array(area.to_masked_array())
+
+    return geolat, geolon, area
