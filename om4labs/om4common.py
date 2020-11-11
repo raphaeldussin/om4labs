@@ -6,6 +6,7 @@ import io
 import signal
 import sys
 import matplotlib.pyplot as plt
+import tarfile as tf
 import xarray as xr
 
 try:
@@ -35,6 +36,21 @@ class DefaultDictParser(argparse.ArgumentParser):
         for act in actions[1::]:
             defaults[act.__dict__["dest"]] = act.__dict__["default"]
         return defaults
+
+
+def extract_from_tar(tar, member):
+    """
+    Function to extract a single netCDF file from within
+    an uncompressed tarfile
+    """
+    if member not in tar.getnames():
+        member = "./" + member
+    f = tar.extractfile(member)
+    data = f.read()
+    # the line below is retained for NetCDF4 library reference
+    # dataset = netCDF4.Dataset("in-mem-file", mode="r", memory=data)
+    dataset = xr.open_dataset(data)
+    return dataset
 
 
 def image_handler(figs, dictArgs, filename="./figure"):
@@ -215,8 +231,14 @@ def horizontal_grid(dictArgs, point_type="t"):
         else:
             raise ValueError("Unknown point type. Must be T, U, or V")
 
-    # elif dictArgs["gridspec"] is not None:
-    #    # open the ocean_hgrid.nc inside gridspec.tar and get the arrays
+    elif dictArgs["gridspec"] is not None:
+        if verbose:
+            print("Using optional gridspec tar file for horizontal grid.")
+        tar = tf.open(dictArgs["gridspec"])
+        ds = extract_from_tar(tar, "ocean_hgrid.nc")
+        geolat = subsample_supergrid(ds, "y", point_type)
+        geolon = subsample_supergrid(ds, "x", point_type)
+        area = sum_on_supergrid(ds, "area", point_type)
 
     # elif dictArgs["platform"] is not None and dictArgs["catalog"] is not None:
     #    # open intake catalog datasets and get the arrays
