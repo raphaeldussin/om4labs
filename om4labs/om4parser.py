@@ -149,7 +149,7 @@ def default_diag_parser(description="", template=False, exclude=None):
         parser.add_argument(
             "-v",
             "--verbose",
-            action="store_false",
+            action="store_true",
             help="Verbose output",
         )
 
