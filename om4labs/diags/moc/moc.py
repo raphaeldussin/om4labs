@@ -12,6 +12,8 @@ import palettable
 import xarray as xr
 import warnings
 
+from om4labs.om4common import horizontal_grid
+from om4labs.om4common import read_topography
 from om4labs.om4common import image_handler
 from om4labs.om4parser import default_diag_parser
 
@@ -123,39 +125,16 @@ def read(dictArgs, varname="vmo"):
     """MOC plotting script"""
 
     infile = dictArgs["infile"]
-
-    if dictArgs["config"] is not None:
-        # use dataset from catalog, either from command line or default
-        cat_platform = (
-            f"catalogs/{dictArgs['config']}_catalog_{dictArgs['platform']}.yml"
-        )
-        catfile = pkgr.resource_filename("om4labs", cat_platform)
-        cat = intake.open_catalog(catfile)
-        ds_basin = cat["basin"].to_dask()
-        ds_topog = cat["topog"].to_dask()
-        ds_gridspec = cat["ocean_hgrid"].to_dask()
-
-    if dictArgs["basin"] is not None:
-        ds_basin = xr.open_dataset(dictArgs["basin"])
-    if dictArgs["gridspec"] is not None:
-        ds_topog = xr.open_dataset(dictArgs["topog"])
-    if dictArgs["topog"] is not None:
-        ds_gridspec = xr.open_dataset(dictArgs["gridspec"])
-
     ds = xr.open_mfdataset(infile, combine="by_coords")
 
-    # horizontal grid
-    x = np.array(ds_gridspec.x.to_masked_array())[::2, ::2]
-    y = np.array(ds_gridspec.y.to_masked_array())[::2, ::2]
+    dsQ = horizontal_grid(dictArgs, point_type="q")
+    geolon_c = dsQ.geolon.values
+    geolat_c = dsQ.geolat.values
+    yq = dsQ.nominal_y.values
+    basin_code = dsQ.basin.values
 
-    # depth coordinate
-    if "deptho" in list(ds_topog.variables):
-        depth = ds_topog.deptho.to_masked_array()
-    elif "depth" in list(ds_topog.variables):
-        depth = ds_topog.depth.to_masked_array()
-    else:
-        raise ValueError("Unable to find depth field.")
-    depth = np.where(np.isnan(depth), 0.0, depth)
+    depth = read_topography(dictArgs)
+
     if varname == "msftyyz":
         zw = np.array(ds["z_i"][:])
         Zmod = np.zeros((zw.shape[0], depth.shape[0], depth.shape[1]))
@@ -165,15 +144,6 @@ def read(dictArgs, varname="vmo"):
     else:
         z = get_z(ds, depth, varname)
 
-    # t-cell nominal y coordinate
-    if "yh" in list(ds_topog.variables):
-        yh = ds_topog.yh.to_masked_array()
-    else:
-        yh = ds.yh.to_masked_array()
-
-    # basin code
-    basin_code = ds_basin.basin.to_masked_array()
-
     # basin masks
     atlantic_arctic_mask = generate_basin_masks(basin_code, basin="atlantic_arctic")
     indo_pacific_mask = generate_basin_masks(basin_code, basin="indo_pacific")
@@ -181,7 +151,17 @@ def read(dictArgs, varname="vmo"):
     # vmo
     arr = ds[varname].to_masked_array()
 
-    return x, y, yh, z, depth, basin_code, atlantic_arctic_mask, indo_pacific_mask, arr
+    return (
+        geolon_c,
+        geolat_c,
+        yq,
+        z,
+        depth,
+        basin_code,
+        atlantic_arctic_mask,
+        indo_pacific_mask,
+        arr,
+    )
 
 
 def calculate(vmo, basin_code):
@@ -243,7 +223,7 @@ def plot(y, yh, z, depth, atlantic_arctic_mask, indo_pacific_mask, msftyyz, labe
 
     if len(z.shape) != 1:
         z = z.min(axis=-1)
-    yy = y[1:, :].max(axis=-1) + 0 * z
+    yy = y[:, :].max(axis=-1) + 0 * z
 
     psi = msftyyz * 1.0e-9
 
