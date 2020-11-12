@@ -10,6 +10,9 @@ import matplotlib.pyplot as plt
 import pkg_resources as pkgr
 import tarfile as tf
 import xarray as xr
+import warnings
+
+from cmip_basins import generate_basin_codes
 
 try:
     from om4labs.helpers import try_variable_from_list
@@ -38,6 +41,11 @@ class DefaultDictParser(argparse.ArgumentParser):
         for act in actions[1::]:
             defaults[act.__dict__["dest"]] = act.__dict__["default"]
         return defaults
+
+
+def basin_code(geolon, geolat, dictArgs=None):
+    codes = generate_basin_codes(ds_static, lon="lon", lat="lat")
+    return codes
 
 
 def extract_from_tar(tar, member):
@@ -191,18 +199,29 @@ def compute_area_regular_grid(ds, Rearth=6378e3):
     return area
 
 
-def horizontal_grid(dictArgs, point_type="t"):
-
-    verbose = dictArgs["verbose"]
-
-    geolon = None
-    geolat = None
-    area = None
+def horizontal_grid(dictArgs=None, point_type="t", verbose=False, output_type="xarray"):
 
     point_type = point_type.upper()
 
-    if dictArgs["hgrid"] is not None:
-        if verbose:
+    if dictArgs is not None:
+        verbose = dictArgs["verbose"]
+        basin_file = dictArgs["basin"]
+    else:
+        basin_file = None
+
+    if dictArgs is None:
+        x = np.arange(0.5, 360.5, 1.0)
+        y = np.arange(-89.5, 90.5, 1.0)
+        area = standard_grid_cell_area(y, x)
+        geolon, geolat = np.meshgrid(x, y)
+        geolon = xr.DataArray(geolon, dims=("y", "x"), coords={"y": y, "x": x})
+        geolat = xr.DataArray(geolat, dims=("y", "x"), coords={"y": y, "x": x})
+        area = xr.DataArray(area, dims=("y", "x"), coords={"y": y, "x": x})
+        nominal_x = geolon[geolon.dims[-1]]
+        nominal_y = geolat[geolat.dims[-2]]
+
+    elif dictArgs["hgrid"] is not None:
+        if verbose is True:
             print("Using optional hgrid file for horizontal grid.")
         ds = xr.open_dataset(dictArgs["hgrid"])
         geolat = subsample_supergrid(ds, "y", point_type)
@@ -210,7 +229,7 @@ def horizontal_grid(dictArgs, point_type="t"):
         area = sum_on_supergrid(ds, "area", point_type)
 
     elif dictArgs["static"] is not None:
-        if verbose:
+        if verbose is True:
             print("Using optional static file for horizontal grid.")
 
         ds = xr.open_dataset(dictArgs["static"])
@@ -234,16 +253,16 @@ def horizontal_grid(dictArgs, point_type="t"):
             raise ValueError("Unknown point type. Must be T, U, or V")
 
     elif dictArgs["gridspec"] is not None:
-        if verbose:
+        if verbose is True:
             print("Using optional gridspec tar file for horizontal grid.")
         tar = tf.open(dictArgs["gridspec"])
         ds = extract_from_tar(tar, "ocean_hgrid.nc")
-        geolat = subsample_supergrid(ds, "y", point_type)
-        geolon = subsample_supergrid(ds, "x", point_type)
+        geolat = subsample_supergrid(ds, "y", point_type)  # , outputgrid='symetric')
+        geolon = subsample_supergrid(ds, "x", point_type)  # , outputgrid='symetric')
         area = sum_on_supergrid(ds, "area", point_type)
 
     elif dictArgs["platform"] is not None and dictArgs["config"] is not None:
-        if verbose:
+        if verbose is True:
             print(
                 f"Using {dictArgs['platform']} {dictArgs['config']} intake catalog for horizontal grid."
             )
@@ -253,15 +272,41 @@ def horizontal_grid(dictArgs, point_type="t"):
         geolon = subsample_supergrid(ds, "x", point_type)
         area = sum_on_supergrid(ds, "area", point_type)
 
-    assert geolon is not None, "Unable to obtain geolon"
-    assert geolat is not None, "Unable to obtain geolat"
-    assert area is not None, "Unable to obtain area"
+    result = xr.Dataset()
+    result["geolat"] = geolat
+    result["geolon"] = geolon
+    result["area"] = area
 
-    geolat = np.array(geolat.to_masked_array())
-    geolon = np.array(geolon.to_masked_array())
-    area = np.array(area.to_masked_array())
+    # nominal coordinates
+    result["nominal_x"] = result.geolon.max(axis=-2)
+    result["nominal_y"] = result.geolat.max(axis=-1)
 
-    return geolat, geolon, area
+    if result["nominal_y"].min() >= 0:
+        warnings.warn("Nominal y latitude is positive definite. May be incorrect.")
+
+    if result["nominal_x"].max() > 360:
+        warnings.warn("Nominal x longitude > 360. May be incorrect.")
+
+    # -- process basin codes while we are here
+    if basin_file is not None:
+        if verbose is True:
+            print("Using optional file for basin code specification.")
+        ds = xr.open_dataset(dictArgs["hgrid"])
+        result["basin"] = ds.basin
+    else:
+        result["basin"] = generate_basin_codes(result, lon="geolon", lat="geolat")
+    result["basin"] = result.basin.fillna(0.0)
+
+    if output_type == "numpy":
+        geolat = np.array(result.geolat.to_masked_array())
+        geolon = np.array(result.geolon.to_masked_array())
+        nominal_x = np.array(result.nominal_x.to_masked_array())
+        nominal_y = np.array(result.nominal_y.to_masked_array())
+        area = np.array(result.area.to_masked_array())
+        basin = np.array(result.basin.to_masked_array())
+        result = (geolat, geolon, nominal_x, nominal_y, area, basin)
+
+    return result
 
 
 def open_intake_catalog(platform, config):
@@ -269,3 +314,42 @@ def open_intake_catalog(platform, config):
     catfile = pkgr.resource_filename("om4labs", cat_platform)
     cat = intake.open_catalog(catfile)
     return cat
+
+
+def read_topography(dictArgs, verbose=False):
+
+    if dictArgs is not None:
+        verbose = dictArgs["verbose"]
+
+    if dictArgs["topog"] is not None:
+        if verbose is True:
+            print("Using optional topg file for depth field")
+        ds = xr.open_dataset(dictArgs["topog"])
+
+    elif dictArgs["static"] is not None:
+        if verbose is True:
+            print("Using optional static file for depth field.")
+        ds = xr.open_dataset(dictArgs["static"])
+
+    elif dictArgs["gridspec"] is not None:
+        if verbose is True:
+            print("Using optional gridspec tar file for depth field.")
+        tar = tf.open(dictArgs["gridspec"])
+        ds = extract_from_tar(tar, "ocean_topog.nc")
+
+    elif dictArgs["platform"] is not None and dictArgs["config"] is not None:
+        if verbose is True:
+            print(
+                f"Using {dictArgs['platform']} {dictArgs['config']} intake catalog for depth field."
+            )
+        cat = open_intake_catalog(dictArgs["platform"], dictArgs["config"])
+        ds = cat["topog"].to_dask()
+
+    if "deptho" in list(ds.variables):
+        depth = ds.deptho.to_masked_array()
+    elif "depth" in list(ds.variables):
+        depth = ds.depth.to_masked_array()
+
+    depth = np.where(np.isnan(depth), 0.0, depth)
+
+    return depth
