@@ -12,6 +12,7 @@ dependencies:
   - matplotlib
   - netcdf4
   - numpy
+  - numba
   - palettable
   - pip
   - pip:
