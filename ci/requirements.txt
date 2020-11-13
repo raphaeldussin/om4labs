@@ -4,6 +4,7 @@ intake-xarray
 matplotlib
 netcdf4
 numpy
+numba
 palettable
 pyshp
 pytest
