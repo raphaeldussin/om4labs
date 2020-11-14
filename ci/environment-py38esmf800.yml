@@ -12,10 +12,12 @@ dependencies:
   - matplotlib
   - netcdf4
   - numpy
+  - numba
   - palettable
   - pip
   - pip:
     - git+https://github.com/jkrasting/cmip_basins.git
+    - git+https://github.com/raphaeldussin/static_downsampler.git
   - pyshp
   - pytest
   - regionmask
