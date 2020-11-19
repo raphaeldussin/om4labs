@@ -154,7 +154,6 @@ def read(dictArgs, varname="vmo"):
 
     # date range
     dates = date_range(ds)
-    print(dates)
 
     return (
         geolon_c,
