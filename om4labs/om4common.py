@@ -43,6 +43,26 @@ class DefaultDictParser(argparse.ArgumentParser):
         return defaults
 
 
+def date_range(ds):
+    """Returns a tuple of start year and end year from xarray dataset
+
+    Parameters
+    ----------
+    ds : xarray.Dataset
+        Input dataset
+
+    Returns
+    -------
+    tuple
+        (start year, end year) for time dimension of the dataset
+    """
+
+    return (
+        int(ds["time"].isel({"time": 0}).dt.strftime("%Y")),
+        int(ds["time"].isel({"time": -1}).dt.strftime("%Y")),
+    )
+
+
 def extract_from_tar(tar, member):
     """Loads Xarray DataSet in memory from a file contained inside a tar file
 
