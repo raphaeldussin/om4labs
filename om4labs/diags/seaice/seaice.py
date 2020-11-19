@@ -20,6 +20,7 @@ import warnings
 from om4labs.om4common import image_handler
 from om4labs.om4parser import default_diag_parser
 from om4labs.om4common import standard_grid_cell_area
+from om4labs.om4common import date_range
 
 warnings.filterwarnings("ignore", message=".*csr_matrix.*")
 warnings.filterwarnings("ignore", message=".*dates out of range.*")
@@ -187,15 +188,8 @@ def calculate(ds, dobs, region="nh"):
     obs["ac_r"] = regrid.curv_to_curv(obs["ac"], model["ac"], reuse_weights=False)
 
     # Get tuple of start year and end years for model and observations
-    model["time"] = (
-        int(ds["time"].isel({"time": 0}).dt.strftime("%Y")),
-        int(ds["time"].isel({"time": -1}).dt.strftime("%Y")),
-    )
-
-    obs["time"] = (
-        int(dobs["time"].isel({"time": 0}).dt.strftime("%Y")),
-        int(dobs["time"].isel({"time": -1}).dt.strftime("%Y")),
-    )
+    model["time"] = date_range(ds)
+    obs["time"] = date_range(dobs)
 
     return model, obs
 
