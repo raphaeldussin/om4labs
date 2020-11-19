@@ -15,6 +15,7 @@ import warnings
 from om4labs.om4common import horizontal_grid
 from om4labs.om4common import read_topography
 from om4labs.om4common import image_handler
+from om4labs.om4common import date_range
 from om4labs.om4parser import default_diag_parser
 
 warnings.filterwarnings("ignore", message=".*csr_matrix.*")
@@ -151,6 +152,10 @@ def read(dictArgs, varname="vmo"):
     # vmo
     arr = ds[varname].to_masked_array()
 
+    # date range
+    dates = date_range(ds)
+    print(dates)
+
     return (
         geolon_c,
         geolat_c,
@@ -161,6 +166,7 @@ def read(dictArgs, varname="vmo"):
         atlantic_arctic_mask,
         indo_pacific_mask,
         arr,
+        dates,
     )
 
 
@@ -172,7 +178,9 @@ def calculate(vmo, basin_code):
     return msftyyz
 
 
-def plot(y, yh, z, depth, atlantic_arctic_mask, indo_pacific_mask, msftyyz, label=None):
+def plot(
+    y, yh, z, depth, atlantic_arctic_mask, indo_pacific_mask, msftyyz, dates, label=None
+):
     """Plotting script"""
 
     def _findExtrema(
@@ -188,26 +196,54 @@ def plot(y, yh, z, depth, atlantic_arctic_mask, indo_pacific_mask, msftyyz, labe
         ax.text(y[j, i], z[j, i], "%.1f" % (psi[j, i]))
 
     def _plotPsi(
-        y, z, psi, ci, title, cmap=None, xlim=None, topomask=None, yh=None, zz=None
+        ax,
+        y,
+        z,
+        psi,
+        ci,
+        title,
+        cmap=None,
+        xlim=None,
+        topomask=None,
+        yh=None,
+        zz=None,
+        dates=None,
     ):
         """Function to plot zonal mean streamfunction"""
         if topomask is not None:
             psi = np.array(np.where(psi.mask, 0.0, psi))
         else:
             psi = np.array(np.where(psi.mask, np.nan, psi))
-        plt.contourf(y, z, psi, levels=ci, cmap=cmap, extend="both")
-        cbar = plt.colorbar()
-        plt.contour(y, z, psi, levels=ci, colors="k", linewidths=0.4)
-        plt.contour(y, z, psi, levels=[0], colors="k", linewidths=0.8)
+        cs = ax.contourf(y, z, psi, levels=ci, cmap=cmap, extend="both")
+        ax.contour(y, z, psi, levels=ci, colors="k", linewidths=0.4)
+        ax.contour(y, z, psi, levels=[0], colors="k", linewidths=0.8)
+
+        # shade topography
         if topomask is not None:
             cMap = mpl.colors.ListedColormap(["gray"])
-            plt.pcolormesh(yh, -1.0 * zz, topomask, cmap=cMap)
-        plt.gca().set_yscale("splitscale", zval=[0, -2000, -6500])
-        plt.title(title)
+            ax.pcolormesh(yh, -1.0 * zz, topomask, cmap=cMap)
+
+        # set latitude limits
         if xlim is not None:
-            plt.gca().set_xlim(xlim)
+            ax.set_xlim(xlim)
+
+        # set vertical split scale
+        ax.set_yscale("splitscale", zval=[0, -2000, -6500])
+        ax.invert_yaxis()
+
+        # add colorbar
+        cbar = plt.colorbar(cs)
         cbar.set_label("[Sv]")
+
+        # add labels
+        ax.text(0.02, 1.02, title, ha="left", fontsize=10, transform=ax.transAxes)
         plt.ylabel("Elevation [m]")
+        if dates is not None:
+            assert isinstance(dates, tuple), "Year range should be provided as a tuple."
+            datestring = f"Years {dates[0]} - {dates[1]}"
+            ax.text(
+                0.98, 1.02, datestring, ha="right", fontsize=10, transform=ax.transAxes
+            )
 
     def _create_topomask(depth, yh, mask=None):
         if mask is not None:
@@ -238,16 +274,18 @@ def plot(y, yh, z, depth, atlantic_arctic_mask, indo_pacific_mask, msftyyz, labe
     ax1 = plt.subplot(3, 1, 1, facecolor="gray")
     psiPlot = psi[0, 0]
     _plotPsi(
+        ax1,
         yy,
         z,
         psiPlot,
         ci,
-        "Atlantic MOC [Sv]",
+        "a. Atlantic MOC [Sv]",
         cmap=cmap,
         xlim=(-40, 90),
         topomask=atlantic_topomask,
         yh=yh,
         zz=zz,
+        dates=dates,
     )
     _findExtrema(ax1, yy, z, psiPlot, min_lat=26.5, max_lat=27.0)
     _findExtrema(ax1, yy, z, psiPlot, max_lat=-33.0)
@@ -256,11 +294,12 @@ def plot(y, yh, z, depth, atlantic_arctic_mask, indo_pacific_mask, msftyyz, labe
     ax2 = plt.subplot(3, 1, 2, facecolor="gray")
     psiPlot = psi[0, 1]
     _plotPsi(
+        ax2,
         yy,
         z,
         psiPlot,
         ci,
-        "Indo-Pacific MOC [Sv]",
+        "b. Indo-Pacific MOC [Sv]",
         cmap=cmap,
         xlim=(-40, 65),
         topomask=indo_pacific_topomask,
@@ -273,11 +312,12 @@ def plot(y, yh, z, depth, atlantic_arctic_mask, indo_pacific_mask, msftyyz, labe
     ax3 = plt.subplot(3, 1, 3, facecolor="gray")
     psiPlot = psi[0, 2]
     _plotPsi(
+        ax3,
         yy,
         z,
         psiPlot,
         ci,
-        "Global MOC [Sv]",
+        "c. Global MOC [Sv]",
         cmap=cmap,
         topomask=global_topomask,
         yh=yh,
@@ -314,9 +354,18 @@ def run(dictArgs):
         varname = "vmo"
     ds.close()
 
-    x, y, yh, z, depth, basin_code, atlantic_arctic_mask, indo_pacific_mask, arr = read(
-        dictArgs, varname=varname
-    )
+    (
+        x,
+        y,
+        yh,
+        z,
+        depth,
+        basin_code,
+        atlantic_arctic_mask,
+        indo_pacific_mask,
+        arr,
+        dates,
+    ) = read(dictArgs, varname=varname)
 
     if varname != "msftyyz":
         msftyyz = calculate(arr, basin_code)
@@ -331,6 +380,7 @@ def run(dictArgs):
         atlantic_arctic_mask,
         indo_pacific_mask,
         msftyyz,
+        dates,
         dictArgs["label"],
     )
     # ---------------------
