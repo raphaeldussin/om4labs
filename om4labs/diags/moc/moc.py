@@ -128,13 +128,22 @@ def read(dictArgs, varname="vmo"):
     infile = dictArgs["infile"]
     ds = xr.open_mfdataset(infile, combine="by_coords")
 
-    dsQ = horizontal_grid(dictArgs, point_type="q")
-    geolon_c = dsQ.geolon.values
-    geolat_c = dsQ.geolat.values
-    yq = dsQ.nominal_y.values
-    basin_code = dsQ.basin.values
+    # vmo
+    arr = ds[varname].to_masked_array()
 
-    depth = read_topography(dictArgs)
+    outputgrid = "nonsymetric"
+    dsV = horizontal_grid(dictArgs, point_type="v", outputgrid=outputgrid)
+    if arr.shape[-2] == (dsV.geolat.shape[0] + 1):
+        print("Symmetric grid detected.<br>")
+        outputgrid = "symetric"
+        dsV = horizontal_grid(dictArgs, point_type="v", outputgrid=outputgrid)
+
+    geolon_v = dsV.geolon.values
+    geolat_v = dsV.geolat.values
+    yq = dsV.nominal_y.values
+    basin_code = dsV.basin.values
+
+    depth = read_topography(dictArgs, outputgrid=outputgrid)
 
     if varname == "msftyyz":
         zw = np.array(ds["z_i"][:])
@@ -149,15 +158,12 @@ def read(dictArgs, varname="vmo"):
     atlantic_arctic_mask = generate_basin_masks(basin_code, basin="atlantic_arctic")
     indo_pacific_mask = generate_basin_masks(basin_code, basin="indo_pacific")
 
-    # vmo
-    arr = ds[varname].to_masked_array()
-
     # date range
     dates = date_range(ds)
 
     return (
-        geolon_c,
-        geolat_c,
+        geolon_v,
+        geolat_v,
         yq,
         z,
         depth,
