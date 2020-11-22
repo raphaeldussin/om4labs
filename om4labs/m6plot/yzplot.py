@@ -157,7 +157,7 @@ def yzplot(
         # plt.gcf().subplots_adjust(left=.10, right=.99, wspace=0, bottom=.09, top=.9, hspace=0)
         axis = plt.gca()
 
-    plt.pcolormesh(yCoord, zCoord, field2, cmap=cmap, norm=norm)
+    plt.pcolormesh(yCoord, zCoord, field2, cmap=cmap, norm=norm, shading="auto")
     if interactive:
         addStatusBar(yCoord, zCoord, field2)
     cb = plt.colorbar(fraction=0.08, pad=0.02, extend=extend)
