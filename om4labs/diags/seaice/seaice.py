@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import cartopy.crs as ccrs
 import cartopy.feature
+import copy
 import time
 import warnings
 
@@ -231,7 +232,7 @@ def _plot_map_panel(
     contour=True,
 ):
     """Function to plot a map-based sea ice panel"""
-    cmap = plt.get_cmap(cmap)
+    cmap = copy.copy(mpl.cm.get_cmap(cmap))
     cmap.set_bad(color="#555555", alpha=1)
     ax.set_extent(extent, ccrs.PlateCarree())
     cb = ax.pcolormesh(
