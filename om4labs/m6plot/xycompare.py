@@ -209,7 +209,7 @@ def xycompare(
             cb1 = plt.colorbar(fraction=0.08, pad=0.02, extend=extend)
             plt.xlim(xLims)
             plt.ylim(yLims)
-            axis.set_xticklabels([""])
+            axis.axes.get_xaxis().set_visible(False)
         else:
             plotBasemapPanel(
                 maskedField1,
@@ -251,7 +251,7 @@ def xycompare(
             plt.xlim(xLims)
             plt.ylim(yLims)
             if npanels > 2:
-                axis.set_xticklabels([""])
+                axis.axes.get_xaxis().set_visible(False)
         else:
             plotBasemapPanel(
                 maskedField2,
