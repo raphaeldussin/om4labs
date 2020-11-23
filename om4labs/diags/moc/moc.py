@@ -220,7 +220,7 @@ def plot(
         # shade topography
         if topomask is not None:
             cMap = mpl.colors.ListedColormap(["gray"])
-            ax.pcolormesh(yh, -1.0 * zz, topomask, cmap=cMap)
+            ax.pcolormesh(yh, -1.0 * zz, topomask, cmap=cMap, shading="auto")
 
         # set latitude limits
         if xlim is not None:
