@@ -14,6 +14,7 @@ from om4labs.om4plotting import plot_yzdiff, plot_yzcompare
 from om4labs.om4common import read_data, subset_data
 from om4labs.om4common import simple_average, copy_coordinates
 from om4labs.om4common import compute_area_regular_grid
+from om4labs.om4common import date_range
 from om4labs.om4common import image_handler
 
 from om4labs.om4parser import default_diag_parser
@@ -53,7 +54,7 @@ def read(dictArgs):
     depth = depth * -1.0
 
     dsmodel = xr.open_mfdataset(
-        dictArgs["infile"], combine="by_coords", decode_times=False
+        dictArgs["infile"], combine="by_coords", use_cftime=True
     )
 
     if dictArgs["obsfile"] is not None:
@@ -122,7 +123,10 @@ def read(dictArgs):
         else:
             raise IOError("no cell area provided")
 
-    return y, z, depth, area, codes, model, obs
+    # date range
+    dates = date_range(dsmodel)
+
+    return y, z, depth, area, codes, model, obs, dates
 
 
 def parse(cliargs=None, template=False):
@@ -169,7 +173,7 @@ def run(dictArgs):
     or DORA can build the args and run it directly"""
 
     # read the data needed for plots
-    y, z, depth, area, code, model, obs = read(dictArgs)
+    y, z, depth, area, code, model, obs, dates = read(dictArgs)
 
     if len(code.shape) == 2:
         code = np.tile(code[None, :, :], (len(z), 1, 1))
@@ -178,14 +182,16 @@ def run(dictArgs):
     filename = []
 
     # global
-    figs.append(plot(y, z, depth, area, model, obs, dictArgs)[0])
+    figs.append(plot(y, z, depth, area, model, obs, dates, dictArgs)[0])
     filename.append(
         f"{dictArgs['outdir']}/{dictArgs['var']}_yz_gbl_{dictArgs['style']}"
     )
 
     # atlantic
     figs.append(
-        plot(y, z, depth, area, model, obs, dictArgs, code=code, basin="atlantic")[0]
+        plot(
+            y, z, depth, area, model, obs, dates, dictArgs, code=code, basin="atlantic"
+        )[0]
     )
     filename.append(
         f"{dictArgs['outdir']}/{dictArgs['var']}_yz_atl_{dictArgs['style']}"
@@ -193,7 +199,9 @@ def run(dictArgs):
 
     # indopacific
     figs.append(
-        plot(y, z, depth, area, model, obs, dictArgs, code=code, basin="indopac")[0]
+        plot(
+            y, z, depth, area, model, obs, dates, dictArgs, code=code, basin="indopac"
+        )[0]
     )
     filename.append(
         f"{dictArgs['outdir']}/{dictArgs['var']}_yz_pac_{dictArgs['style']}"
@@ -204,7 +212,7 @@ def run(dictArgs):
     return imgbufs
 
 
-def plot(y, z, depth, area, model, obs, dictArgs, code=None, basin=None):
+def plot(y, z, depth, area, model, obs, dates, dictArgs, code=None, basin=None):
     """meta plotting function"""
 
     if (code is not None) or (basin is not None):
@@ -252,7 +260,7 @@ def plot(y, z, depth, area, model, obs, dictArgs, code=None, basin=None):
         title = get_run_name(dictArgs["infile"])
         suptitle = f"{title} {dictArgs['label']}"
 
-    title_diff = f"{var} bias (w.r.t. {obsds}) {units}"
+    title_diff = f"{var} bias (w.r.t. {obsds}) {units}   Years {dates[0]} - {dates[1]}"
     title1_compare = f"{var} {units}"
     title2_compare = f"{obsds} {var} {units}"
     png_diff = f"{pngout}/{var}_yz_annual_bias_{obsds}.png"
