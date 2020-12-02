@@ -57,10 +57,18 @@ def date_range(ds):
         (start year, end year) for time dimension of the dataset
     """
 
-    return (
-        int(ds["time"].isel({"time": 0}).dt.strftime("%Y")),
-        int(ds["time"].isel({"time": -1}).dt.strftime("%Y")),
-    )
+    if "time_bnds" in list(ds.variables):
+        t0 = tuple(ds["time_bnds"].values[0][0].timetuple())[0]
+
+        # if end bound is Jan-1, fall back to previous year
+        t1 = tuple(ds["time_bnds"].values[-1][-1].timetuple())
+        t1 = (t1[0] - 1) if (t1[1:3] == (1, 1)) else t1[0]
+
+    else:
+        t0 = int(ds["time"].isel({"time": 0}).dt.strftime("%Y"))
+        t1 = int(ds["time"].isel({"time": -1}).dt.strftime("%Y"))
+
+    return (t0, t1)
 
 
 def extract_from_tar(tar, member):
