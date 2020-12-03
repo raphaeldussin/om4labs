@@ -14,6 +14,7 @@ from om4labs.om4plotting import plot_xydiff, plot_xycompare
 from om4labs.om4common import read_data, subset_data
 from om4labs.om4common import simple_average, copy_coordinates
 from om4labs.om4common import compute_area_regular_grid
+from om4labs.om4common import date_range
 from om4labs.om4common import image_handler
 
 from om4labs.om4parser import default_diag_parser
@@ -25,7 +26,7 @@ def read(dictArgs):
     """ read data from model and obs files, process data and return it """
 
     dsmodel = xr.open_mfdataset(
-        dictArgs["infile"], combine="by_coords", decode_times=False
+        dictArgs["infile"], combine="by_coords", use_cftime=True
     )
 
     if dictArgs["obsfile"] is not None:
@@ -107,7 +108,10 @@ def read(dictArgs):
         else:
             raise IOError("no cell area provided")
 
-    return x, y, area, model, obs
+    # date range
+    dates = date_range(dsmodel)
+
+    return x, y, area, model, obs, dates
 
 
 def parse(cliargs=None, template=False):
@@ -154,16 +158,16 @@ def run(dictArgs):
     or DORA can build the args and run it directly"""
 
     # read the data needed for plots
-    x, y, area, model, obs = read(dictArgs)
+    x, y, area, model, obs, dates = read(dictArgs)
     # make the plots
-    figs = plot(x, y, area, model, obs, dictArgs)
+    figs = plot(x, y, area, model, obs, dates, dictArgs)
     filename = f"{dictArgs['outdir']}/{dictArgs['var']}_{dictArgs['style']}"
     imgbufs = image_handler(figs, dictArgs, filename=filename)
 
     return imgbufs
 
 
-def plot(x, y, area, model, obs, dictArgs):
+def plot(x, y, area, model, obs, dates, dictArgs):
     """meta plotting function"""
 
     streamdiff = True if dictArgs["style"] == "diff" else False
@@ -186,7 +190,7 @@ def plot(x, y, area, model, obs, dictArgs):
         title = get_run_name(dictArgs["infile"])
         suptitle = f"{title} {dictArgs['label']}"
 
-    title_diff = f"{var} bias (w.r.t. {obsds}) {units}"
+    title_diff = f"{var} bias (w.r.t. {obsds}) {units}   Years {dates[0]} - {dates[1]}"
     title1_compare = f"{var} {units}"
     title2_compare = f"{obsds} {var} {units}"
     png_diff = f"{pngout}/{var}_annual_bias_{obsds}.png"
