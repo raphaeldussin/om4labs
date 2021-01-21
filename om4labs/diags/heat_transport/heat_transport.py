@@ -122,6 +122,9 @@ def read(dictArgs, adv_varname="T_ady_2d", dif_varname="T_diffy_2d"):
     atlantic_arctic_mask = generate_basin_masks(basin_code, basin="atlantic_arctic")
     indo_pacific_mask = generate_basin_masks(basin_code, basin="indo_pacific")
 
+    # date range
+    dates = date_range(ds)
+
     return (
         geolon_v,
         geolat_v,
@@ -131,6 +134,7 @@ def read(dictArgs, adv_varname="T_ady_2d", dif_varname="T_diffy_2d"):
         indo_pacific_mask,
         advective,
         diffusive,
+        dates,
     )
 
 
@@ -187,7 +191,7 @@ class GWObs:
         )
 
 
-def plot(dictArgs, yq, trans_global, trans_atlantic, trans_pacific):
+def plot(dictArgs, yq, trans_global, trans_atlantic, trans_pacific, dates=None):
 
     # Load observations for plotting
     GW = GWObs()
@@ -224,6 +228,13 @@ def plot(dictArgs, yq, trans_global, trans_atlantic, trans_pacific):
         ha="left",
         transform=ax1.transAxes,
     )
+
+    if dates is not None:
+        assert isinstance(dates, tuple), "Year range should be provided as a tuple."
+        datestring = f"Years {dates[0]} - {dates[1]}"
+        ax1.text(
+            0.98, 1.02, datestring, ha="right", fontsize=10, transform=ax1.transAxes
+        )
 
     # if diffusive is None: annotatePlot('Warning: Diffusive component of transport is missing.')
 
@@ -309,13 +320,14 @@ def run(dictArgs):
         indo_pacific_mask,
         advective,
         diffusive,
+        dates,
     ) = read(dictArgs)
 
     trans_global = calculate(advective, diffusive)
     trans_atlantic = calculate(advective, diffusive, vmask=atlantic_arctic_mask)
     trans_pacific = calculate(advective, diffusive, vmask=indo_pacific_mask)
 
-    fig = plot(dictArgs, yq, trans_global, trans_atlantic, trans_pacific)
+    fig = plot(dictArgs, yq, trans_global, trans_atlantic, trans_pacific, dates)
 
     filename = f"{dictArgs['outdir']}/heat_transport"
     imgbufs = image_handler([fig], dictArgs, filename=filename)
