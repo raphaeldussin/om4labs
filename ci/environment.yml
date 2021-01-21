@@ -1,0 +1,29 @@
+name: om4labs
+channels:
+  - conda-forge
+dependencies:
+  - python
+  - black
+  - cartopy
+  - dask
+  - intake-xarray
+  - esmf=8.0.0
+  - esmpy=8.0.0
+  - matplotlib
+  - netcdf4
+  - numpy
+  - numba
+  - palettable
+  - pip
+  - pip:
+    - git+https://github.com/jkrasting/cmip_basins.git
+    - git+https://github.com/raphaeldussin/static_downsampler.git
+  - pyshp
+  - pytest
+  - regionmask
+  - scipy
+  - shapely
+  - six
+  - xarray
+  - xesmf=0.4.0
+  - xgcm
