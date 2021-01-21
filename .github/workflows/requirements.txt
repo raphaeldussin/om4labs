@@ -1,0 +1,16 @@
+black
+dask
+intake-xarray
+matplotlib
+netcdf4
+numpy
+numba
+palettable
+pyshp
+pytest
+regionmask
+scipy
+shapely
+six
+xarray
+xesmf
