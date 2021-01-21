@@ -12,7 +12,9 @@ import palettable
 import xarray as xr
 import warnings
 
+from om4labs.om4common import horizontal_grid
 from om4labs.om4common import image_handler
+from om4labs.om4common import date_range
 from om4labs.om4parser import default_diag_parser
 
 warnings.filterwarnings("ignore", message=".*csr_matrix.*")
@@ -93,35 +95,7 @@ def read(dictArgs, adv_varname="T_ady_2d", dif_varname="T_diffy_2d"):
     """Read in heat transport data"""
 
     infile = dictArgs["infile"]
-
-    if dictArgs["config"] is not None:
-        # use dataset from catalog, either from command line or default
-        cat_platform = (
-            f"catalogs/{dictArgs['config']}_catalog_{dictArgs['platform']}.yml"
-        )
-        catfile = pkgr.resource_filename("om4labs", cat_platform)
-        cat = intake.open_catalog(catfile)
-        ds_basin = cat["basin"].to_dask()
-        ds_gridspec = cat["ocean_hgrid"].to_dask()
-
-    if dictArgs["basin"] is not None:
-        ds_basin = xr.open_dataset(dictArgs["basin"])
-
     ds = xr.open_mfdataset(infile, combine="by_coords")
-
-    # horizontal grid
-    x = np.array(ds_gridspec.x.to_masked_array())[::2, ::2]
-    y = np.array(ds_gridspec.y.to_masked_array())[::2, ::2]
-
-    # nominal y coordinate
-    yq = ds.yq.to_masked_array()
-
-    # basin code
-    basin_code = ds_basin.basin.to_masked_array()
-
-    # basin masks
-    atlantic_arctic_mask = generate_basin_masks(basin_code, basin="atlantic_arctic")
-    indo_pacific_mask = generate_basin_masks(basin_code, basin="indo_pacific")
 
     # advective component of transport
     advective = ds[adv_varname]
@@ -132,9 +106,25 @@ def read(dictArgs, adv_varname="T_ady_2d", dif_varname="T_diffy_2d"):
     else:
         diffusive = None
 
+    outputgrid = "nonsymetric"
+    dsV = horizontal_grid(dictArgs, point_type="v", outputgrid=outputgrid)
+    if advective.shape[-2] == (dsV.geolat.shape[0] + 1):
+        print("Symmetric grid detected.<br>")
+        outputgrid = "symetric"
+        dsV = horizontal_grid(dictArgs, point_type="v", outputgrid=outputgrid)
+
+    geolon_v = dsV.geolon.values
+    geolat_v = dsV.geolat.values
+    yq = dsV.nominal_y.values
+    basin_code = dsV.basin.values
+
+    # basin masks
+    atlantic_arctic_mask = generate_basin_masks(basin_code, basin="atlantic_arctic")
+    indo_pacific_mask = generate_basin_masks(basin_code, basin="indo_pacific")
+
     return (
-        x,
-        y,
+        geolon_v,
+        geolat_v,
         yq,
         basin_code,
         atlantic_arctic_mask,
@@ -240,7 +230,7 @@ def plot(dictArgs, yq, trans_global, trans_atlantic, trans_pacific):
     # Atlantic Heat Transport
     ax2 = plt.subplot(3, 1, 2)
     plt.plot(yq, yq * 0.0, "k", linewidth=0.5)
-    trans_atlantic[yq < -34] = np.nan
+    trans_atlantic[yq <= -33] = np.nan
     plt.plot(yq, trans_atlantic, "r", linewidth=1.5, label="Model")
     GW.atl.annotate(ax2)
     plt.plot(yobs, NCEP_Atlantic, "k--", linewidth=0.5, label="NCEP")
@@ -258,7 +248,7 @@ def plot(dictArgs, yq, trans_global, trans_atlantic, trans_pacific):
     # Indo-pacific Heat Transport
     ax3 = plt.subplot(3, 1, 3)
     plt.plot(yq, yq * 0.0, "k", linewidth=0.5)
-    trans_pacific[yq < -34] = np.nan
+    trans_pacific[yq <= -33] = np.nan
     plt.plot(yq, trans_pacific, "r", linewidth=1.5, label="Model")
     GW.indpac.annotate(ax3)
     plt.plot(yobs, NCEP_IndoPac, "k--", linewidth=0.5, label="NCEP")
