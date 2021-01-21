@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/raphaeldussin/OM4labs.svg?branch=master)](https://travis-ci.org/raphaeldussin/OM4labs)
+![CI](https://github.com/raphaeldussin/om4labs/workflows/CI/badge.svg)
 
 # OM4-Analysis-Labs
 scripts for OM4 analysis
