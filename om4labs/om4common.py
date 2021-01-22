@@ -44,7 +44,7 @@ class DefaultDictParser(argparse.ArgumentParser):
         return defaults
 
 
-def date_range(ds):
+def date_range(ds, ref_time="1970-01-01T00:00:00Z"):
     """Returns a tuple of start year and end year from xarray dataset
 
     Parameters
@@ -69,7 +69,7 @@ def date_range(ds):
             base_time = ds["time"].encoding["units"]
             base_time = base_time.split(" ")[2:4]
             base_time = np.datetime64(f"{base_time[0]}T{base_time[1]}Z")
-            offset = base_time - np.datetime64("1970-01-01T00:00:00Z")
+            offset = base_time - np.datetime64(ref_time)
 
             t0 = ds["time_bnds"].values[0][0] + offset
             t0 = datetime.fromtimestamp(int(np.ceil(int(t0) * 1.0e-9)))
