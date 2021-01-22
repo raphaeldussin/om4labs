@@ -269,10 +269,6 @@ def grid_from_supergrid(ds, point_type="t", outputgrid="nonsymetric"):
     geolon = subsample_supergrid(ds, "x", point_type, outputgrid=outputgrid)
     area = sum_on_supergrid(ds, "area", point_type, outputgrid=outputgrid)
 
-    # kludge - requires fix in static_downsampler pkg
-    if outputgrid == "symetric":
-        area = area[:, 1:]
-
     return geolat, geolon, area
 
 
