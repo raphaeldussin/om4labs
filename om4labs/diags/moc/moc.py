@@ -143,7 +143,7 @@ def read(dictArgs, varname="vmo"):
     yq = dsV.nominal_y.values
     basin_code = dsV.basin.values
 
-    depth = read_topography(dictArgs, outputgrid=outputgrid)
+    depth = read_topography(dictArgs, coords=ds.coords, point_type="v")
 
     if varname == "msftyyz":
         zw = np.array(ds["z_i"][:])

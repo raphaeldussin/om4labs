@@ -13,6 +13,7 @@ import xarray as xr
 import warnings
 
 from cmip_basins import generate_basin_codes
+from xgcm import Grid
 
 try:
     from om4labs.helpers import try_variable_from_list
@@ -435,7 +436,7 @@ def open_intake_catalog(platform, config):
     return cat
 
 
-def read_topography(dictArgs, outputgrid="nonsymetric"):
+def read_topography(dictArgs, coords=None, point_type="t"):
     """Returns topography field based on the values of the CLI
     arguments and the presence of intake catalogs.
 
@@ -451,6 +452,8 @@ def read_topography(dictArgs, outputgrid="nonsymetric"):
     numpy.ma.maskedArray
         topography array
     """
+
+    point_type = point_type.upper()
 
     verbose = dictArgs["verbose"] if "verbose" in dictArgs else False
 
@@ -483,21 +486,19 @@ def read_topography(dictArgs, outputgrid="nonsymetric"):
     elif "depth" in list(ds.variables):
         depth = ds.depth
 
-    if outputgrid == "symetric":
-        """ extend array, assuming periodic/tripolar grid"""
-        warnings.warn("assuming the grid is periodic and tripolar")
-        tmp = depth.values
-        inner = xr.DataArray(tmp, dims=("y", "x"))
+    coords = xr.Dataset(coords)
+    xedge = "outer" if (len(coords.xq) == len(coords.xh) + 1) else "right"
+    yedge = "outer" if (len(coords.yq) == len(coords.yh) + 1) else "right"
+    out_grid = Grid(
+        coords,
+        coords={"X": {"center": "xh", xedge: "xq"}, "Y": {"center": "yh", yedge: "yq"}},
+        periodic=["X"],
+    )
 
-        # southern boundary
-        south = xr.DataArray(tmp[0, :], dims=("x"))
-        inner_w_poles = xr.concat([south, inner], dim="y")
-
-        # apply E-W boundary condition
-        west = xr.DataArray(inner_w_poles[-1, :], dims=("y"))
-        out = xr.concat([west, inner_w_poles], dim="x")
-        depth = out
-        depth = depth[:, 1:]
+    if point_type == "V":
+        depth = out_grid.interp(depth, "Y", boundary="fill")
+    elif point_type == "U":
+        depth = out_grid.interp(depth, "X", boundary="fill")
 
     depth = np.where(np.isnan(depth.to_masked_array()), 0.0, depth)
 
