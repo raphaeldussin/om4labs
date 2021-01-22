@@ -12,6 +12,7 @@ import tarfile as tf
 import xarray as xr
 import warnings
 
+from datetime import datetime
 from cmip_basins import generate_basin_codes
 
 try:
@@ -43,7 +44,7 @@ class DefaultDictParser(argparse.ArgumentParser):
         return defaults
 
 
-def date_range(ds):
+def date_range(ds, ref_time="1970-01-01T00:00:00Z"):
     """Returns a tuple of start year and end year from xarray dataset
 
     Parameters
@@ -58,11 +59,36 @@ def date_range(ds):
     """
 
     if "time_bnds" in list(ds.variables):
-        t0 = tuple(ds["time_bnds"].values[0][0].timetuple())[0]
 
-        # if end bound is Jan-1, fall back to previous year
-        t1 = tuple(ds["time_bnds"].values[-1][-1].timetuple())
-        t1 = (t1[0] - 1) if (t1[1:3] == (1, 1)) else t1[0]
+        # Xarray decodes bounds times relative to the epoch and
+        # returns a numpy timedelta object in some instances
+        # instead of a cftime datetime object. Manual decoding
+        # and shifting may be necessary
+
+        if isinstance(ds["time_bnds"].values[0][0], np.timedelta64):
+            base_time = ds["time"].encoding["units"]
+            base_time = base_time.split(" ")[2:4]
+            base_time = np.datetime64(f"{base_time[0]}T{base_time[1]}Z")
+            offset = base_time - np.datetime64(ref_time)
+
+            t0 = ds["time_bnds"].values[0][0] + offset
+            t0 = datetime.fromtimestamp(int(np.ceil(int(t0) * 1.0e-9)))
+            t0 = tuple(t0.timetuple())
+            # if start bound is Dec-31, advance to next year
+            t0 = (t0[0] + 1) if (t0[1:3] == (12, 31)) else t0[0]
+
+            t1 = ds["time_bnds"].values[-1][-1] + offset
+            t1 = datetime.fromtimestamp(int(np.ceil(int(t1) * 1.0e-9)))
+            t1 = tuple(t1.timetuple())
+            # if end bound is Jan-1, fall back to previous year
+            t1 = (t1[0] - 1) if (t1[1:3] == (1, 1)) else t1[0]
+
+        else:
+            t0 = tuple(ds["time_bnds"].values[0][0].timetuple())[0]
+
+            # if end bound is Jan-1, fall back to previous year
+            t1 = tuple(ds["time_bnds"].values[-1][-1].timetuple())
+            t1 = (t1[0] - 1) if (t1[1:3] == (1, 1)) else t1[0]
 
     else:
         t0 = int(ds["time"].isel({"time": 0}).dt.strftime("%Y"))
