@@ -14,6 +14,7 @@ import warnings
 
 from datetime import datetime
 from cmip_basins import generate_basin_codes
+from xgcm import Grid
 
 try:
     from om4labs.helpers import try_variable_from_list
@@ -24,6 +25,7 @@ except ImportError:
 
 from static_downsampler.static import sum_on_supergrid
 from static_downsampler.static import subsample_supergrid
+from static_downsampler.static import extend_supergrid_array
 
 possible_names = {}
 possible_names["lon"] = ["lon", "LON", "longitude", "LONGITUDE"]
@@ -268,7 +270,7 @@ def compute_area_regular_grid(ds, Rearth=6378e3):
     return area
 
 
-def grid_from_supergrid(ds, point_type="t"):
+def grid_from_supergrid(ds, point_type="t", outputgrid="nonsymetric"):
     """Subsample super grid to obtain geolon, geolat, and cell area
 
     Parameters
@@ -277,6 +279,8 @@ def grid_from_supergrid(ds, point_type="t"):
         Input dataset containing variables from the supergrid
     point_type : str, optional
         Requested grid type of t|q|u|v, by default "t"
+    outputgrid : str, optional
+        Either "symetric" or "nonsymetric", default is "nonsymetric"
 
     Returns
     -------
@@ -287,13 +291,17 @@ def grid_from_supergrid(ds, point_type="t"):
     area : xarray.DataArray
         Array of cell areas with dimension (geolat,geolon)
     """
-    geolat = subsample_supergrid(ds, "y", point_type)
-    geolon = subsample_supergrid(ds, "x", point_type)
-    area = sum_on_supergrid(ds, "area", point_type)
+
+    geolat = subsample_supergrid(ds, "y", point_type, outputgrid=outputgrid)
+    geolon = subsample_supergrid(ds, "x", point_type, outputgrid=outputgrid)
+    area = sum_on_supergrid(ds, "area", point_type, outputgrid=outputgrid)
+
     return geolat, geolon, area
 
 
-def horizontal_grid(dictArgs=None, point_type="t", output_type="xarray"):
+def horizontal_grid(
+    dictArgs=None, point_type="t", outputgrid="nonsymetric", output_type="xarray"
+):
     """Returns horizontal grid parameters based on the values of the CLI
     arguments and the presence of intake catalogs.
 
@@ -314,6 +322,8 @@ def horizontal_grid(dictArgs=None, point_type="t", output_type="xarray"):
         dictionary of arguments obtained from the CLI parser, by default None
     point_type : str, optional
         Requested grid type of t|q|u|v, by default "t"
+    outputgrid : str, optional
+        Either "symetric" or "nonsymetric", default is "nonsymetric"
     output_type : str, optional
         Specify output format of either "xarray" or "numpy", by default "xarray"
 
@@ -344,7 +354,9 @@ def horizontal_grid(dictArgs=None, point_type="t", output_type="xarray"):
         if verbose:
             print("Using optional hgrid file for horizontal grid.")
         ds = xr.open_dataset(dictArgs["hgrid"])
-        geolat, geolon, area = grid_from_supergrid(ds, point_type)
+        geolat, geolon, area = grid_from_supergrid(
+            ds, point_type, outputgrid=outputgrid
+        )
 
     elif dictArgs["static"] is not None:
         if verbose:
@@ -375,7 +387,9 @@ def horizontal_grid(dictArgs=None, point_type="t", output_type="xarray"):
             print("Using optional gridspec tar file for horizontal grid.")
         tar = tf.open(dictArgs["gridspec"])
         ds = extract_from_tar(tar, "ocean_hgrid.nc")
-        geolat, geolon, area = grid_from_supergrid(ds, point_type)
+        geolat, geolon, area = grid_from_supergrid(
+            ds, point_type, outputgrid=outputgrid
+        )
 
     elif dictArgs["platform"] is not None and dictArgs["config"] is not None:
         if verbose:
@@ -384,7 +398,9 @@ def horizontal_grid(dictArgs=None, point_type="t", output_type="xarray"):
             )
         cat = open_intake_catalog(dictArgs["platform"], dictArgs["config"])
         ds = cat["ocean_hgrid"].to_dask()
-        geolat, geolon, area = grid_from_supergrid(ds, point_type)
+        geolat, geolon, area = grid_from_supergrid(
+            ds, point_type, outputgrid=outputgrid
+        )
 
     result = xr.Dataset()
     result["geolat"] = geolat
@@ -446,7 +462,7 @@ def open_intake_catalog(platform, config):
     return cat
 
 
-def read_topography(dictArgs):
+def read_topography(dictArgs, coords=None, point_type="t"):
     """Returns topography field based on the values of the CLI
     arguments and the presence of intake catalogs.
 
@@ -454,12 +470,16 @@ def read_topography(dictArgs):
     ----------
     dictArgs : dict, optional
         dictionary of arguments obtained from the CLI parser, by default None
+    outputgrid : str, optional
+        Either "symetric" or "nonsymetric", default is "nonsymetric"
 
     Returns
     -------
     numpy.ma.maskedArray
         topography array
     """
+
+    point_type = point_type.upper()
 
     verbose = dictArgs["verbose"] if "verbose" in dictArgs else False
 
@@ -488,10 +508,24 @@ def read_topography(dictArgs):
         ds = cat["topog"].to_dask()
 
     if "deptho" in list(ds.variables):
-        depth = ds.deptho.to_masked_array()
+        depth = ds.deptho
     elif "depth" in list(ds.variables):
-        depth = ds.depth.to_masked_array()
+        depth = ds.depth
 
-    depth = np.where(np.isnan(depth), 0.0, depth)
+    coords = xr.Dataset(coords)
+    xedge = "outer" if (len(coords.xq) == len(coords.xh) + 1) else "right"
+    yedge = "outer" if (len(coords.yq) == len(coords.yh) + 1) else "right"
+    out_grid = Grid(
+        coords,
+        coords={"X": {"center": "xh", xedge: "xq"}, "Y": {"center": "yh", yedge: "yq"}},
+        periodic=["X"],
+    )
+
+    if point_type == "V":
+        depth = out_grid.interp(depth, "Y", boundary="fill")
+    elif point_type == "U":
+        depth = out_grid.interp(depth, "X", boundary="fill")
+
+    depth = np.where(np.isnan(depth.to_masked_array()), 0.0, depth)
 
     return depth
