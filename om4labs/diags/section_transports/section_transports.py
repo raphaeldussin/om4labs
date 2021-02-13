@@ -26,25 +26,36 @@ reference = (
     + "doi:10.5194/gmd-9-3231-2016"
 )
 
+# passages below are (pp driectory, text label, depth range, obs limit)
 defined_passages = [
-    ("ocean_Agulhas_section", "Agulhas", (129.8, 143.6)),
-    ("ocean_Bering_Strait", "Bering Strait", (0.7, 1.1)),
-    ("ocean_Barents_opening", "Barents Opening", (1.99, 2.01)),
-    ("ocean_Davis_Strait", "Davis Strait", (-2.1, -1.1)),
-    ("ocean_Denmark_Strait", "Denmark Strait", (-4.8, -2.0)),
-    ("ocean_Drake_Passage", "Drake Passage", (129.8, 143.6)),
-    ("ocean_English_Channel", "English Channel", (0.01, 0.1)),
-    ("ocean_Faroe_Scotland", "Faroe-Scotland", (0.8, 1.0)),
-    ("ocean_Florida_Bahamas", "Florida-Bahamas", (28.9, 34.3)),
-    ("ocean_Fram_Strait", "Fram Strait", (-4.7, 0.7)),
-    ("ocean_Gibraltar_Strait", "Gibraltar Strait", (0.109, 0.111)),
-    (["ocean_Iceland_Faroe_U", "ocean_Iceland_Faroe_V"], "Iceland-Faroe", (4.35, 4.85)),
-    ("ocean_Iceland_Norway", "Iceland-Norway", None),
-    ("ocean_Indonesian_Throughflow", "Indonesian Throughflow", (-15, -13)),
-    ("ocean_Mozambique_Channel", "Mozambique Channel", (-25.6, -7.8)),
-    ("ocean_Pacific_undercurrent", "Pacific Equatorial Undercurrent", (24.5, 28.3)),
-    ("ocean_Taiwan_Luzon", "Taiwan-Luzon Strait", (-3.0, -1.8)),
-    ("ocean_Windward_Passage", "Windward Passage", (-15, 5)),
+    ("ocean_Agulhas_section", "Agulhas", None, (129.8, 143.6)),
+    ("ocean_Bering_Strait", "Bering Strait", None, (0.7, 1.1)),
+    ("ocean_Barents_opening", "Barents Opening", None, (1.99, 2.01)),
+    ("ocean_Davis_Strait", "Davis Strait", None, (-2.1, -1.1)),
+    ("ocean_Denmark_Strait", "Denmark Strait", None, (-4.8, -2.0)),
+    ("ocean_Drake_Passage", "Drake Passage", None, (129.8, 143.6)),
+    ("ocean_English_Channel", "English Channel", None, (0.01, 0.1)),
+    ("ocean_Faroe_Scotland", "Faroe-Scotland", None, (0.8, 1.0)),
+    ("ocean_Florida_Bahamas", "Florida-Bahamas", None, (28.9, 34.3)),
+    ("ocean_Fram_Strait", "Fram Strait", None, (-4.7, 0.7)),
+    ("ocean_Gibraltar_Strait", "Gibraltar Strait", None, (0.109, 0.111)),
+    (
+        ["ocean_Iceland_Faroe_U", "ocean_Iceland_Faroe_V"],
+        "Iceland-Faroe",
+        None,
+        (4.35, 4.85),
+    ),
+    ("ocean_Iceland_Norway", "Iceland-Norway", None, None),
+    ("ocean_Indonesian_Throughflow", "Indonesian Throughflow", None, (-15, -13)),
+    ("ocean_Mozambique_Channel", "Mozambique Channel", None, (-25.6, -7.8)),
+    (
+        "ocean_Pacific_undercurrent",
+        "Pacific Equatorial Undercurrent",
+        (0.0, 350.0),
+        (24.5, 28.3),
+    ),
+    ("ocean_Taiwan_Luzon", "Taiwan-Luzon Strait", None, (-3.0, -1.8)),
+    ("ocean_Windward_Passage", "Windward Passage", None, (-15, 5)),
 ]
 
 
@@ -57,6 +68,7 @@ class Passage:
         pathpp,
         tscomponent,
         passage_label="",
+        zlim=None,
         obsrange=None,
         varlist=["umo", "vmo"],
     ):
@@ -82,6 +94,7 @@ class Passage:
         self.files = files
         self.passage_label = passage_label
         self.label = label
+        self.zlim = zlim
         self.obsrange = obsrange
 
     def calculate(self):
@@ -93,7 +106,9 @@ class Passage:
         else:
             # invoke generic section transport diagnostic
             dset_transport = xr.open_mfdataset(self.files, use_cftime=True)
-            self.transport = generic_section_transport.calculate(dset_transport)
+            self.transport = generic_section_transport.calculate(
+                dset_transport, zlim=self.zlim
+            )
 
         return self
 
