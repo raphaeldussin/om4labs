@@ -39,10 +39,8 @@ def parse(cliargs=None, template=False):
         return parser.parse_args(cliargs)
 
 
-def read(dictArgs, varlist=["umo", "vmo"]):
+def read(infile, varlist=["umo", "vmo"]):
     """Reads umo and vmo files from a working directory"""
-
-    infile = dictArgs["infile"]
 
     return xr.open_mfdataset(infile, use_cftime=True, combine="by_coords")
 
@@ -172,7 +170,7 @@ def run(dictArgs):
 
     # --- the main show ---
 
-    dset_transport = read(dictArgs)
+    dset_transport = read(dictArgs["infile"])
     transport = calculate(dset_transport)
 
     dictArgs["obsrange"] = (
