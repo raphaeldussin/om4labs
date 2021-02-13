@@ -4,6 +4,7 @@ import argparse
 import io
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import numpy as np
 from om4labs import m6plot
 import xarray as xr
 
@@ -40,9 +41,13 @@ def parse(cliargs=None, template=False):
 
 
 def read(infile, varlist=["umo", "vmo"]):
-    """Reads umo and vmo files from a working directory"""
+    """Reads input files from a working directory"""
 
-    return xr.open_mfdataset(infile, use_cftime=True, combine="by_coords")
+    ds = xr.open_mfdataset(infile, use_cftime=True, combine="by_coords")
+    assert any(
+        field in ds.variables for field in varlist
+    ), f"Input dataset must include one of {varlist}"
+    return ds
 
 
 def calculate(
@@ -138,8 +143,8 @@ def plot(transport, ylim=None, label=None, passage_label=None, obsrange=None):
 
     # plot obs range
     if obsrange is not None:
-        minval = (transport.values * 0.0) + min(obsrange)
-        maxval = (transport.values * 0.0) + max(obsrange)
+        minval = min(obsrange) * np.ones((len(transport.values)))
+        maxval = max(obsrange) * np.ones((len(transport.values)))
         plt.fill_between(
             transport.time.values,
             minval,
