@@ -6,6 +6,7 @@ import intake
 import io
 import signal
 import sys
+import matplotlib
 import matplotlib.pyplot as plt
 import pkg_resources as pkgr
 import tarfile as tf
@@ -142,17 +143,8 @@ def image_handler(figs, dictArgs, filename="./figure"):
     ), "Number of figure handles and file names do not match."
 
     if dictArgs["interactive"] is True:
-        plt.ion()
-        for n, fig in enumerate(figs):
-            plt.show(fig)
+        plt.show()
 
-        def _signal_handler(sig, frame):
-            print("Complete!")
-            sys.exit(0)
-
-        signal.signal(signal.SIGINT, _signal_handler)
-        print("Press ctrl+c to exit...")
-        signal.pause()
     else:
         for n, fig in enumerate(figs):
             if dictArgs["format"] == "stream":

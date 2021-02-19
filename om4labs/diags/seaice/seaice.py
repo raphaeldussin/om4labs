@@ -389,9 +389,6 @@ def run(dictArgs):
     # set visual backend
     if dictArgs["interactive"] is False:
         plt.switch_backend("Agg")
-    else:
-        # plt.switch_backend("TkAgg")
-        plt.switch_backend("qt5agg")
 
     # --- the main show ---
     ds, dobs, valid_mask = read(dictArgs)

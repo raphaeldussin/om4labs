@@ -72,8 +72,6 @@ def yzplot(
     # set visual backend
     if interactive is False:
         plt.switch_backend("Agg")
-    else:
-        plt.switch_backend("qt5agg")
 
     c = cm.dunne_pm()
     c = cm.dunne_rainbow()

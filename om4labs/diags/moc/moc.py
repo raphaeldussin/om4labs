@@ -347,9 +347,6 @@ def run(dictArgs):
     # set visual backend
     if dictArgs["interactive"] is False:
         plt.switch_backend("Agg")
-    else:
-        # plt.switch_backend("TkAgg")
-        plt.switch_backend("qt5agg")
 
     # --- the main show ---
     ds = xr.open_mfdataset(dictArgs["infile"], combine="by_coords")
