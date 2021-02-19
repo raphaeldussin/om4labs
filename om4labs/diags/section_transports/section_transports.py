@@ -127,9 +127,32 @@ def parse(cliargs=None, template=False):
     """
     Function to capture the user-specified command line options
     """
-    description = """ """
+    description = """Driver script for plotting all OM4 section transports"""
 
-    parser = default_diag_parser(description=description, template=template)
+    exclude = [
+        "basin",
+        "config",
+        "gridspec",
+        "hgrid",
+        "infile",
+        "obsfile",
+        "platform",
+        "static",
+        "suptitle",
+        "topog",
+    ]
+
+    parser = default_diag_parser(
+        description=description, template=template, exclude=exclude
+    )
+
+    parser.add_argument(
+        "ppdir",
+        metavar="PPDIR",
+        type=str,
+        nargs="+",
+        help="Path to root post-processing directory (<...>/pp)",
+    )
 
     if template is True:
         return parser.parse_args(None).__dict__
@@ -148,11 +171,11 @@ def run(dictArgs):
 
     # --- the main show ---
 
-    assert len(dictArgs["infile"]) == 1, "Only one path may be provided to this routine"
-    infile = dictArgs["infile"][0]
+    assert len(dictArgs["ppdir"]) == 1, "Only one path may be provided to this routine"
+    ppdir = dictArgs["ppdir"][0]
 
     # read in the data
-    passages = [Passage(dictArgs["label"], infile, *x) for x in defined_passages]
+    passages = [Passage(dictArgs["label"], ppdir, *x) for x in defined_passages]
 
     # calculate the transports for each of the passages
     passages = [x.calculate() for x in passages]

@@ -16,9 +16,23 @@ def parse(cliargs=None, template=False):
     """
     Function to capture the user-specified command line options
     """
-    description = """ """
+    description = """Generic routine for plotting section transports"""
 
-    parser = default_diag_parser(description=description, template=template)
+    exclude = [
+        "basin",
+        "config",
+        "gridspec",
+        "hgrid",
+        "obsfile",
+        "platform",
+        "static",
+        "suptitle",
+        "topog",
+    ]
+
+    parser = default_diag_parser(
+        description=description, template=template, exclude=exclude
+    )
 
     parser.add_argument(
         "--passage_label",
