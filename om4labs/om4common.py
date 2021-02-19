@@ -3,7 +3,9 @@
 import numpy as np
 import argparse
 import intake
+import glob
 import io
+import os
 import signal
 import sys
 import matplotlib
@@ -100,6 +102,38 @@ def date_range(ds, ref_time="1970-01-01T00:00:00Z"):
     return (t0, t1)
 
 
+def discover_ts_dir(path, default="ts/daily"):
+    """Find the directory with the longest timeseries chunk
+
+    Parameters
+    ----------
+    path : str, path-like
+        Path to top-level (.../pp) post-processing directory
+    default : str, optional
+        Time resolution to scan, by default "ts/daily"
+
+    Returns
+    -------
+    str, path-like
+        Full path to timeseries directory with the longest chunks
+    """
+
+    # combine root pp path with the default chunk
+    path = f"{path}/{default}"
+    path = fixdir(path)
+
+    # get a list of subdirectories
+    subdirs = [f.path for f in os.scandir(path) if f.is_dir()]
+    subdirs = [dirname.replace(f"{path}/", "") for dirname in subdirs]
+
+    # chomp the last part of the path to obtain the numerical chunk length
+    subdirs = [int(dirname.replace("yr", "")) for dirname in subdirs]
+
+    # reconstruct and return the path
+    return_path = f"{path}/{max(subdirs)}yr/"
+    return fixdir(return_path)
+
+
 def extract_from_tar(tar, member):
     """Loads Xarray DataSet in memory from a file contained inside a tar file
 
@@ -127,6 +161,22 @@ def extract_from_tar(tar, member):
     dataset = xr.open_dataset(data)
 
     return dataset
+
+
+def fixdir(path):
+    """Ensures a path string does not contain a double-slash
+
+    Parameters
+    ----------
+    path : str, path-like
+        string containing a path
+
+    Returns
+    -------
+    string with double slashes removed
+
+    """
+    return path.replace("//", "/")
 
 
 def image_handler(figs, dictArgs, filename="./figure"):
