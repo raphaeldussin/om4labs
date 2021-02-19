@@ -48,6 +48,13 @@ def parse(cliargs=None, template=False):
         help="Comma-separated tuple of min and max observed ranges (e.g. -20,20)",
     )
 
+    parser.add_argument(
+        "--outfile",
+        type=str,
+        default="section",
+        help="Name of output file name with path (--outdir) and extension (--format)",
+    )
+
     if template is True:
         return parser.parse_args(None).__dict__
     else:
@@ -208,8 +215,8 @@ def run(dictArgs):
     # ---------------------
 
     # construct output filename based on "passage_label" argument, if present
-    filename = dictArgs["passage_label"]
-    filename = filename.replace(" ", "_") if filename != "" else "section"
+    filename = dictArgs["outfile"]
+    filename = filename.replace(" ", "_")
     filename = f"{dictArgs['outdir']}/{filename}"
     imgbufs = image_handler([fig], dictArgs, filename=filename)
 
