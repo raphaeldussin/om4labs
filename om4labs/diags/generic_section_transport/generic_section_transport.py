@@ -193,7 +193,10 @@ def run(dictArgs):
 
     # ---------------------
 
-    filename = f"{dictArgs['outdir']}/section"
+    # construct output filename based on "passage_label" argument, if present
+    filename = dictArgs["passage_label"]
+    filename = filename.replace(" ", "_") if filename != "" else "section"
+    filename = f"{dictArgs['outdir']}/{filename}"
     imgbufs = image_handler([fig], dictArgs, filename=filename)
 
     return imgbufs
