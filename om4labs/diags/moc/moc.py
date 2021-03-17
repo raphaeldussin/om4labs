@@ -10,6 +10,7 @@ import numpy as np
 from om4labs import m6plot
 import palettable
 import xarray as xr
+import xoverturning
 import warnings
 
 from om4labs.om4common import horizontal_grid
@@ -133,6 +134,7 @@ def read(dictArgs, varname="vmo"):
 
     outputgrid = "nonsymetric"
     dsV = horizontal_grid(dictArgs, point_type="v", outputgrid=outputgrid)
+    dsT = horizontal_grid(dictArgs, point_type="t", outputgrid=outputgrid)
     if arr.shape[-2] == (dsV.geolat.shape[0] + 1):
         print("Symmetric grid detected.<br>")
         outputgrid = "symetric"
@@ -142,8 +144,8 @@ def read(dictArgs, varname="vmo"):
     geolat_v = dsV.geolat.values
     yq = dsV.nominal_y.values
     basin_code = dsV.basin.values
-
     depth = read_topography(dictArgs, coords=ds.coords, point_type="v")
+    depth_t = read_topography(dictArgs, coords=ds.coords, point_type="t")
 
     if varname == "msftyyz":
         zw = np.array(ds["z_i"][:])
@@ -160,6 +162,17 @@ def read(dictArgs, varname="vmo"):
 
     # date range
     dates = date_range(ds)
+
+    # output xarray.Dataset
+    dset_out = xr.Dataset()
+    dset_out["geolon"] = dsT.geolon
+    dset_out["geolat"] = dsT.geolat
+    dset_out["umo"] = ds["umo"]
+    dset_out["vmo"] = ds["vmo"]
+    dset_out.attrs["dates"] = dates
+    dset_out["wet"] = xr.where(depth_t,1.,0.)
+
+    depth = np.where(np.isnan(depth.to_masked_array()), 0.0, depth)
 
     return (
         geolon_v,
