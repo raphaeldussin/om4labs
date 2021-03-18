@@ -23,72 +23,6 @@ warnings.filterwarnings("ignore", message=".*csr_matrix.*")
 warnings.filterwarnings("ignore", message=".*dates out of range.*")
 
 
-def get_z(ds, depth, var_name):
-    """Returns 3d interface positions from netcdf group rg, based on dimension data for variable var_name"""
-    if "e" in ds.variables:  # First try native approach
-        if len(ds.e) == 3:
-            return ds.e
-        elif len(ds.e) == 4:
-            return ds.e[0]
-    if var_name not in ds.variables:
-        raise Exception('Variable "' + var_name + '" not found in dataset')
-    if len(ds[var_name].shape) < 3:
-        raise Exception('Variable "' + var_name + '" must have 3 or more dimensions')
-    vdim = ds[var_name].dims[-3]
-    if vdim not in ds.variables:
-        raise Exception(
-            'Variable "' + vdim + '" should be a [CF] dimension variable but is missing'
-        )
-    if "edges" in ds[vdim].attrs.keys():
-        zvar = ds[vdim].edges
-    elif "zw" in ds.variables:
-        zvar = "zw"
-    else:
-        raise Exception(
-            'Cannot figure out vertical coordinate from variable "' + var_name + '"'
-        )
-    if not len(ds[zvar].shape) == 1:
-        raise Exception('Variable "' + zvar + '" was expected to be 1d')
-    zw = np.array(ds[zvar][:])
-    Zmod = np.zeros((zw.shape[0], depth.shape[0], depth.shape[1]))
-    for k in range(zw.shape[0]):
-        Zmod[k] = -np.minimum(depth, abs(zw[k]))
-    return Zmod
-
-
-def compute_msftyyz(vmo, basin_code, nc_misval=1.0e20):
-    """Computes meridional overturning streamfunction according to CMIP6 spec"""
-    atlantic_arctic_mask = generate_basin_masks(basin_code, basin="atlantic_arctic")
-    indo_pacific_mask = generate_basin_masks(basin_code, basin="indo_pacific")
-    msftyyz = np.ma.ones((vmo.shape[0], 3, vmo.shape[1] + 1, vmo.shape[2])) * 0.0
-    msftyyz[:, 0, :, :] = moc_maskedarray(vmo, mask=atlantic_arctic_mask)
-    msftyyz[:, 1, :, :] = moc_maskedarray(vmo, mask=indo_pacific_mask)
-    msftyyz[:, 2, :, :] = moc_maskedarray(vmo)
-    msftyyz.long_name = "Ocean Y Overturning Mass Streamfunction"
-    msftyyz.units = "kg s-1"
-    msftyyz.coordinates = "region"
-    msftyyz.cell_methods = "z_i:point yq:point time:mean"
-    msftyyz.time_avg_info = "average_T1,average_T2,average_DT"
-    msftyyz.standard_name = "ocean_y_overturning_mass_streamfunction"
-    return msftyyz
-
-
-def moc_maskedarray(vh, mask=None):
-    """Computes the overturning streamfunction given a masked array"""
-    if mask is not None:
-        _mask = np.ma.masked_where(np.not_equal(mask, 1.0), mask)
-    else:
-        _mask = 1.0
-    _vh = vh * _mask
-    _vh_btm = np.ma.expand_dims(_vh[:, -1, :, :] * 0.0, axis=1)
-    _vh = np.ma.concatenate((_vh, _vh_btm), axis=1)
-    _vh = np.ma.sum(_vh, axis=-1) * -1.0
-    _vh = _vh[:, ::-1]  # flip z-axis so running sum is from ocean floor to surface
-    _vh = np.ma.cumsum(_vh, axis=1)
-    _vh = _vh[:, ::-1]  # flip z-axis back to original order
-    return _vh
-
-
 def generate_basin_masks(basin_code, basin=None):
     """Function to generate pre-defined basin masks"""
     mask = basin_code * 0
@@ -123,81 +57,81 @@ def parse(cliargs=None, template=False):
         return parser.parse_args(cliargs)
 
 
-def read(dictArgs, varname="vmo"):
+def read(dictArgs, vcomp="vmo", ucomp="umo"):
     """MOC plotting script"""
 
+    # initialize an xarray.Dataset to hold the output
+    dset_out = xr.Dataset()
+
+    # read the infile and get u, v transport components
     infile = dictArgs["infile"]
     ds = xr.open_mfdataset(infile, combine="by_coords")
+    dset_out["umo"] = ds[ucomp]
+    dset_out["vmo"] = ds[vcomp]
 
-    # vmo
-    arr = ds[varname].to_masked_array()
+    # determine vertical coordinate
+    layer = "z_l" if "z_l" in ds.dims else "rho2_l" if "rho2_l" in ds.dims else None
+    assert layer is not None, "Unrecognized vertical coordinate."
 
-    outputgrid = "nonsymetric"
-    dsV = horizontal_grid(dictArgs, point_type="v", outputgrid=outputgrid)
-    dsT = horizontal_grid(dictArgs, point_type="t", outputgrid=outputgrid)
-    if arr.shape[-2] == (dsV.geolat.shape[0] + 1):
-        print("Symmetric grid detected.<br>")
-        outputgrid = "symetric"
-        dsV = horizontal_grid(dictArgs, point_type="v", outputgrid=outputgrid)
+    # get vertical coordinate edges
+    interface = "z_i" if layer == "z_l" else "rho2_i" if layer == "rho2_l" else None
+    dset_out[interface] = ds[interface]
 
-    geolon_v = dsV.geolon.values
-    geolat_v = dsV.geolat.values
-    yq = dsV.nominal_y.values
-    basin_code = dsV.basin.values
-    depth = read_topography(dictArgs, coords=ds.coords, point_type="v")
-    depth_t = read_topography(dictArgs, coords=ds.coords, point_type="t")
+    # save layer and interface info for use later in the workflow
+    dset_out.attrs["layer"] = layer
+    dset_out.attrs["interface"] = interface
 
-    if varname == "msftyyz":
-        zw = np.array(ds["z_i"][:])
-        Zmod = np.zeros((zw.shape[0], depth.shape[0], depth.shape[1]))
-        for k in range(zw.shape[0]):
-            Zmod[k] = -np.minimum(depth, abs(zw[k]))
-        z = Zmod
-    else:
-        z = get_z(ds, depth, varname)
+    # get horizontal t-cell grid info
+    dsT = horizontal_grid(dictArgs, point_type="t")
+    dset_out["geolon"] = xr.DataArray(dsT.geolon.values, dims=("yh", "xh"))
+    dset_out["geolat"] = xr.DataArray(dsT.geolat.values, dims=("yh", "xh"))
+
+    # get topography info
+    _depth = read_topography(dictArgs, coords=ds.coords, point_type="t")
+    depth = np.where(np.isnan(_depth.to_masked_array()), 0.0, _depth)
+    dset_out["depth"] = xr.DataArray(depth, dims=("yh", "xh"))
+
+    # replicates older get_z() func
+    zmod, _ = xr.broadcast(dset_out[interface], xr.ones_like(dset_out.geolat))
+    zmod = xr.ufuncs.minimum(dset_out.depth, xr.ufuncs.fabs(zmod)) * -1.0
+    zmod = zmod.transpose(interface, "yh", "xh")
+    dset_out["zmod"] = zmod
+
+    # grid wet mask based on model's topography
+    wet = np.where(np.isnan(_depth.to_masked_array()), 0.0, 1.0)
+    dset_out["wet"] = xr.DataArray(wet, dims=("yh", "xh"))
 
     # basin masks
-    atlantic_arctic_mask = generate_basin_masks(basin_code, basin="atlantic_arctic")
-    indo_pacific_mask = generate_basin_masks(basin_code, basin="indo_pacific")
+    basin_code = dsT.basin.values
+    basins = ["atlantic_arctic", "indo_pacific"]
+    basins = [generate_basin_masks(basin_code, basin=x) for x in basins]
+    basins = [xr.DataArray(x, dims=("yh", "xh")) for x in basins]
+    basins = xr.concat(basins, dim="basin")
+    dset_out["basin_masks"] = basins
 
     # date range
     dates = date_range(ds)
-
-    # output xarray.Dataset
-    dset_out = xr.Dataset()
-    dset_out["geolon"] = dsT.geolon
-    dset_out["geolat"] = dsT.geolat
-    dset_out["umo"] = ds["umo"]
-    dset_out["vmo"] = ds["vmo"]
     dset_out.attrs["dates"] = dates
-    dset_out["wet"] = xr.where(depth_t,1.,0.)
 
-    depth = np.where(np.isnan(depth.to_masked_array()), 0.0, depth)
-
-    return (
-        geolon_v,
-        geolat_v,
-        yq,
-        z,
-        depth,
-        basin_code,
-        atlantic_arctic_mask,
-        indo_pacific_mask,
-        arr,
-        dates,
-    )
+    return dset_out
 
 
-def calculate(vmo, basin_code):
+def calculate(dset):
     """Main computational script"""
 
-    msftyyz = compute_msftyyz(vmo, basin_code)
+    basins = ["atl-arc", "indopac", "global"]
+    msftyyz = [
+        xoverturning.calcmoc(dset, basin=x, layer=dset.layer, interface=dset.interface)
+        for x in basins
+    ]
+    msftyyz = xr.concat(msftyyz, dim="basin")
+    msftyyz = msftyyz.transpose(msftyyz.dims[1], msftyyz.dims[0], ...)
 
     return msftyyz
 
 
 def plot(
-    y, yh, z, depth, atlantic_arctic_mask, indo_pacific_mask, msftyyz, dates, label=None
+    dset_out, msftyyz, label=None,
 ):
     """Plotting script"""
 
@@ -232,6 +166,7 @@ def plot(
             psi = np.array(np.where(psi.mask, 0.0, psi))
         else:
             psi = np.array(np.where(psi.mask, np.nan, psi))
+
         cs = ax.contourf(y, z, psi, levels=ci, cmap=cmap, extend="both")
         ax.contour(y, z, psi, levels=ci, colors="k", linewidths=0.4)
         ax.contour(y, z, psi, levels=[0], colors="k", linewidths=0.8)
@@ -275,11 +210,20 @@ def plot(
         topomask = topomask * 0.0
         return topomask, _z
 
+    # get y-coord from geolat
+    y = dset_out.geolat.values
+    z = dset_out.zmod.values
+    yh = dset_out.yh.values
+    depth = dset_out.depth.values
+    atlantic_arctic_mask = dset_out.basin_masks.isel(basin=0)
+    indo_pacific_mask = dset_out.basin_masks.isel(basin=1)
+    dates = dset_out.dates
+
     if len(z.shape) != 1:
         z = z.min(axis=-1)
     yy = y[:, :].max(axis=-1) + 0 * z
 
-    psi = msftyyz * 1.0e-9
+    psi = msftyyz.to_masked_array()
 
     atlantic_topomask, zz = _create_topomask(depth, yh, atlantic_arctic_mask)
     indo_pacific_topomask, zz = _create_topomask(depth, yh, indo_pacific_mask)
@@ -361,43 +305,14 @@ def run(dictArgs):
     if dictArgs["interactive"] is False:
         plt.switch_backend("Agg")
 
-    # --- the main show ---
-    ds = xr.open_mfdataset(dictArgs["infile"], combine="by_coords")
-    if "msftyyz" in list(ds.variables):
-        varname = "msftyyz"
-    elif "vmo" in list(ds.variables):
-        varname = "vmo"
-    ds.close()
+    # read in data
+    dset_out = read(dictArgs)
 
-    (
-        x,
-        y,
-        yh,
-        z,
-        depth,
-        basin_code,
-        atlantic_arctic_mask,
-        indo_pacific_mask,
-        arr,
-        dates,
-    ) = read(dictArgs, varname=varname)
+    # calculate otsfn
+    msftyyz = calculate(dset_out)
 
-    if varname != "msftyyz":
-        msftyyz = calculate(arr, basin_code)
-    else:
-        msftyyz = arr
-
-    fig = plot(
-        y,
-        yh,
-        z,
-        depth,
-        atlantic_arctic_mask,
-        indo_pacific_mask,
-        msftyyz,
-        dates,
-        dictArgs["label"],
-    )
+    # make the plots
+    fig = plot(dset_out, msftyyz, dictArgs["label"],)
     # ---------------------
 
     filename = f"{dictArgs['outdir']}/moc"
