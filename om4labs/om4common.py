@@ -574,8 +574,6 @@ def read_topography(dictArgs, coords=None, point_type="t"):
     elif point_type == "U":
         depth = out_grid.interp(depth, "X", boundary="fill")
 
-    depth = np.where(np.isnan(depth.to_masked_array()), 0.0, depth)
-
     return depth
 
 
