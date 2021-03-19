@@ -18,6 +18,7 @@ dependencies:
   - pip:
     - git+https://github.com/jkrasting/cmip_basins.git
     - git+https://github.com/raphaeldussin/static_downsampler.git
+    - git+https://github.com/raphaeldussin/xoverturning
   - pyshp
   - pytest
   - regionmask
