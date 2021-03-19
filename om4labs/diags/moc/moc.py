@@ -171,6 +171,9 @@ def calculate(dset, dset_grid):
             warnings.warn("performing non-weighted time average")
         otsfn = otsfn.mean(dim="time")
 
+    # take the time mean
+    otsfn = otsfn.mean(dim="time")
+
     return otsfn
 
 
