@@ -79,13 +79,13 @@ def read(dictArgs, vcomp="vmo", ucomp="umo"):
     """
 
     # initialize an xarray.Dataset to hold the output
-    dset_out = xr.Dataset()
+    dset = xr.Dataset()
 
     # read the infile and get u, v transport components
     infile = dictArgs["infile"]
     ds = xr.open_mfdataset(infile, combine="by_coords")
-    dset_out["umo"] = ds[ucomp]
-    dset_out["vmo"] = ds[vcomp]
+    dset["umo"] = ds[ucomp]
+    dset["vmo"] = ds[vcomp]
 
     # determine vertical coordinate
     layer = "z_l" if "z_l" in ds.dims else "rho2_l" if "rho2_l" in ds.dims else None
@@ -93,31 +93,31 @@ def read(dictArgs, vcomp="vmo", ucomp="umo"):
 
     # get vertical coordinate edges
     interface = "z_i" if layer == "z_l" else "rho2_i" if layer == "rho2_l" else None
-    dset_out[interface] = ds[interface]
+    dset[interface] = ds[interface]
 
     # save layer and interface info for use later in the workflow
-    dset_out.attrs["layer"] = layer
-    dset_out.attrs["interface"] = interface
+    dset.attrs["layer"] = layer
+    dset.attrs["interface"] = interface
 
     # get horizontal t-cell grid info
     dsT = horizontal_grid(dictArgs, point_type="t")
-    dset_out["geolon"] = xr.DataArray(dsT.geolon.values, dims=("yh", "xh"))
-    dset_out["geolat"] = xr.DataArray(dsT.geolat.values, dims=("yh", "xh"))
+    dset["geolon"] = xr.DataArray(dsT.geolon.values, dims=("yh", "xh"))
+    dset["geolat"] = xr.DataArray(dsT.geolat.values, dims=("yh", "xh"))
 
     # get topography info
     _depth = read_topography(dictArgs, coords=ds.coords, point_type="t")
     depth = np.where(np.isnan(_depth.to_masked_array()), 0.0, _depth)
-    dset_out["depth"] = xr.DataArray(depth, dims=("yh", "xh"))
+    dset["depth"] = xr.DataArray(depth, dims=("yh", "xh"))
 
-    # replicates older get_z() func
-    zmod, _ = xr.broadcast(dset_out[interface], xr.ones_like(dset_out.geolat))
-    zmod = xr.ufuncs.minimum(dset_out.depth, xr.ufuncs.fabs(zmod)) * -1.0
+    # replicates older get_z() func from m6plot
+    zmod, _ = xr.broadcast(dset[interface], xr.ones_like(dset.geolat))
+    zmod = xr.ufuncs.minimum(dset.depth, xr.ufuncs.fabs(zmod)) * -1.0
     zmod = zmod.transpose(interface, "yh", "xh")
-    dset_out["zmod"] = zmod
+    dset["zmod"] = zmod
 
     # grid wet mask based on model's topography
     wet = np.where(np.isnan(_depth.to_masked_array()), 0.0, 1.0)
-    dset_out["wet"] = xr.DataArray(wet, dims=("yh", "xh"))
+    dset["wet"] = xr.DataArray(wet, dims=("yh", "xh"))
 
     # basin masks
     basin_code = dsT.basin.values
@@ -125,32 +125,32 @@ def read(dictArgs, vcomp="vmo", ucomp="umo"):
     basins = [generate_basin_masks(basin_code, basin=x) for x in basins]
     basins = [xr.DataArray(x, dims=("yh", "xh")) for x in basins]
     basins = xr.concat(basins, dim="basin")
-    dset_out["basin_masks"] = basins
+    dset["basin_masks"] = basins
 
     # date range
     dates = date_range(ds)
-    dset_out.attrs["dates"] = dates
+    dset.attrs["dates"] = dates
 
-    return dset_out
+    return dset
 
 
 def calculate(dset):
     """Main computational script"""
 
     basins = ["atl-arc", "indopac", "global"]
-    msftyyz = [
-        xoverturning.calcmoc(dset, basin=x, layer=dset.layer, interface=dset.interface)
+    otsfn = [
+        xoverturning.calcmoc(
+            dset, basin=x, layer=dset.layer, interface=dset.interface, verbose=False
+        )
         for x in basins
     ]
-    msftyyz = xr.concat(msftyyz, dim="basin")
-    msftyyz = msftyyz.transpose(msftyyz.dims[1], msftyyz.dims[0], ...)
+    otsfn = xr.concat(otsfn, dim="basin")
+    otsfn = otsfn.transpose(otsfn.dims[1], otsfn.dims[0], ...)
 
-    return msftyyz
+    return otsfn
 
 
-def plot(
-    dset_out, msftyyz, label=None,
-):
+def plot(dset, otsfn, label=None):
     """Plotting script"""
 
     def _findExtrema(
@@ -229,19 +229,19 @@ def plot(
         return topomask, _z
 
     # get y-coord from geolat
-    y = dset_out.geolat.values
-    z = dset_out.zmod.values
-    yh = dset_out.yh.values
-    depth = dset_out.depth.values
-    atlantic_arctic_mask = dset_out.basin_masks.isel(basin=0)
-    indo_pacific_mask = dset_out.basin_masks.isel(basin=1)
-    dates = dset_out.dates
+    y = dset.geolat.values
+    z = dset.zmod.values
+    yh = dset.yh.values
+    depth = dset.depth.values
+    atlantic_arctic_mask = dset.basin_masks.isel(basin=0)
+    indo_pacific_mask = dset.basin_masks.isel(basin=1)
+    dates = dset.dates
 
     if len(z.shape) != 1:
         z = z.min(axis=-1)
     yy = y[:, :].max(axis=-1) + 0 * z
 
-    psi = msftyyz.to_masked_array()
+    psi = otsfn.to_masked_array()
 
     atlantic_topomask, zz = _create_topomask(depth, yh, atlantic_arctic_mask)
     indo_pacific_topomask, zz = _create_topomask(depth, yh, indo_pacific_mask)
@@ -324,13 +324,13 @@ def run(dictArgs):
         plt.switch_backend("Agg")
 
     # read in data
-    dset_out = read(dictArgs)
+    dset = read(dictArgs)
 
     # calculate otsfn
-    msftyyz = calculate(dset_out)
+    otsfn = calculate(dset)
 
     # make the plots
-    fig = plot(dset_out, msftyyz, dictArgs["label"],)
+    fig = plot(dset, otsfn, dictArgs["label"],)
     # ---------------------
 
     filename = f"{dictArgs['outdir']}/moc"
