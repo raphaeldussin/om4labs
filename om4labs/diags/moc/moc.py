@@ -58,7 +58,25 @@ def parse(cliargs=None, template=False):
 
 
 def read(dictArgs, vcomp="vmo", ucomp="umo"):
-    """MOC plotting script"""
+    """Read required fields to plot MOC in om4labs
+
+    Parameters
+    ----------
+    dictArgs : dict
+        Dictionary containing argparse options
+    vcomp : str, optional
+        Name of meridional component of total residual
+        freshwater transport, by default "vmo"
+    ucomp : str, optional
+        Name of zonal component of total residual
+        freshwater transport, by default "umo"
+
+    Returns
+    -------
+    xarray.DataSet
+        Xarray dataset containing `umo`, `vmo`, `geolon`, 
+        `geolat`, `depth`, `zmod`, `wet`, and `basin_masks`
+    """
 
     # initialize an xarray.Dataset to hold the output
     dset_out = xr.Dataset()
