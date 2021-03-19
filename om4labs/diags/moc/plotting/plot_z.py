@@ -74,9 +74,24 @@ def create_z_topomask(depth, yh, mask=None):
 
 
 def plot_z(dset, otsfn, label=None):
-    """Plotting script"""
+    """MOC plotting script for z-level overturning
 
-    # get y-coord from geolat
+    Parameters
+    ----------
+    dset : xarray.Dataset
+        Dataset containing grid and mask fields
+    otsfn : xarray.DataArray
+        DataArray containing the overturning streamfunction
+    label : str, optional
+        Text label to add to plot, by default None
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+        Figure handle
+    """
+
+    # populate internal variables from xarray dataset
     y = dset.geolat.values
     z = dset.zmod.values
     yh = dset.yh.values
@@ -84,21 +99,28 @@ def plot_z(dset, otsfn, label=None):
     atlantic_arctic_mask = dset.basin_masks.isel(basin=0)
     indo_pacific_mask = dset.basin_masks.isel(basin=1)
     dates = dset.dates
-
-    if len(z.shape) != 1:
-        z = z.min(axis=-1)
-    yy = y[:, :].max(axis=-1) + 0 * z
-
     psi = otsfn.to_masked_array()
 
+    # reduce to nominal z-coordinate
+    if len(z.shape) != 1:
+        z = z.min(axis=-1)
+
+    # make y-axis plotting coordinate based off of depth coordinate
+    yy = y[:, :].max(axis=-1) + 0 * z
+
+    # create topography masks
     atlantic_topomask, zz = create_z_topomask(depth, yh, atlantic_arctic_mask)
     indo_pacific_topomask, zz = create_z_topomask(depth, yh, indo_pacific_mask)
     global_topomask, zz = create_z_topomask(depth, yh)
 
+    # set colormaps and contour intervals
     ci = m6plot.formatting.pmCI(0.0, 43.0, 3.0)
     cmap = palettable.cmocean.diverging.Balance_20.get_mpl_colormap()
 
+    # setup figure handle
     fig = plt.figure(figsize=(8.5, 11))
+
+    # Panel #1 (top):  Atlantic-Arctic MOC
     ax1 = plt.subplot(3, 1, 1, facecolor="gray")
     psiPlot = psi[0, 0]
     plot_z_panel(
@@ -119,6 +141,7 @@ def plot_z(dset, otsfn, label=None):
     annotate_z_extrema(ax1, yy, z, psiPlot, max_lat=-33.0)
     annotate_z_extrema(ax1, yy, z, psiPlot)
 
+    # Panel #2 (middle):  Indo-Pacific MOC
     ax2 = plt.subplot(3, 1, 2, facecolor="gray")
     psiPlot = psi[0, 1]
     plot_z_panel(
@@ -137,6 +160,7 @@ def plot_z(dset, otsfn, label=None):
     annotate_z_extrema(ax2, yy, z, psiPlot, min_depth=2000.0, mult=-1.0)
     annotate_z_extrema(ax2, yy, z, psiPlot)
 
+    # Panel #3 (bottom):  Global MOC
     ax3 = plt.subplot(3, 1, 3, facecolor="gray")
     psiPlot = psi[0, 2]
     plot_z_panel(
@@ -156,8 +180,10 @@ def plot_z(dset, otsfn, label=None):
     annotate_z_extrema(ax3, yy, z, psiPlot, min_depth=2000.0, mult=-1.0)
     plt.xlabel(r"Latitude [$\degree$N]")
 
+    # adjust panel spacing
     plt.subplots_adjust(hspace=0.2)
 
+    # annotate top of the plot
     if label is not None:
         plt.suptitle(label)
 
