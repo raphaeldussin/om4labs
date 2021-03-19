@@ -21,6 +21,7 @@ from om4labs.om4common import date_range
 from om4labs.om4parser import default_diag_parser
 
 from om4labs.diags.moc.plotting import plot_z
+from om4labs.diags.moc.plotting import plot_rho
 
 warnings.filterwarnings("ignore", message=".*csr_matrix.*")
 warnings.filterwarnings("ignore", message=".*dates out of range.*")
@@ -134,7 +135,18 @@ def calculate(dset):
 
 
 def plot(dset, otsfn, label=None):
-    fig = plot_z(dset, otsfn, label=label)
+    layer = dset.layer
+
+    fig = (
+        # z-coordinate plot
+        plot_z(dset, otsfn, label=label)
+        if layer == "z_l"
+        # sigma2-coordinate plot
+        else plot_rho(dset, otsfn, label=label)
+        if layer == "rho2_l"
+        else None
+    )
+
     return fig
 
 
