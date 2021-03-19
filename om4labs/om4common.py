@@ -185,6 +185,42 @@ def fixdir(path):
     return path.replace("//", "/")
 
 
+def generate_basin_masks(basin_code, basin=None):
+    """Returns 2-D array mask (1s/0s) for common pre-defined
+    basins and regions.
+
+    Parameters
+    ----------
+    basin_code : numpy.ndarray
+        2-dimensional array of CMIP-convention basin codes
+    basin : str or int, optional
+        Name of basin to calculate. Options are "atlantic_arctic"
+        and "indo_pacific". An integer basin code may also be 
+        passed. By default None
+
+    Returns
+    -------
+    numpy.ndarray
+        Basin mask of 1s and 0s.
+    """
+    mask = basin_code * 0
+    if basin == "atlantic_arctic":
+        mask[
+            (basin_code == 2)
+            | (basin_code == 4)
+            | (basin_code == 6)
+            | (basin_code == 7)
+            | (basin_code == 8)
+        ] = 1.0
+    elif basin == "indo_pacific":
+        mask[(basin_code == 3) | (basin_code == 5)] = 1.0
+    elif isinstance(basin, int):
+        mask[(basin_code == basin)] = 1.0
+    else:
+        mask[(basin_code >= 1)] = 1.0
+    return mask
+
+
 def image_handler(figs, dictArgs, filename="./figure"):
     """Generic routine for image handling"""
 

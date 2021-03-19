@@ -16,31 +16,12 @@ import warnings
 from om4labs.om4common import horizontal_grid
 from om4labs.om4common import read_topography
 from om4labs.om4common import image_handler
+from om4labs.om4common import generate_basin_masks
 from om4labs.om4common import date_range
 from om4labs.om4parser import default_diag_parser
 
 warnings.filterwarnings("ignore", message=".*csr_matrix.*")
 warnings.filterwarnings("ignore", message=".*dates out of range.*")
-
-
-def generate_basin_masks(basin_code, basin=None):
-    """Function to generate pre-defined basin masks"""
-    mask = basin_code * 0
-    if basin == "atlantic_arctic":
-        mask[
-            (basin_code == 2)
-            | (basin_code == 4)
-            | (basin_code == 6)
-            | (basin_code == 7)
-            | (basin_code == 8)
-        ] = 1.0
-    elif basin == "indo_pacific":
-        mask[(basin_code == 3) | (basin_code == 5)] = 1.0
-    elif isinstance(basin, int):
-        mask[(basin_code == basin)] = 1.0
-    else:
-        mask[(basin_code >= 1)] = 1.0
-    return mask
 
 
 def parse(cliargs=None, template=False):
