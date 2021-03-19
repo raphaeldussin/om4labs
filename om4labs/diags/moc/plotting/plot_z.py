@@ -122,7 +122,7 @@ def plot_z(dset, otsfn, label=None):
 
     # Panel #1 (top):  Atlantic-Arctic MOC
     ax1 = plt.subplot(3, 1, 1, facecolor="gray")
-    psiPlot = psi[0, 0]
+    psiPlot = psi[0]
     plot_z_panel(
         ax1,
         yy,
@@ -143,7 +143,7 @@ def plot_z(dset, otsfn, label=None):
 
     # Panel #2 (middle):  Indo-Pacific MOC
     ax2 = plt.subplot(3, 1, 2, facecolor="gray")
-    psiPlot = psi[0, 1]
+    psiPlot = psi[1]
     plot_z_panel(
         ax2,
         yy,
@@ -162,7 +162,7 @@ def plot_z(dset, otsfn, label=None):
 
     # Panel #3 (bottom):  Global MOC
     ax3 = plt.subplot(3, 1, 3, facecolor="gray")
-    psiPlot = psi[0, 2]
+    psiPlot = psi[2]
     plot_z_panel(
         ax3,
         yy,

@@ -131,6 +131,9 @@ def calculate(dset):
     otsfn = xr.concat(otsfn, dim="basin")
     otsfn = otsfn.transpose(otsfn.dims[1], otsfn.dims[0], ...)
 
+    # take the time mean
+    otsfn = otsfn.mean(dim="time")
+
     return otsfn
 
 
