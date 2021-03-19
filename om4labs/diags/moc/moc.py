@@ -28,10 +28,21 @@ warnings.filterwarnings("ignore", message=".*dates out of range.*")
 
 
 def parse(cliargs=None, template=False):
+    """Function to capture the user-specified command line options
+
+    Parameters
+    ----------
+    cliargs : argparse, optional
+        Command line options from argparse, by default None
+    template : bool, optional
+        Return dictionary instead of parser, by default False
+
+    Returns
+    -------
+        parsed command line arguments
     """
-    Function to capture the user-specified command line options
-    """
-    description = """ """
+
+    description = " "
 
     parser = default_diag_parser(description=description, template=template)
 
@@ -119,15 +130,31 @@ def read(dictArgs, vcomp="vmo", ucomp="umo"):
 
 
 def calculate(dset):
-    """Main computational script"""
+    """Main calculation function
 
+    Parameters
+    ----------
+    dset : xarray.Dataset
+        Input dataset with grid values, umo, and vmo
+
+    Returns
+    -------
+    xarray.DataArray
+        Time-mean overturning streamfunction by basin 
+    """
+
+    # define list of basins
     basins = ["atl-arc", "indopac", "global"]
+
+    # iterate over basins
     otsfn = [
         xoverturning.calcmoc(
             dset, basin=x, layer=dset.layer, interface=dset.interface, verbose=False
         )
         for x in basins
     ]
+
+    # combine into single DataArray
     otsfn = xr.concat(otsfn, dim="basin")
     otsfn = otsfn.transpose(otsfn.dims[1], otsfn.dims[0], ...)
 
@@ -138,6 +165,23 @@ def calculate(dset):
 
 
 def plot(dset, otsfn, label=None):
+    """Plotting wrapper that redirects to either the z-level
+    or sigma plotting routine based on the data type
+
+    Parameters
+    ----------
+    dset : xarray.Dataset
+        Input dataset with grid values, umo, and vmo
+    otsfn : xarray.DataArray
+        Time-mean overturning streamfunction by basin 
+    label : str, optional
+        title/experiment name for plot labels, by default None
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+        Figure handle
+    """
     layer = dset.layer
 
     fig = (
@@ -154,7 +198,18 @@ def plot(dset, otsfn, label=None):
 
 
 def run(dictArgs):
-    """Function to call read, calc, and plot in sequence"""
+    """Function to call read, calc, and plot in sequence
+
+    Parameters
+    ----------
+    dictArgs : dict
+        Dictionary of parsed options
+
+    Returns
+    -------
+    io.BytesIO
+        In-memory image buffer
+    """
 
     # set visual backend
     if dictArgs["interactive"] is False:
@@ -168,7 +223,6 @@ def run(dictArgs):
 
     # make the plots
     fig = plot(dset, otsfn, dictArgs["label"],)
-    # ---------------------
 
     filename = f"{dictArgs['outdir']}/moc"
     imgbufs = image_handler([fig], dictArgs, filename=filename)
@@ -177,6 +231,18 @@ def run(dictArgs):
 
 
 def parse_and_run(cliargs=None):
+    """Parses command line and runs diagnostic
+
+    Parameters
+    ----------
+    cliargs : argparse, optional
+        command line arguments from upstream instance, by default None
+
+    Returns
+    -------
+    io.BytesIO
+        In-memory image buffer
+    """
     args = parse(cliargs)
     args = args.__dict__
     imgbuf = run(args)
