@@ -7,39 +7,37 @@ om4labs: model-simulated sea ice vs. NSIDC obs
 __all__ = ["parse", "read", "calculate", "plot", "run", "parse_and_run"]
 
 import argparse
-import pkg_resources as pkgr
-import intake
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
-import cartopy.crs as ccrs
-import cartopy.feature
 import copy
 import time
 import warnings
 
-from om4labs.om4common import image_handler
+import cartopy.crs as ccrs
+import cartopy.feature
+import intake
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import pkg_resources as pkgr
+from matplotlib.lines import Line2D
+
+from om4labs.om4common import (
+    annual_cycle,
+    date_range,
+    image_handler,
+    standard_grid_cell_area,
+)
 from om4labs.om4parser import default_diag_parser
-from om4labs.om4common import standard_grid_cell_area
-from om4labs.om4common import date_range
 
 warnings.filterwarnings("ignore", message=".*csr_matrix.*")
 warnings.filterwarnings("ignore", message=".*dates out of range.*")
 
-try:
-    from . import averagers
-    from . import regrid
-except:
-    import averagers
-    import regrid
 import io
-import numpy as np
-import palettable
-import xarray as xr
-
 import os
 import shutil
 import tempfile
+
+import numpy as np
+import palettable
+import xarray as xr
 
 
 def parse(cliargs=None, template=False):
@@ -151,8 +149,8 @@ def calculate(ds, dobs, region="nh"):
     obs = {}
 
     # Create annual cycle climatology
-    model["ac"] = averagers.annual_cycle(ds, "CN")
-    obs["ac"] = averagers.annual_cycle(dobs, "sic")
+    model["ac"] = annual_cycle(ds, "CN")
+    obs["ac"] = annual_cycle(dobs, "sic")
 
     # Calculate area and extent
     if region == "nh":

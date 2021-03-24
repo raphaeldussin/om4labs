@@ -1,22 +1,26 @@
 # need a data_read, data_sel, data_reduce
 
-import numpy as np
 import argparse
-import intake
+import calendar
 import glob
 import io
 import os
 import signal
 import sys
+import tarfile as tf
+import warnings
+from datetime import datetime
+
+import intake
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
 import pkg_resources as pkgr
-import tarfile as tf
+import scipy
 import xarray as xr
-import warnings
-
-from datetime import datetime
+import xesmf as xe
 from cmip_basins import generate_basin_codes
+from packaging import version
 from xgcm import Grid
 
 try:
@@ -26,9 +30,11 @@ except ImportError:
     # reads from current directory
     from helpers import try_variable_from_list
 
-from static_downsampler.static import sum_on_supergrid
-from static_downsampler.static import subsample_supergrid
-from static_downsampler.static import extend_supergrid_array
+from static_downsampler.static import (
+    extend_supergrid_array,
+    subsample_supergrid,
+    sum_on_supergrid,
+)
 
 possible_names = {}
 possible_names["lon"] = ["lon", "LON", "longitude", "LONGITUDE"]
@@ -571,3 +577,56 @@ def read_topography(dictArgs, coords=None, point_type="t"):
     depth = np.where(np.isnan(depth.to_masked_array()), 0.0, depth)
 
     return depth
+
+
+def annual_cycle(ds, var):
+    """Compute annual cycle climatology"""
+    # Make a DataArray with the number of days in each month, size = len(time)
+    if hasattr(ds.time, "calendar"):
+        cal = ds.time.calendar
+    elif hasattr(ds.time, "calendar_type"):
+        cal = ds.time.calendar_type.lower()
+    else:
+        cal = "standard"
+
+    if cal.lower() in ["noleap", "365day"]:
+        # always calculate days in month based on year 1 (non-leap year)
+        month_length = [calendar.monthrange(1, x.month)[1] for x in ds.time.to_index()]
+    else:
+        # use real year/month combo to calculate days in month
+        month_length = [
+            calendar.monthrange(x.year, x.month)[1] for x in ds.time.to_index()
+        ]
+
+    month_length = xr.DataArray(month_length, coords=[ds.time], name="month_length")
+
+    # Calculate the weights by grouping by 'time.season'.
+    # Conversion to float type ('astype(float)') only necessary for Python 2.x
+    weights = (
+        month_length.groupby("time.month") / month_length.groupby("time.month").sum()
+    )
+
+    # Test that the sum of the weights for each season is 1.0
+    np.testing.assert_allclose(weights.groupby("time.month").sum().values, np.ones(12))
+
+    # Calculate the weighted average
+    ds_weighted = (ds[var] * weights).groupby("time.month").sum(dim="time")
+
+    return ds_weighted
+
+
+def add_matrix_NaNs(regridder):
+    """Helper function to set masked points to NaN instead of zero"""
+    X = regridder.weights
+    M = scipy.sparse.csr_matrix(X)
+    num_nonzeros = np.diff(M.indptr)
+    M[num_nonzeros == 0, 0] = np.NaN
+    regridder.weights = scipy.sparse.coo_matrix(M)
+    return regridder
+
+
+def curv_to_curv(src, dst, reuse_weights=False):
+    regridder = xe.Regridder(src, dst, "bilinear", reuse_weights=reuse_weights)
+    if version.parse(xe.__version__) < version.parse("0.4.0"):
+        regridder = add_matrix_NaNs(regridder)
+    return regridder(src)
