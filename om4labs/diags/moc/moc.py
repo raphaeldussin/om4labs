@@ -172,7 +172,9 @@ def calculate(dset, dset_grid):
         otsfn = otsfn.mean(dim="time")
 
     # take the time mean
-    otsfn = otsfn.mean(dim="time")
+    otsfn = otsfn.squeeze()
+    if "time" in otsfn.dims:
+        otsfn = otsfn.mean(dim="time")
 
     return otsfn
 
