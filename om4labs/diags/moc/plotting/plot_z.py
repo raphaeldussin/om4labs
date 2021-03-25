@@ -11,79 +11,21 @@ warnings.filterwarnings("ignore", message=".*csr_matrix.*")
 warnings.filterwarnings("ignore", message=".*dates out of range.*")
 
 
-def annotate_z_extrema(
-    ax, y, z, psi, min_lat=-90.0, max_lat=90.0, min_depth=0.0, mult=1.0
-):
-    """Function to annotate min/max values on z-level MOC plot
+def plot_z(otsfn, lat, depth, label=None, dates=None):
+    """Function to plot 3-panel MOC figure
 
     Parameters
     ----------
-    ax : matplotlib.axes.axis
-         Axis containing plot
-    y : numpy.ndarray
-        y-coordinate
-    z : numpy.ndarray
-        z-coordinate
-    psi : numpy.ndarray
-        Array of overturning streamfuctuon
-    min_lat : float, optional
-        starting search latitude, by default -90.0
-    max_lat : float, optional
-        ending search latitude, by default 90.0
-    min_depth : float, optional
-        minimum search depth, by default 0.0
-    mult : float, optional
-        scaling factor, by default 1.0
-    """
-    psiMax = mult * np.amax(
-        mult * np.ma.array(psi)[(y >= min_lat) & (y <= max_lat) & (z < -min_depth)]
-    )
-    idx = np.argmin(np.abs(psi - psiMax))
-    (j, i) = np.unravel_index(idx, psi.shape)
-    ax.plot(y[j, i], z[j, i], "kx")
-    ax.text(y[j, i], z[j, i], "%.1f" % (psi[j, i]))
-
-
-def create_z_topomask(depth, yh, mask=None):
-    """Creates a bottom topography mask for plots
-
-    Parameters
-    ----------
-    depth : numpy.ndarray
-        3-dimensional depth field (zmod)
-    yh : np.ndarray
-        nominal latitude array
-    mask : numpy.ndarray, optional
-        optional secondary mask, by default None
-
-    Returns
-    -------
-    numpy.ma.maskedArray
-        topography mask array
-    """
-    if mask is not None:
-        depth = np.where(mask == 1, depth, 0.0)
-    topomask = depth.max(axis=-1)
-    _y = yh
-    _z = np.arange(0, 7100, 100)
-    _yy, _zz = np.meshgrid(_y, _z)
-    topomask = np.tile(topomask[None, :], (len(_z), 1))
-    topomask = np.ma.masked_where(_zz < topomask, topomask)
-    topomask = topomask * 0.0
-    return topomask, _z
-
-
-def plot_z(dset, otsfn, label=None):
-    """MOC plotting script for z-level overturning
-
-    Parameters
-    ----------
-    dset : xarray.Dataset
-        Dataset containing grid and mask fields
-    otsfn : xarray.DataArray
-        DataArray containing the overturning streamfunction
+    otsfn : numpy.ma.MaskedArray
+        Input array with dimensions (basin,depth,lat)
+    lat : numpy.array
+        1-D array of latitude values
+    depth : numpy.array
+        1-D array of depth values
     label : str, optional
-        Text label to add to plot, by default None
+        Experiment name / top line label, by default None
+    dates : tuple, optional
+        Tuple of date ranges, by default None
 
     Returns
     -------
@@ -91,179 +33,146 @@ def plot_z(dset, otsfn, label=None):
         Figure handle
     """
 
-    # populate internal variables from xarray dataset
-    y = dset.geolat.values
-    z = dset.zmod.values
-    yh = dset.yh.values
-    depth = dset.depth.values
-    atlantic_arctic_mask = dset.basin_masks.isel(basin=0)
-    indo_pacific_mask = dset.basin_masks.isel(basin=1)
-    dates = dset.dates
-    psi = otsfn.to_masked_array()
-
-    # reduce to nominal z-coordinate
-    if len(z.shape) != 1:
-        z = z.min(axis=-1)
-
-    # make y-axis plotting coordinate based off of depth coordinate
-    yy = y[:, :].max(axis=-1) + 0 * z
-
-    # create topography masks
-    atlantic_topomask, zz = create_z_topomask(depth, yh, atlantic_arctic_mask)
-    indo_pacific_topomask, zz = create_z_topomask(depth, yh, indo_pacific_mask)
-    global_topomask, zz = create_z_topomask(depth, yh)
-
-    # set colormaps and contour intervals
-    ci = m6plot.formatting.pmCI(0.0, 43.0, 3.0)
-    cmap = palettable.cmocean.diverging.Balance_20.get_mpl_colormap()
-
-    # setup figure handle
+    # Set up the figure
     fig = plt.figure(figsize=(8.5, 11))
 
-    # Panel #1 (top):  Atlantic-Arctic MOC
-    ax1 = plt.subplot(3, 1, 1, facecolor="gray")
-    psiPlot = psi[0]
-    plot_z_panel(
-        ax1,
-        yy,
-        z,
-        psiPlot,
-        ci,
-        "a. Atlantic MOC [Sv]",
-        cmap=cmap,
-        xlim=(-40, 90),
-        topomask=atlantic_topomask,
-        yh=yh,
-        zz=zz,
-        dates=dates,
+    # Top panel: Atlantic-Arctic
+    arr = otsfn[0]
+    ax1 = plt.subplot(3, 1, 1, facecolor="#bbbbbb")
+    plot_z_panel(ax1, arr, lat, depth, xlim=(-33, 90))
+    ax1.text(
+        0.01,
+        1.02,
+        "a. Atlantic-Arctic",
+        ha="left",
+        fontsize=12,
+        transform=ax1.transAxes,
     )
-    annotate_z_extrema(ax1, yy, z, psiPlot, min_lat=26.5, max_lat=27.0)
-    annotate_z_extrema(ax1, yy, z, psiPlot, max_lat=-33.0)
-    annotate_z_extrema(ax1, yy, z, psiPlot)
 
-    # Panel #2 (middle):  Indo-Pacific MOC
-    ax2 = plt.subplot(3, 1, 2, facecolor="gray")
-    psiPlot = psi[1]
-    plot_z_panel(
-        ax2,
-        yy,
-        z,
-        psiPlot,
-        ci,
-        "b. Indo-Pacific MOC [Sv]",
-        cmap=cmap,
-        xlim=(-40, 65),
-        topomask=indo_pacific_topomask,
-        yh=yh,
-        zz=zz,
-    )
-    annotate_z_extrema(ax2, yy, z, psiPlot, min_depth=2000.0, mult=-1.0)
-    annotate_z_extrema(ax2, yy, z, psiPlot)
+    # Basin maximum
+    basinmax = z_extremes(arr, lat, depth, ylim=(-33, 90), zlim=(500, 2000))
+    maxval = str(round(basinmax[2], 1))
+    ax1.plot(*basinmax[0:2], marker="o", markersize=5, color="w")
+    ax1.text(*basinmax[0:2], maxval, fontsize=16, ha="right", va="top")
+    ax1.plot(60, 4500, marker="o", markersize=5, color="w")
+    ax1.text(63, 4500, "N. Atl. Max", fontsize=10, ha="left", va="center")
 
-    # Panel #3 (bottom):  Global MOC
-    ax3 = plt.subplot(3, 1, 3, facecolor="gray")
-    psiPlot = psi[2]
-    plot_z_panel(
-        ax3,
-        yy,
-        z,
-        psiPlot,
-        ci,
-        "c. Global MOC [Sv]",
-        cmap=cmap,
-        topomask=global_topomask,
-        yh=yh,
-        zz=zz,
+    # Maximum at latitude of RAPID array
+    rapid = z_extremes(arr, lat, depth, ylim=(25, 28.0), zlim=(500, 2000))
+    maxval = str(round(rapid[2], 1))
+    ax1.plot(*rapid[0:2], marker="o", markersize=5, color="#ffff00")
+    ax1.text(*rapid[0:2], maxval, fontsize=16, ha="left", va="bottom")
+    ax1.plot(60, 5500, marker="o", markersize=5, color="#ffff00")
+    ax1.text(63, 5500, "RAPID", fontsize=10, ha="left", va="center")
+
+    # Middle panel: Indo-Pacific
+    arr = otsfn[1]
+    ax2 = plt.subplot(3, 1, 2, facecolor="#bbbbbb")
+    plot_z_panel(ax2, arr, lat, depth, xlim=(-40, 65))
+    ax2.text(
+        0.01, 1.02, "b. Indo-Pacific", ha="left", fontsize=12, transform=ax2.transAxes
     )
-    annotate_z_extrema(ax3, yy, z, psiPlot, max_lat=-30.0)
-    annotate_z_extrema(ax3, yy, z, psiPlot, min_lat=25.0)
-    annotate_z_extrema(ax3, yy, z, psiPlot, min_depth=2000.0, mult=-1.0)
-    plt.xlabel(r"Latitude [$\degree$N]")
+
+    # Bottom panel: Global
+    arr = otsfn[2]
+    ax3 = plt.subplot(3, 1, 3, facecolor="#bbbbbb")
+    plot_z_panel(ax3, arr, lat, depth)
+    ax3.text(0.01, 1.02, "c. Global", ha="left", fontsize=12, transform=ax3.transAxes)
+
+    # Add dates to top panel
+    if dates is not None:
+        dates = f"Years {dates[0]} - {dates[1]}"
+        ax1.text(0.98, 1.02, dates, ha="right", fontsize=12, transform=ax1.transAxes)
 
     # adjust panel spacing
-    plt.subplots_adjust(hspace=0.2)
+    plt.subplots_adjust(hspace=0.25)
 
-    # annotate top of the plot
-    if label is not None:
-        plt.suptitle(label)
+    # add top label
+    plt.suptitle(label)
 
     return fig
 
 
-def plot_z_panel(
-    ax,
-    y,
-    z,
-    psi,
-    ci,
-    title,
-    cmap=None,
-    xlim=None,
-    topomask=None,
-    yh=None,
-    zz=None,
-    dates=None,
-):
-    """Plotting routine for an individual z-coordinate panel
+def plot_z_panel(ax, arr, lat, depth, levels=None, xlim=None):
+    """Plots an indiviual MOC panel
 
     Parameters
     ----------
     ax : matplotlib.axes.axis
-        axis handle to use for plotting
-    y : numpy.ndarray
-        y-coordinate to use for contour plots
-    z : numpy.ndarray
-        z-coordinate to use for contour plots
-    psi : numpy.ndarray
-        array of overturning streamfunction in z-levels
-    ci : list of floats
-        list of countour intervals (levels)
-    title : str
-        title of plot/experiment
-    cmap : matplotlib.cm.colormap, optional
-        colormap, by default None
+        Axis handle
+    arr : numpy.ma.MaskedArray
+        2-D masked array with dimensions (depth,lat)
+    lat : numpy.array
+        1-D array of latitude values
+    depth : numpy.array
+        1-D array of depth values
+    levels : list, optional
+        list of contour intervals, by default None
     xlim : tuple, optional
-        range of latitudes to plot along the x-axis, by default None
-    topomask : numpy.ndarray, optional
-        topography mask, by default None
-    yh : numpy.ndarray, optional
-        nominal latitude values for plotting, by default None
-    zz : numpy.ndarray, optional
-        secondary z-level axis on cell centers for topomask, by default None
-    dates : tuple, optional
-        date range of dataset, by default None
+        latitude range for plotting, by default None
     """
 
-    if topomask is not None:
-        psi = np.array(np.where(psi.mask, 0.0, psi))
+    levels = np.arange(-45, 48, 3) if levels is None else levels
+    ax.contourf(lat, depth, arr, levels=levels, cmap="RdBu_r")
+    ax.contour(lat, depth, arr, levels=levels, colors=["k"], linewidths=0.5)
+    ax.contour(lat, depth, arr, levels=[0.0], colors=["k"], linewidths=1)
+    ax.set_yscale("splitscale", zval=[6500.0, 2000.0, 0.0])
+    ax.set_xlim(xlim)
+
+
+def z_extremes(arr, lat, depth, zlim=None, ylim=None):
+    """Locate max value of a lat-depth array
+
+    Parameters
+    ----------
+    arr : numpy.ma.MaskedArray
+        2-D masked array with dimensions (depth,lat)
+    lat : numpy.array
+        1-D array of latitude values
+    depth : numpy.array
+        1-D array of depth values
+    zlim : tuple, optional
+        depth range, by default None
+    ylim : tuple, optional
+        latitude range, by default None
+
+    Returns
+    -------
+    tuple
+        (lat,depth,max. value)
+    """
+
+    # broadcast lat and depth to 2D arrays
+    lat = np.tile(lat[None, :], (arr.shape[0], 1))
+    depth = np.tile(depth[:, None], (1, arr.shape[1]))
+
+    # latitude range mask
+    if ylim is not None:
+        assert isinstance(ylim, tuple), "ylim must be a tuple"
+        ymask = np.where(lat >= ylim[0], 1.0, 0.0)
+        ymask = np.where(lat <= ylim[1], ymask, 0.0)
     else:
-        psi = np.array(np.where(psi.mask, np.nan, psi))
+        ymask = 1.0
 
-    cs = ax.contourf(y, z, psi, levels=ci, cmap=cmap, extend="both")
-    ax.contour(y, z, psi, levels=ci, colors="k", linewidths=0.4)
-    ax.contour(y, z, psi, levels=[0], colors="k", linewidths=0.8)
+    # depth range mask
+    if zlim is not None:
+        assert isinstance(zlim, tuple), "zlim must be a tuple"
+        zmask = np.where(depth >= zlim[0], 1.0, 0.0)
+        zmask = np.where(depth <= zlim[1], zmask, 0.0)
+    else:
+        zmask = 1.0
 
-    # shade topography
-    if topomask is not None:
-        cMap = mpl.colors.ListedColormap(["gray"])
-        ax.pcolormesh(yh, -1.0 * zz, topomask, cmap=cMap, shading="auto")
+    # combine masks
+    mask = np.array(ymask * zmask)
 
-    # set latitude limits
-    if xlim is not None:
-        ax.set_xlim(xlim)
+    # turn mask into a masked array
+    if len(mask.shape) > 0:
+        mask = np.ma.masked_where(mask == 0.0, mask)
 
-    # set vertical split scale
-    ax.set_yscale("splitscale", zval=[0, -2000, -6500])
-    ax.invert_yaxis()
+    # multiply array by mask
+    arr = arr * mask
 
-    # add colorbar
-    cbar = plt.colorbar(cs)
-    cbar.set_label("[Sv]")
+    # find indicies of max values
+    ind = np.unravel_index(np.ma.argmax(arr, axis=None), arr.shape)
 
-    # add labels
-    ax.text(0.02, 1.02, title, ha="left", fontsize=10, transform=ax.transAxes)
-    plt.ylabel("Elevation [m]")
-    if dates is not None:
-        assert isinstance(dates, tuple), "Year range should be provided as a tuple."
-        datestring = f"Years {dates[0]} - {dates[1]}"
-        ax.text(0.98, 1.02, datestring, ha="right", fontsize=10, transform=ax.transAxes)
+    return (lat[ind], depth[ind], arr[ind])

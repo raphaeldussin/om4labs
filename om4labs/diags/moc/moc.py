@@ -70,12 +70,13 @@ def read(dictArgs, vcomp="vmo", ucomp="umo"):
     Returns
     -------
     xarray.DataSet
-        Xarray dataset containing `umo`, `vmo`, `geolon`, 
-        `geolat`, `depth`, `zmod`, `wet`, and `basin_masks`
+        Two xarray datasets; one containing `umo`, `vmo`
+        and the other containing the grid information
     """
 
     # initialize an xarray.Dataset to hold the output
     dset = xr.Dataset()
+    dset_grid = xr.Dataset()
 
     # read the infile and get u, v transport components
     infile = dictArgs["infile"]
@@ -100,40 +101,52 @@ def read(dictArgs, vcomp="vmo", ucomp="umo"):
 
     # get horizontal t-cell grid info
     dsT = horizontal_grid(dictArgs, point_type="t")
-    dset["geolon"] = xr.DataArray(dsT.geolon.values, dims=("yh", "xh"))
-    dset["geolat"] = xr.DataArray(dsT.geolat.values, dims=("yh", "xh"))
+    dset_grid["geolon"] = xr.DataArray(dsT.geolon.values, dims=("yh", "xh"))
+    dset_grid["geolat"] = xr.DataArray(dsT.geolat.values, dims=("yh", "xh"))
+
+    # get horizontal v-cell grid info
+    dsV = horizontal_grid(dictArgs, point_type="v", outputgrid=outputgrid)
+    dset_grid["geolon_v"] = xr.DataArray(dsV.geolon.values, dims=("yq", "xh"))
+    dset_grid["geolat_v"] = xr.DataArray(dsV.geolat.values, dims=("yq", "xh"))
 
     # get topography info
     _depth = read_topography(dictArgs, coords=ds.coords, point_type="t")
-    depth = np.where(np.isnan(_depth.to_masked_array()), 0.0, _depth)
-    dset["depth"] = xr.DataArray(depth, dims=("yh", "xh"))
+    _depth_v = read_topography(dictArgs, coords=ds.coords, point_type="v")
 
-    # replicates older get_z() func from m6plot
-    zmod, _ = xr.broadcast(dset[interface], xr.ones_like(dset.geolat))
-    zmod = xr.ufuncs.minimum(dset.depth, xr.ufuncs.fabs(zmod)) * -1.0
-    zmod = zmod.transpose(interface, "yh", "xh")
-    dset["zmod"] = zmod
+    # save bathymetry
+    depth = np.where(np.isnan(_depth.to_masked_array()), 0.0, _depth)
+    dset_grid["deptho"] = xr.DataArray(depth, dims=("yh", "xh"))
 
     # grid wet mask based on model's topography
     wet = np.where(np.isnan(_depth.to_masked_array()), 0.0, 1.0)
-    dset["wet"] = xr.DataArray(wet, dims=("yh", "xh"))
+    dset_grid["wet"] = xr.DataArray(wet, dims=("yh", "xh"))
+
+    # print(_depth_v)
+    _wet_v = xr.where(_depth_v.isnull(), 0.0, 1.0)
+    dset_grid["wet_v"] = xr.DataArray(_wet_v.values, dims=("yq", "xh"))
 
     # basin masks
     basin_code = dsT.basin.values
+    dset_grid["basin_code"] = xr.DataArray(dsV.basin.values, dims=("yq", "xh"))
+
+    # calculate atlantic and pacific masks
     basins = ["atlantic_arctic", "indo_pacific"]
     basins = [generate_basin_masks(basin_code, basin=x) for x in basins]
     basins = [xr.DataArray(x, dims=("yh", "xh")) for x in basins]
     basins = xr.concat(basins, dim="basin")
-    dset["basin_masks"] = basins
+    dset_grid["basin_masks"] = basins
+
+    # dset_grid requires `xq`
+    dset_grid["xq"] = dset.xq
 
     # date range
     dates = date_range(ds)
     dset.attrs["dates"] = dates
 
-    return dset
+    return (dset, dset_grid)
 
 
-def calculate(dset):
+def calculate(dset, dset_grid):
     """Main calculation function
 
     Parameters
@@ -147,13 +160,28 @@ def calculate(dset):
         Time-mean overturning streamfunction by basin 
     """
 
+    layer = dset.layer
+    interface = dset.interface
+
     # define list of basins
     basins = ["atl-arc", "indopac", "global"]
+
+    mask_output = True if layer == "z_l" else False
+
+    if mask_output is False:
+        dset_grid = dset_grid.drop(labels=["deptho"])
 
     # iterate over basins
     otsfn = [
         xoverturning.calcmoc(
-            dset, basin=x, layer=dset.layer, interface=dset.interface, verbose=False
+            dset,
+            dset_grid,
+            mask_output=mask_output,
+            output_true_lat=True,
+            basin=x,
+            verbose=False,
+            layer=layer,
+            interface=interface,
         )
         for x in basins
     ]
@@ -163,7 +191,9 @@ def calculate(dset):
     otsfn = otsfn.transpose(otsfn.dims[1], otsfn.dims[0], ...)
 
     # take the time mean
-    otsfn = otsfn.mean(dim="time")
+    otsfn = otsfn.squeeze()
+    if "time" in otsfn.dims:
+        otsfn = otsfn.mean(dim="time")
 
     return otsfn
 
@@ -190,10 +220,22 @@ def plot(dset, otsfn, label=None):
 
     fig = (
         # z-coordinate plot
-        plot_z(dset, otsfn, label=label)
+        plot_z(
+            otsfn.values,
+            otsfn.lat.values,
+            otsfn.z_i.values,
+            dates=dset.dates,
+            label=label,
+        )
         if layer == "z_l"
         # sigma2-coordinate plot
-        else plot_rho(dset, otsfn, label=label)
+        else plot_rho(
+            otsfn.values,
+            otsfn.lat.values,
+            otsfn.rho2_i.values,
+            dates=dset.dates,
+            label=label,
+        )
         if layer == "rho2_l"
         else None
     )
@@ -220,10 +262,10 @@ def run(dictArgs):
         plt.switch_backend("Agg")
 
     # read in data
-    dset = read(dictArgs)
+    dset, dset_grid = read(dictArgs)
 
     # calculate otsfn
-    otsfn = calculate(dset)
+    otsfn = calculate(dset, dset_grid)
 
     # make the plots
     fig = plot(dset, otsfn, dictArgs["label"],)
