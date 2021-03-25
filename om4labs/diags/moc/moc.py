@@ -16,6 +16,7 @@ import warnings
 from om4labs.om4common import horizontal_grid
 from om4labs.om4common import read_topography
 from om4labs.om4common import image_handler
+from om4labs.om4common import is_symmetric
 from om4labs.om4common import generate_basin_masks
 from om4labs.om4common import date_range
 from om4labs.om4parser import default_diag_parser
@@ -81,6 +82,9 @@ def read(dictArgs, vcomp="vmo", ucomp="umo"):
     ds = xr.open_mfdataset(infile, combine="by_coords")
     dset["umo"] = ds[ucomp]
     dset["vmo"] = ds[vcomp]
+
+    # detect symmetric grid
+    outputgrid = "symetric" if is_symmetric(dset) else "nonsymetric"
 
     # determine vertical coordinate
     layer = "z_l" if "z_l" in ds.dims else "rho2_l" if "rho2_l" in ds.dims else None

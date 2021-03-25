@@ -354,6 +354,45 @@ def compute_area_regular_grid(ds, Rearth=6378e3):
     return area
 
 
+def is_symmetric(dset, center="yh", corner="yq"):
+    """Determines if ocean model output is on a symmetric grip
+
+    Parameters
+    ----------
+    dset : xarray.Dataset
+        Input dataset
+    center : str, optional
+        Name of cell centers dimension, by default "yh"
+    corner : str, optional
+        Name of cell corners dimension, by default "yq"
+
+    Returns
+    -------
+    bool
+        True if grid is symmetric
+    """
+
+    # check that both dimensions are present
+    assert (corner in dset.variables) and (
+        center in dset.variables
+    ), f"`{corner}` and `{center}` needed to detect grid"
+
+    # get dimension lenghts
+    corner = len(dset[corner])
+    center = len(dset[center])
+
+    # dimensions should either be the same or differ by one point
+    assert not abs(corner - center) > 1, "Unexpected dimension lengths"
+
+    # set logical
+    is_sym = False if corner == center else True if corner > center else None
+
+    # sanity check
+    assert is_sym is not None, "Corner point length less than center cell length"
+
+    return is_sym
+
+
 def grid_from_supergrid(ds, point_type="t", outputgrid="nonsymetric"):
     """Subsample super grid to obtain geolon, geolat, and cell area
 
