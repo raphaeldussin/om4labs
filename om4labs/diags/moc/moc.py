@@ -99,11 +99,6 @@ def read(dictArgs, vcomp="vmo", ucomp="umo"):
     dset.attrs["layer"] = layer
     dset.attrs["interface"] = interface
 
-    # get horizontal t-cell grid info
-    dsT = horizontal_grid(dictArgs, point_type="t")
-    dset_grid["geolon"] = xr.DataArray(dsT.geolon.values, dims=("yh", "xh"))
-    dset_grid["geolat"] = xr.DataArray(dsT.geolat.values, dims=("yh", "xh"))
-
     # get horizontal v-cell grid info
     dsV = horizontal_grid(dictArgs, point_type="v", outputgrid=outputgrid)
     dset_grid["geolon_v"] = xr.DataArray(dsV.geolon.values, dims=("yq", "xh"))
@@ -117,29 +112,14 @@ def read(dictArgs, vcomp="vmo", ucomp="umo"):
     depth = np.where(np.isnan(_depth.to_masked_array()), 0.0, _depth)
     dset_grid["deptho"] = xr.DataArray(depth, dims=("yh", "xh"))
 
-    # grid wet mask based on model's topography
-    wet = np.where(np.isnan(_depth.to_masked_array()), 0.0, 1.0)
-    dset_grid["wet"] = xr.DataArray(wet, dims=("yh", "xh"))
-
-    # print(_depth_v)
+    # get the wet mask on the v-grid
     _wet_v = xr.where(_depth_v.isnull(), 0.0, 1.0)
     dset_grid["wet_v"] = xr.DataArray(_wet_v.values, dims=("yq", "xh"))
-
-    # basin masks
-    basin_code = dsT.basin.values
-    dset_grid["basin_code"] = xr.DataArray(dsV.basin.values, dims=("yq", "xh"))
-
-    # calculate atlantic and pacific masks
-    basins = ["atlantic_arctic", "indo_pacific"]
-    basins = [generate_basin_masks(basin_code, basin=x) for x in basins]
-    basins = [xr.DataArray(x, dims=("yh", "xh")) for x in basins]
-    basins = xr.concat(basins, dim="basin")
-    dset_grid["basin_masks"] = basins
 
     # dset_grid requires `xq`
     dset_grid["xq"] = dset.xq
 
-    # date range
+    # save date range as an attribute
     dates = date_range(ds)
     dset.attrs["dates"] = dates
 
