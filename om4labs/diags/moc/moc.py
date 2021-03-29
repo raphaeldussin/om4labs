@@ -146,10 +146,9 @@ def calculate(dset, dset_grid):
     # define list of basins
     basins = ["atl-arc", "indopac", "global"]
 
+    # determine options to pass to xoverturning.calcmoc
     mask_output = True if layer == "z_l" else False
-
-    if mask_output is False:
-        dset_grid = dset_grid.drop(labels=["deptho"])
+    vertical = "rho2" if layer == "rho2_l" else "z" if layer == "z_l" else None
 
     # iterate over basins
     otsfn = [
@@ -160,8 +159,7 @@ def calculate(dset, dset_grid):
             output_true_lat=True,
             basin=x,
             verbose=False,
-            layer=layer,
-            interface=interface,
+            vertical=vertical,
         )
         for x in basins
     ]
