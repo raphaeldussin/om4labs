@@ -593,12 +593,14 @@ def read_topography(dictArgs, coords=None, point_type="t"):
     ----------
     dictArgs : dict, optional
         dictionary of arguments obtained from the CLI parser, by default None
-    outputgrid : str, optional
-        Either "symetric" or "nonsymetric", default is "nonsymetric"
+    coords : tuple, optional
+        target xarray coordinates
+    point_type : str, optional
+        Requested grid type of t|q|u|v, by default "t"
 
     Returns
     -------
-    numpy.ma.maskedArray
+    xarray.DataArray
         topography array
     """
 
