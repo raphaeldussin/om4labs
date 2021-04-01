@@ -162,11 +162,13 @@ def calculate(dset, dset_grid):
 
     # combine into single DataArray
     otsfn = xr.concat(otsfn, dim="basin")
-    otsfn = otsfn.transpose(otsfn.dims[1], otsfn.dims[0], ...)
+    otsfn = otsfn.transpose(*("time", "basin", ...))
 
     # take the time mean
     otsfn = otsfn.squeeze()
     if "time" in otsfn.dims:
+        if len(otsfn["time"]) > 1:
+            warnings.warn("performing non-weighted time average")
         otsfn = otsfn.mean(dim="time")
 
     return otsfn
