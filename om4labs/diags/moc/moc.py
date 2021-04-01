@@ -194,27 +194,27 @@ def plot(dset, otsfn, label=None):
     """
     layer = dset.layer
 
-    fig = (
-        # z-coordinate plot
-        plot_z(
+    # z-coordinate plot
+    if layer == "z_l":
+        fig = plot_z(
             otsfn.values,
             otsfn.lat.values,
             otsfn.z_i.values,
             dates=dset.dates,
             label=label,
         )
-        if layer == "z_l"
-        # sigma2-coordinate plot
-        else plot_rho(
+    # sigma2-coordinate plot
+    elif layer == "rho2_l":
+        fig = plot_rho(
             otsfn.values,
             otsfn.lat.values,
             otsfn.rho2_i.values,
             dates=dset.dates,
             label=label,
         )
-        if layer == "rho2_l"
-        else None
-    )
+
+    else:
+        raise ValueError(f"{layer} is not a recognized vertical coordinate.")
 
     return fig
 
