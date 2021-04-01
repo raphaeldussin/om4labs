@@ -244,7 +244,7 @@ def run(dictArgs):
     otsfn = calculate(dset, dset_grid)
 
     # make the plots
-    fig = plot(dset, otsfn, dictArgs["label"],)
+    fig = plot(dset, otsfn, dictArgs["label"])
 
     filename = f"{dictArgs['outdir']}/moc"
     imgbufs = image_handler([fig], dictArgs, filename=filename)
