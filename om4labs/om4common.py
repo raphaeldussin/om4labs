@@ -185,6 +185,42 @@ def fixdir(path):
     return path.replace("//", "/")
 
 
+def generate_basin_masks(basin_code, basin=None):
+    """Returns 2-D array mask (1s/0s) for common pre-defined
+    basins and regions.
+
+    Parameters
+    ----------
+    basin_code : numpy.ndarray
+        2-dimensional array of CMIP-convention basin codes
+    basin : str or int, optional
+        Name of basin to calculate. Options are "atlantic_arctic"
+        and "indo_pacific". An integer basin code may also be 
+        passed. By default None
+
+    Returns
+    -------
+    numpy.ndarray
+        Basin mask of 1s and 0s.
+    """
+    mask = basin_code * 0
+    if basin == "atlantic_arctic":
+        mask[
+            (basin_code == 2)
+            | (basin_code == 4)
+            | (basin_code == 6)
+            | (basin_code == 7)
+            | (basin_code == 8)
+        ] = 1.0
+    elif basin == "indo_pacific":
+        mask[(basin_code == 3) | (basin_code == 5)] = 1.0
+    elif isinstance(basin, int):
+        mask[(basin_code == basin)] = 1.0
+    else:
+        mask[(basin_code >= 1)] = 1.0
+    return mask
+
+
 def image_handler(figs, dictArgs, filename="./figure"):
     """Generic routine for image handling"""
 
@@ -318,6 +354,41 @@ def compute_area_regular_grid(ds, Rearth=6378e3):
     return area
 
 
+def is_symmetric(dset, x_center="xh", x_corner="xq", y_center="yh", y_corner="yq"):
+    """Determines if ocean model output is on a symmetric grid
+
+    Parameters
+    ----------
+    dset : [type]
+        [description]
+    x_center : str, optional
+        Name of x-cell centers dimension, by default "yxh"
+    x_corner : str, optional
+        Name of x-cell corners dimension, by default "xq"
+    y_center : str, optional
+        Name of y-cell centers dimension, by default "yh"
+    y_corner : str, optional
+        Name of y-cell corners dimension, by default "yq"
+
+    Returns
+    -------
+    bool
+        True if grid is symmetric
+    """
+
+    if (len(dset[x_corner]) == len(dset[x_center])) and (
+        len(dset[y_corner]) == len(dset[y_center])
+    ):
+        out = False
+    elif (len(dset[x_corner]) == len(dset[x_center]) + 1) and (
+        len(dset[y_corner]) == len(dset[y_center]) + 1
+    ):
+        out = True
+    else:
+        raise ValueError("unsupported combination of coordinates")
+    return out
+
+
 def grid_from_supergrid(ds, point_type="t", outputgrid="nonsymetric"):
     """Subsample super grid to obtain geolon, geolat, and cell area
 
@@ -348,7 +419,11 @@ def grid_from_supergrid(ds, point_type="t", outputgrid="nonsymetric"):
 
 
 def horizontal_grid(
-    dictArgs=None, point_type="t", outputgrid="nonsymetric", output_type="xarray"
+    dictArgs=None,
+    point_type="t",
+    coords=None,
+    outputgrid="nonsymetric",
+    output_type="xarray",
 ):
     """Returns horizontal grid parameters based on the values of the CLI
     arguments and the presence of intake catalogs.
@@ -370,6 +445,8 @@ def horizontal_grid(
         dictionary of arguments obtained from the CLI parser, by default None
     point_type : str, optional
         Requested grid type of t|q|u|v, by default "t"
+    coords : tuple, optional
+        target xarray coordinates
     outputgrid : str, optional
         Either "symetric" or "nonsymetric", default is "nonsymetric"
     output_type : str, optional
@@ -405,6 +482,10 @@ def horizontal_grid(
         geolat, geolon, area = grid_from_supergrid(
             ds, point_type, outputgrid=outputgrid
         )
+        wet = infer_wet_mask(dictArgs, coords=coords, point_type=point_type)
+        warnings.warn(
+            "Inferring wet mask from topography. Consider using ocean_static.nc"
+        )
 
     elif dictArgs["static"] is not None:
         if verbose:
@@ -415,16 +496,19 @@ def horizontal_grid(
         if point_type == "T":
             geolat = ds["geolat"]
             geolon = ds["geolon"]
+            wet = ds["wet"]
             area = ds["areacello"]
 
         elif point_type == "U":
             geolat = ds["geolat_u"]
             geolon = ds["geolon_u"]
+            wet = ds["wet_u"]
             area = ds["areacello_cu"]
 
         elif point_type == "V":
             geolat = ds["geolat_v"]
             geolon = ds["geolon_v"]
+            wet = ds["wet_v"]
             area = ds["areacello_cv"]
 
         else:
@@ -438,6 +522,10 @@ def horizontal_grid(
         geolat, geolon, area = grid_from_supergrid(
             ds, point_type, outputgrid=outputgrid
         )
+        wet = infer_wet_mask(dictArgs, coords=coords, point_type=point_type)
+        warnings.warn(
+            "Inferring wet mask from topography. Consider using ocean_static.nc"
+        )
 
     elif dictArgs["platform"] is not None and dictArgs["config"] is not None:
         if verbose:
@@ -449,11 +537,16 @@ def horizontal_grid(
         geolat, geolon, area = grid_from_supergrid(
             ds, point_type, outputgrid=outputgrid
         )
+        wet = infer_wet_mask(dictArgs, coords=coords, point_type=point_type)
+        warnings.warn(
+            "Inferring wet mask from topography. Consider using ocean_static.nc"
+        )
 
     result = xr.Dataset()
     result["geolat"] = geolat
     result["geolon"] = geolon
     result["area"] = area
+    result["wet"] = wet
 
     # nominal coordinates
     result["nominal_x"] = result.geolon.max(axis=-2)
@@ -518,12 +611,14 @@ def read_topography(dictArgs, coords=None, point_type="t"):
     ----------
     dictArgs : dict, optional
         dictionary of arguments obtained from the CLI parser, by default None
-    outputgrid : str, optional
-        Either "symetric" or "nonsymetric", default is "nonsymetric"
+    coords : tuple, optional
+        target xarray coordinates
+    point_type : str, optional
+        Requested grid type of t|q|u|v, by default "t"
 
     Returns
     -------
-    numpy.ma.maskedArray
+    xarray.DataArray
         topography array
     """
 
@@ -574,9 +669,29 @@ def read_topography(dictArgs, coords=None, point_type="t"):
     elif point_type == "U":
         depth = out_grid.interp(depth, "X", boundary="fill")
 
-    depth = np.where(np.isnan(depth.to_masked_array()), 0.0, depth)
-
     return depth
+
+
+def infer_wet_mask(dictArgs, coords=None, point_type="t"):
+    """Infers the model's wet mask based on the model topography
+
+    Parameters
+    ----------
+    dictArgs : dict, optional
+        dictionary of arguments obtained from the CLI parser, by default None
+    coords : tuple, optional
+        target xarray coordinates
+    point_type : str, optional
+        Requested grid type of t|q|u|v, by default "t"
+
+    Returns
+    -------
+    xarray.DataArray
+        wet mask of ocean=1, land=0
+    """
+    depth = read_topography(dictArgs, coords=coords, point_type=point_type)
+    depth = xr.where(depth.isnull(), 0.0, depth)
+    return xr.where(depth > 0.0, 1.0, 0.0)
 
 
 def annual_cycle(ds, var):
