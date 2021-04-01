@@ -100,21 +100,17 @@ def read(dictArgs, vcomp="vmo", ucomp="umo"):
     dset.attrs["interface"] = interface
 
     # get horizontal v-cell grid info
-    dsV = horizontal_grid(dictArgs, point_type="v", outputgrid=outputgrid)
+    dsV = horizontal_grid(
+        dictArgs, coords=ds.coords, point_type="v", outputgrid=outputgrid
+    )
     dset_grid["geolon_v"] = xr.DataArray(dsV.geolon.values, dims=("yq", "xh"))
     dset_grid["geolat_v"] = xr.DataArray(dsV.geolat.values, dims=("yq", "xh"))
+    dset_grid["wet_v"] = xr.DataArray(dsV.wet.values, dims=("yq", "xh"))
 
     # get topography info
-    _depth = read_topography(dictArgs, coords=ds.coords, point_type="t")
-    _depth_v = read_topography(dictArgs, coords=ds.coords, point_type="v")
-
-    # save bathymetry
-    depth = np.where(np.isnan(_depth.to_masked_array()), 0.0, _depth)
+    depth = read_topography(dictArgs, coords=ds.coords, point_type="t")
+    depth = np.where(np.isnan(depth.to_masked_array()), 0.0, depth)
     dset_grid["deptho"] = xr.DataArray(depth, dims=("yh", "xh"))
-
-    # get the wet mask on the v-grid
-    _wet_v = xr.where(_depth_v.isnull(), 0.0, 1.0)
-    dset_grid["wet_v"] = xr.DataArray(_wet_v.values, dims=("yq", "xh"))
 
     # dset_grid requires `xq`
     dset_grid["xq"] = dset.xq
