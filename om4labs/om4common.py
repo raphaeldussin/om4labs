@@ -354,17 +354,21 @@ def compute_area_regular_grid(ds, Rearth=6378e3):
     return area
 
 
-def is_symmetric(dset, center="yh", corner="yq"):
-    """Determines if ocean model output is on a symmetric grip
+def is_symmetric(dset, x_center="xh", x_corner="xq", y_center="yh", y_corner="yq"):
+    """Determines if ocean model output is on a symmetric grid
 
     Parameters
     ----------
-    dset : xarray.Dataset
-        Input dataset
-    center : str, optional
-        Name of cell centers dimension, by default "yh"
-    corner : str, optional
-        Name of cell corners dimension, by default "yq"
+    dset : [type]
+        [description]
+    x_center : str, optional
+        Name of x-cell centers dimension, by default "yxh"
+    x_corner : str, optional
+        Name of x-cell corners dimension, by default "xq"
+    y_center : str, optional
+        Name of y-cell centers dimension, by default "yh"
+    y_corner : str, optional
+        Name of y-cell corners dimension, by default "yq"
 
     Returns
     -------
@@ -372,25 +376,17 @@ def is_symmetric(dset, center="yh", corner="yq"):
         True if grid is symmetric
     """
 
-    # check that both dimensions are present
-    assert (corner in dset.variables) and (
-        center in dset.variables
-    ), f"`{corner}` and `{center}` needed to detect grid"
-
-    # get dimension lenghts
-    corner = len(dset[corner])
-    center = len(dset[center])
-
-    # dimensions should either be the same or differ by one point
-    assert not abs(corner - center) > 1, "Unexpected dimension lengths"
-
-    # set logical
-    is_sym = False if corner == center else True if corner > center else None
-
-    # sanity check
-    assert is_sym is not None, "Corner point length less than center cell length"
-
-    return is_sym
+    if (len(dset[x_corner]) == len(dset[x_center])) and (
+        len(dset[y_corner]) == len(dset[y_center])
+    ):
+        out = False
+    elif (len(dset[x_corner]) == len(dset[x_center]) + 1) and (
+        len(dset[y_corner]) == len(dset[y_center]) + 1
+    ):
+        out = True
+    else:
+        raise ValueError("unsupported combination of coordinates")
+    return out
 
 
 def grid_from_supergrid(ds, point_type="t", outputgrid="nonsymetric"):
