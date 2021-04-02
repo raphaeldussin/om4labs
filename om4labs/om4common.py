@@ -108,7 +108,7 @@ def date_range(ds, ref_time="1970-01-01T00:00:00Z"):
     return (t0, t1)
 
 
-def discover_ts_dir(path, default="ts/daily"):
+def discover_ts_dir(path, default="ts/monthly"):
     """Find the directory with the longest timeseries chunk
 
     Parameters
@@ -116,7 +116,7 @@ def discover_ts_dir(path, default="ts/daily"):
     path : str, path-like
         Path to top-level (.../pp) post-processing directory
     default : str, optional
-        Time resolution to scan, by default "ts/daily"
+        Time resolution to scan, by default "ts/monthly"
 
     Returns
     -------

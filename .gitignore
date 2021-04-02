@@ -132,6 +132,8 @@ dmypy.json
 testing/test_data
 testing/*.png
 testing/bilinear*.nc
+testing/om4labs.OM4p125_test_data.latest.tar.gz
+testing/om4labs.obs_data.latest.tar.gz
 
 # Visual Studio
 .vscode
