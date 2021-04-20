@@ -85,5 +85,6 @@ distclean:
 	rm -f $(IMG)
 	rm -f bilinear*.nc
 	rm -fR test_data
+	rm -fR output
 	rm -f om4labs.obs_data.latest.tar.gz
 	rm -f om4labs.OM4p125_test_data.latest.tar.gz
