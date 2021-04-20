@@ -134,6 +134,7 @@ testing/*.png
 testing/bilinear*.nc
 testing/om4labs.OM4p125_test_data.latest.tar.gz
 testing/om4labs.obs_data.latest.tar.gz
+testing/output
 
 # Visual Studio
 .vscode
