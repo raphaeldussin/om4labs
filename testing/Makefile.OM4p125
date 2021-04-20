@@ -15,7 +15,8 @@ THETAO_YZ_PLOTS = thetao_yz_gbl_diff.png thetao_yz_atl_diff.png thetao_yz_pac_di
 SO_YZ_PLOTS = so_yz_gbl_diff.png so_yz_atl_diff.png so_yz_pac_diff.png
 
 # Combined set of all plots
-IMG = $(SECTION_PLOTS) $(SFC_BIAS_PLOTS) $(THETAO_YZ_PLOTS) $(SO_YZ_PLOTS) $(MOC_PLOTS) $(HEAT_TRANS_PLOTS)
+COMBINED = $(SECTION_PLOTS) $(SFC_BIAS_PLOTS) $(THETAO_YZ_PLOTS) $(SO_YZ_PLOTS) $(MOC_PLOTS) $(HEAT_TRANS_PLOTS)
+IMG = $(patsubst %, output/OM4p125/%, $(COMBINED))
 
 all: $(IMG)
 
@@ -29,48 +30,50 @@ test_data/OM4p125:
 	ftp://ftp.gfdl.noaa.gov/perm/John.Krasting/om4labs/om4labs.OM4p125_test_data.latest.tar.gz
 	tar -xzvf om4labs.OM4p125_test_data.latest.tar.gz
 
-$(HEAT_TRANS_PLOTS): test_data/OM4p125 test_data/obs ../om4labs/diags/heat_transport/heat_transport.py
-	om4labs heat_transport --platform testing \
+$(patsubst %, output/OM4p125/%, $(HEAT_TRANS_PLOTS)): test_data/OM4p125 test_data/obs ../om4labs/diags/heat_transport/heat_transport.py
+	om4labs heat_transport --platform testing -o output/OM4p125 \
 	-s test_data/OM4p125/pp/ocean_monthly_d2/ocean_monthly_d2.static.nc \
 	test_data/OM4p125/pp/ocean_monthly_d2/av/annual_5yr/ocean_monthly_d2.0126-0130.ann.nc
 
-$(MOC_PLOTS): test_data/OM4p125 ../om4labs/diags/moc/moc.py
+$(patsubst %, output/OM4p125/%, $(MOC_PLOTS)): test_data/OM4p125 ../om4labs/diags/moc/moc.py
 	# density plot
-	om4labs moc -s test_data/OM4p125/pp/ocean_annual_rho2_d2/ocean_annual_rho2_d2.static.nc \
+	om4labs moc -o output/OM4p125 \
+	-s test_data/OM4p125/pp/ocean_annual_rho2_d2/ocean_annual_rho2_d2.static.nc \
 	--topog test_data/OM4p125/pp/ocean_annual_rho2_d2/ocean_annual_rho2_d2.static.nc \
 	test_data/OM4p125/pp/ocean_annual_rho2_d2/av/annual_10yr/ocean_annual_rho2_d2.0121-0130.ann.nc
-	mv moc.png moc_rho.png
+	mv output/OM4p125/moc.png output/OM4p125/moc_rho.png
 	
 	# z-level plot
-	om4labs moc -s test_data/OM4p125/pp/ocean_annual_z_d2/ocean_annual_z_d2.static.nc \
+	om4labs moc -o output/OM4p125 \
+	-s test_data/OM4p125/pp/ocean_annual_z_d2/ocean_annual_z_d2.static.nc \
 	--topog test_data/OM4p125/pp/ocean_annual_z_d2/ocean_annual_z_d2.static.nc \
 	test_data/OM4p125/pp/ocean_annual_z_d2/av/annual_10yr/ocean_annual_z_d2.0121-0130.ann.nc
-	mv moc.png moc_z.png
+	mv output/OM4p125/moc.png output/OM4p125/moc_z.png
 
-$(SECTION_PLOTS): test_data/OM4p125 \
+$(patsubst %, output/OM4p125/%, $(SECTION_PLOTS)): test_data/OM4p125 \
 	../om4labs/diags/section_transports/section_transports.py \
 	../om4labs/diags/generic_section_transport/generic_section_transport.py 
-	om4labs section_transports test_data/OM4p125/pp
+	om4labs section_transports -o output/OM4p125 test_data/OM4p125/pp
 
-$(SFC_BIAS_PLOTS): test_data/OM4p125 test_data/obs \
+$(patsubst %, output/OM4p125/%, $(SFC_BIAS_PLOTS)): test_data/OM4p125 test_data/obs \
 	../om4labs/diags/sst_annual_bias_1x1deg/sst_annual_bias_1x1deg.py \
 	../om4labs/diags/sss_annual_bias_1x1deg/sss_annual_bias_1x1deg.py
-	om4labs sst_annual_bias_1x1deg --platform testing \
+	om4labs sst_annual_bias_1x1deg --platform testing -o output/OM4p125 \
 	test_data/OM4p125/pp/ocean_annual_z_d2_1x1deg/av/annual_10yr/ocean_annual_z_d2_1x1deg.0121-0130.ann.nc
-	om4labs sss_annual_bias_1x1deg --platform testing \
+	om4labs sss_annual_bias_1x1deg --platform testing -o output/OM4p125 \
 	test_data/OM4p125/pp/ocean_annual_z_d2_1x1deg/av/annual_10yr/ocean_annual_z_d2_1x1deg.0121-0130.ann.nc
 
-$(THETAO_YZ_PLOTS): test_data/OM4p125 test_data/obs \
+$(patsubst %, output/OM4p125/%, $(THETAO_YZ_PLOTS)): test_data/OM4p125 test_data/obs \
 	../om4labs/diags/generic_yz_annual_bias_1x1deg/generic_yz_annual_bias_1x1deg.py \
 	../om4labs/diags/thetao_yz_annual_bias_1x1deg/thetao_yz_annual_bias_1x1deg.py
-	om4labs thetao_yz_annual_bias_1x1deg --style diff --platform testing \
+	om4labs thetao_yz_annual_bias_1x1deg --style diff --platform testing -o output/OM4p125 \
 	--static test_data/OM4p125/pp/ocean_annual_z_d2_1x1deg/ocean_annual_z_d2_1x1deg.static.nc  \
 	test_data/OM4p125/pp/ocean_annual_z_d2_1x1deg/av/annual_10yr/ocean_annual_z_d2_1x1deg.0121-0130.ann.nc
 
-$(SO_YZ_PLOTS): test_data/OM4p125 test_data/obs \
+$(patsubst %, output/OM4p125/%, $(SO_YZ_PLOTS)): test_data/OM4p125 test_data/obs \
 	../om4labs/diags/generic_yz_annual_bias_1x1deg/generic_yz_annual_bias_1x1deg.py \
 	../om4labs/diags/so_yz_annual_bias_1x1deg/so_yz_annual_bias_1x1deg.py
-	om4labs so_yz_annual_bias_1x1deg --style diff --platform testing \
+	om4labs so_yz_annual_bias_1x1deg --style diff --platform testing -o output/OM4p125 \
 	--static test_data/OM4p125/pp/ocean_annual_z_d2_1x1deg/ocean_annual_z_d2_1x1deg.static.nc  \
 	test_data/OM4p125/pp/ocean_annual_z_d2_1x1deg/av/annual_10yr/ocean_annual_z_d2_1x1deg.0121-0130.ann.nc
 
