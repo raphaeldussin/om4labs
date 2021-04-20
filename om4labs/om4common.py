@@ -5,6 +5,7 @@ import calendar
 import glob
 import io
 import os
+import pathlib
 import signal
 import sys
 import tarfile as tf
@@ -222,10 +223,31 @@ def generate_basin_masks(basin_code, basin=None):
 
 
 def image_handler(figs, dictArgs, filename="./figure"):
-    """Generic routine for image handling"""
+    """ Generic OM4Labs image handler. Depending on the framework mode,
+    this handler either saves a matplotlib figure handle to disk or
+    returns an in-memory image buffer
+
+    Parameters
+    ----------
+    figs : matplotlib.Figure or list
+        Matplotlib figure handle or list of figure handles
+    dictArgs : dict
+        Dictionary of parsed command-line options
+    filename : str, optional
+        Figure filename, by default "./figure"
+
+    Returns
+    -------
+    io.BytesIO
+        In-memory image buffers
+    """
 
     imgbufs = []
     numfigs = len(figs)
+
+    # test if output directory exists
+    if dictArgs["outdir"] != "./":
+        pathlib.Path(dictArgs["outdir"]).mkdir(parents=True, exist_ok=True)
 
     if not isinstance(filename, list):
         filename = [filename]
