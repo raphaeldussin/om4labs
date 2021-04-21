@@ -21,6 +21,7 @@ from matplotlib.lines import Line2D
 
 from om4labs.om4common import (
     annual_cycle,
+    curv_to_curv,
     date_range,
     image_handler,
     standard_grid_cell_area,
