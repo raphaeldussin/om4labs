@@ -21,6 +21,7 @@ from matplotlib.lines import Line2D
 
 from om4labs.om4common import (
     annual_cycle,
+    curv_to_curv,
     date_range,
     image_handler,
     standard_grid_cell_area,
@@ -48,10 +49,7 @@ def parse(cliargs=None, template=False):
     )
 
     parser.add_argument(
-        "--month",
-        type=str,
-        default="March",
-        help="Month to analyze. Deafult is March",
+        "--month", type=str, default="March", help="Month to analyze. Deafult is March",
     )
 
     parser.add_argument(
@@ -145,52 +143,59 @@ def calculate(ds, dobs, region="nh"):
     """ Function to calculate sea ice parameters """
 
     # Container dictionaries to hold results
-    model = {}
-    obs = {}
+    model = xr.Dataset()
+    obs = xr.Dataset()
+
+    # Add coordinates
+    model["GEOLON"] = ds["GEOLON"]
+    model["GEOLAT"] = ds["GEOLAT"]
+    model = model.rename({"GEOLON": "lon", "GEOLAT": "lat"})
+    obs["lon"] = dobs["lon"]
+    obs["lat"] = dobs["lat"]
 
     # Create annual cycle climatology
     model["ac"] = annual_cycle(ds, "CN")
     obs["ac"] = annual_cycle(dobs, "sic")
 
+    # Regrid the observations to the model grid (for plotting)
+    regridded = curv_to_curv(obs, model, reuse_weights=False)
+
     # Calculate area and extent
     if region == "nh":
-        model["area"] = np.where(ds["GEOLAT"] > 0.0, model["ac"] * ds.AREA, 0.0)
-        model["ext"] = np.where(
+        model["area"] = xr.where(ds["GEOLAT"] > 0.0, model["ac"] * ds.AREA, 0.0)
+        model["ext"] = xr.where(
             (model["ac"] > 0.15) & (ds["GEOLAT"] > 0.0), ds.AREA, 0.0
         )
     elif region == "sh":
-        model["area"] = np.where(ds["GEOLAT"] < 0.0, model["ac"] * ds.AREA, 0.0)
-        model["ext"] = np.where(
+        model["area"] = xr.where(ds["GEOLAT"] < 0.0, model["ac"] * ds.AREA, 0.0)
+        model["ext"] = xr.where(
             (model["ac"] > 0.15) & (ds["GEOLAT"] < 0.0), ds.AREA, 0.0
         )
     else:
         raise ValueError(f"Unknown region {region}. Option are nh or sh")
 
+    # Ensure dims are in the correct order
+    model["area"] = model["area"].transpose("month", ...)
+    model["ext"] = model["ext"].transpose("month", ...)
+
+    # Sum to get model area and extent
     model["area"] = model["area"].sum(axis=(-2, -1)) * 1.0e-12
     model["ext"] = model["ext"].sum(axis=(-2, -1)) * 1.0e-12
 
+    # Get obs model and extent
     obs["area"] = obs["ac"] * dobs.areacello
+    obs["area"] = obs["area"].transpose("month", ...)
     obs["area"] = obs["area"].sum(axis=(-2, -1)) * 1.0e-12
 
-    obs["ext"] = np.where(obs["ac"] > 0.15, dobs.areacello, 0.0)
+    obs["ext"] = xr.where(obs["ac"] > 0.15, dobs.areacello, 0.0)
+    obs["ext"] = obs["ext"].transpose("month", ...)
     obs["ext"] = obs["ext"].sum(axis=(-2, -1)) * 1.0e-12
 
-    # Add back in the 2D coordinates
-
-    model["ac"]["GEOLON"] = ds["GEOLON"]
-    model["ac"]["GEOLAT"] = ds["GEOLAT"]
-    model["ac"] = model["ac"].rename({"GEOLON": "lon", "GEOLAT": "lat"})
-    obs["ac"]["lon"] = dobs["lon"]
-    obs["ac"]["lat"] = dobs["lat"]
-
-    # Regrid the observations to the model grid (for plotting)
-    obs["ac_r"] = regrid.curv_to_curv(obs["ac"], model["ac"], reuse_weights=False)
-
     # Get tuple of start year and end years for model and observations
-    model["time"] = date_range(ds)
-    obs["time"] = date_range(dobs)
+    model.attrs["time"] = date_range(ds)
+    obs.attrs["time"] = date_range(dobs)
 
-    return model, obs
+    return model, obs, regridded
 
 
 def _plot_annual_cycle(ax, _mod, _obs, roll=0):
@@ -243,7 +248,7 @@ def _plot_map_panel(
     return cb
 
 
-def plot(model, obs, valid_mask, label=None, region="nh", month="March"):
+def plot(model, obs, regridded, valid_mask, label=None, region="nh", month="March"):
     """Function to make sea ice plot"""
 
     # Get integer index of the requested month
@@ -263,25 +268,25 @@ def plot(model, obs, valid_mask, label=None, region="nh", month="March"):
         raise ValueError(f"Unknown region {region}. Option are nh or sh")
 
     # All maps are plotted on the model grid
-    x = np.array(model["ac"].lon.to_masked_array())
-    y = np.array(model["ac"].lat.to_masked_array())
+    x = np.array(model["lon"].to_masked_array())
+    y = np.array(model["lat"].to_masked_array())
 
     # Top left panel - model map of sea ice
     ax = plt.subplot(2, 3, 1, projection=proj)
     plotdata = (model["ac"][month_index] * 100.0).to_masked_array()
     plotdata = np.ma.masked_where(valid_mask, plotdata)
     cb1 = _plot_map_panel(ax, x, y, plotdata, extent=extent)
-    ax.set_title(f"Model - Years {model['time'][0]} to {model['time'][1]}")
+    ax.set_title(f"Model - Years {model.time[0]} to {model.time[1]}")
     fig.colorbar(
         cb1, orientation="horizontal", fraction=0.03, pad=0.05, aspect=60, ax=ax
     )
 
     # Top middle panel - observed map of sea ice
     ax = plt.subplot(2, 3, 2, projection=proj)
-    plotdata = (obs["ac_r"][month_index] * 100.0).to_masked_array()
+    plotdata = (regridded["ac"][month_index] * 100.0).to_masked_array()
     plotdata = np.ma.masked_where(valid_mask, plotdata)
     cb2 = _plot_map_panel(ax, x, y, plotdata, extent=extent)
-    ax.set_title(f"NSIDC - Years {obs['time'][0]} to {obs['time'][1]}")
+    ax.set_title(f"NSIDC - Years {obs.time[0]} to {obs.time[1]}")
     fig.colorbar(
         cb2, orientation="horizontal", fraction=0.03, pad=0.05, aspect=60, ax=ax
     )
@@ -292,7 +297,9 @@ def plot(model, obs, valid_mask, label=None, region="nh", month="March"):
         np.isnan(model["ac"][month_index].data), 0.0, model["ac"][month_index].data
     )
     _obs = np.where(
-        np.isnan(obs["ac_r"][month_index].data), 0.0, obs["ac_r"][month_index].data
+        np.isnan(regridded["ac"][month_index].data),
+        0.0,
+        regridded["ac"][month_index].data,
     )
     plotdata = (_mod - _obs) * 100.0
     plotdata = np.ma.masked_where(valid_mask, plotdata)
@@ -394,13 +401,14 @@ def run(dictArgs):
     current_dir = os.getcwd()
     tmpdir = tempfile.mkdtemp()
     os.chdir(tmpdir)
-    model, obs = calculate(ds, dobs, region=dictArgs["region"])
+    model, obs, regridded = calculate(ds, dobs, region=dictArgs["region"])
     os.chdir(current_dir)
     shutil.rmtree(tmpdir)
 
     fig = plot(
         model,
         obs,
+        regridded,
         valid_mask,
         label=dictArgs["label"],
         region=dictArgs["region"],
