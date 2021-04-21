@@ -48,10 +48,7 @@ def parse(cliargs=None, template=False):
     )
 
     parser.add_argument(
-        "--month",
-        type=str,
-        default="March",
-        help="Month to analyze. Deafult is March",
+        "--month", type=str, default="March", help="Month to analyze. Deafult is March",
     )
 
     parser.add_argument(
