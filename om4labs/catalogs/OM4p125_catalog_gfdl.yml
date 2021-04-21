@@ -1,0 +1,44 @@
+plugins:
+  source:
+    - module: intake_xarray
+sources:
+
+  basin:
+    description: "File containing basin masks on native model grid"
+    driver: netcdf
+    args:
+      urlpath: '/archive/Raphael.Dussin/datasets/OM4p125/OM4p125_grid_20200213_merged_bathy_unpacked/ocean_static_d2.nc'
+      xarray_kwargs:
+        decode_times: False
+    metadata:
+      origin_url: ''
+
+  ocean_hgrid:
+    description: "Horizontal grid information from the gridspec"
+    driver: netcdf
+    args:
+      urlpath: '/archive/Raphael.Dussin/datasets/OM4p125/OM4p125_grid_20200213_merged_bathy_unpacked/ocean_hgrid_d2.nc'
+      xarray_kwargs:
+        decode_times: False
+    metadata:
+      origin_url: ''
+
+  topog:
+    description: "Model topography"
+    driver: netcdf
+    args:
+      urlpath: '/archive/Raphael.Dussin/datasets/OM4p125/OM4p125_grid_20200213_merged_bathy_unpacked/ocean_static_d2.nc'
+      xarray_kwargs:
+        decode_times: False
+    metadata:
+      origin_url: ''
+
+  ice_static_1x1:
+    description: "Ice Model 1x1 Static File"
+    driver: netcdf
+    args:
+      urlpath: '/archive/Niki.Zadeh/xanadu_esm4_20190304_devgfdl_20200330/CM4_2010Control_C_noBLING_c192_OM4p125/gfdl.ncrc4-intel18-prod-openmp/pp/ice_1x1deg/ice_1x1deg.static.nc'
+      xarray_kwargs:
+        decode_times: False
+    metadata:
+      origin_url: ''
