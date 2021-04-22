@@ -2,7 +2,6 @@
 
 import argparse
 import pkg_resources as pkgr
-import intake
 import io
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -15,6 +14,7 @@ import warnings
 from om4labs.om4common import horizontal_grid
 from om4labs.om4common import image_handler
 from om4labs.om4common import date_range
+from om4labs.om4common import open_intake_catalog
 from om4labs.om4parser import default_diag_parser
 
 warnings.filterwarnings("ignore", message=".*csr_matrix.*")
@@ -180,14 +180,7 @@ class GWObs:
         self.indpac = self._gw(
             np.array([-30.0, -18.0, 24.0, 47.0]),
             np.array([-0.9, -1.6, 0.52, 0.0]),
-            np.array(
-                [
-                    0.3,
-                    0.6,
-                    0.2,
-                    0.05,
-                ]
-            ),
+            np.array([0.3, 0.6, 0.2, 0.05,]),
         )
 
 
@@ -196,9 +189,7 @@ def plot(dictArgs, yq, trans_global, trans_atlantic, trans_pacific, dates=None):
     # Load observations for plotting
     GW = GWObs()
 
-    cat_platform = "catalogs/obs_catalog_" + dictArgs["platform"] + ".yml"
-    catfile = pkgr.resource_filename("om4labs", cat_platform)
-    cat = intake.open_catalog(catfile)
+    cat = open_intake_catalog(dictArgs["platform"], "obs")
     fObs = cat["Trenberth_and_Caron"].to_dask()
 
     yobs = fObs.ylat.to_masked_array()
