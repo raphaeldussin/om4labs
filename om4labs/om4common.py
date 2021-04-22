@@ -583,7 +583,9 @@ def horizontal_grid(
 def open_intake_catalog(platform, config):
     """Returns an Intake catalog for a specified platform and config
 
-    Uses the package resources included in the om4labs distribution.
+    Uses the package resources included in the om4labs distribution
+    to determine the directory of the intake catalogs, unless it
+    is overridden by the "OM4LABS_CATALOG_DIR" environment var.
 
     Parameters
     ----------
@@ -597,9 +599,16 @@ def open_intake_catalog(platform, config):
     intake.catalog.Catalog
         Intake catalog corresponding to specified platform/config
     """
-    cat_platform = f"catalogs/{config}_catalog_{platform}.yml"
-    catfile = pkgr.resource_filename("om4labs", cat_platform)
+
+    catalog_str = f"{config}_catalog_{platform}.yml"
+
+    if "OM4LABS_CATALOG_DIR" in os.environ.keys():
+        catfile = f"{os.environ['OM4LABS_CATALOG_DIR']}/{catalog_str}"
+    else:
+        catfile = pkgr.resource_filename("om4labs", f"catalogs/{catalog_str}")
+
     cat = intake.open_catalog(catfile)
+
     return cat
 
 
