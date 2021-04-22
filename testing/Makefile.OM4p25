@@ -13,9 +13,10 @@ SECTION_PLOTS = Agulhas.png Barents_Opening.png Bering_Strait.png Davis_Strait.p
 SFC_BIAS_PLOTS = SSS_diff.png SST_diff.png
 THETAO_YZ_PLOTS = thetao_yz_gbl_diff.png thetao_yz_atl_diff.png thetao_yz_pac_diff.png
 SO_YZ_PLOTS = so_yz_gbl_diff.png so_yz_atl_diff.png so_yz_pac_diff.png
+SEAICE_PLOTS = seaice.nh.png seaice.sh.png
 
 # Combined set of all plots
-COMBINED = $(SECTION_PLOTS) $(SFC_BIAS_PLOTS) $(THETAO_YZ_PLOTS) $(SO_YZ_PLOTS) $(MOC_PLOTS) $(HEAT_TRANS_PLOTS)
+COMBINED = $(SECTION_PLOTS) $(SFC_BIAS_PLOTS) $(THETAO_YZ_PLOTS) $(SO_YZ_PLOTS) $(MOC_PLOTS) $(HEAT_TRANS_PLOTS) $(SEAICE_PLOTS)
 IMG = $(patsubst %, output/OM4p25/%, $(COMBINED))
 
 all: $(IMG)
@@ -76,6 +77,12 @@ $(patsubst %, output/OM4p25/%, $(SO_YZ_PLOTS)): test_data/OM4p25 test_data/obs \
 	om4labs so_yz_annual_bias_1x1deg --style diff --platform testing -o output/OM4p25 \
 	--static test_data/OM4p25/pp/ocean_annual_z_1x1deg/ocean_annual_z_1x1deg.static.nc  \
 	test_data/OM4p25/pp/ocean_annual_z_1x1deg/av/annual_5yr/ocean_annual_z_1x1deg.2000-2004.ann.nc
+
+$(patsubst %, output/OM4p25/%, $(SEAICE_PLOTS)): test_data/OM4p25 ../om4labs/diags/seaice/seaice.py
+	om4labs seaice -o output/OM4p25 --platform testing -s test_data/OM4p25/pp/ice_1x1deg/ice_1x1deg.static.nc \
+	--region nh --month march test_data/OM4p25/pp/ice_1x1deg/ts/monthly/5yr/ice_1x1deg.200001-200412.siconc.nc 
+	om4labs seaice -o output/OM4p25 --platform testing -s test_data/OM4p25/pp/ice_1x1deg/ice_1x1deg.static.nc \
+	--region sh --month september test_data/OM4p25/pp/ice_1x1deg/ts/monthly/5yr/ice_1x1deg.200001-200412.siconc.nc 
 
 clean:
 	rm -f $(IMG)
