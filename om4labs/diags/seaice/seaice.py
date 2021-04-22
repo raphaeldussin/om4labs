@@ -24,6 +24,7 @@ from om4labs.om4common import (
     curv_to_curv,
     date_range,
     image_handler,
+    open_intake_catalog,
     standard_grid_cell_area,
 )
 from om4labs.om4parser import default_diag_parser
@@ -128,10 +129,8 @@ def read(dictArgs):
     if dictArgs["obsfile"] is not None:
         dobs = xr.open_dataset(dictArgs["obsfile"])
     else:
-        cat_platform = "catalogs/obs_catalog_" + dictArgs["platform"] + ".yml"
-        catfile = pkgr.resource_filename("om4labs", cat_platform)
-        cat = intake.open_catalog(catfile)
-        dobs = cat[dictArgs["dataset"]].to_dask()
+        cat = open_intake_catalog(dictArgs["platform"], "obs")
+        dobs = cat[f"NSIDC_{dictArgs['region'].upper()}_monthly"].to_dask()
 
     # Close the static file (no longer used)
     dstatic.close()
