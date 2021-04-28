@@ -6,7 +6,6 @@ import argparse
 import xarray as xr
 import warnings
 import pkg_resources as pkgr
-import intake
 
 from om4labs import m6plot
 from om4labs.helpers import get_run_name, try_variable_from_list
@@ -16,6 +15,7 @@ from om4labs.om4common import simple_average, copy_coordinates
 from om4labs.om4common import compute_area_regular_grid
 from om4labs.om4common import date_range
 from om4labs.om4common import image_handler
+from om4labs.om4common import open_intake_catalog
 
 from om4labs.om4parser import default_diag_parser
 
@@ -29,11 +29,7 @@ def read(dictArgs):
 
     if dictArgs["config"] is not None:
         # use dataset from catalog, either from command line or default
-        cat_platform = (
-            f"catalogs/{dictArgs['config']}_catalog_{dictArgs['platform']}.yml"
-        )
-        catfile = pkgr.resource_filename("om4labs", cat_platform)
-        cat = intake.open_catalog(catfile)
+        cat = open_intake_catalog(dictArgs["platform"], dictArgs["config"])
         ds_static = cat["ocean_static_1x1"].to_dask()
 
     if dictArgs["static"] is not None:
@@ -64,9 +60,7 @@ def read(dictArgs):
         )
     else:
         # use dataset from catalog, either from command line or default
-        cat_platform = "catalogs/obs_catalog_" + dictArgs["platform"] + ".yml"
-        catfile = pkgr.resource_filename("om4labs", cat_platform)
-        cat = intake.open_catalog(catfile)
+        cat = open_intake_catalog(dictArgs["platform"], "obs")
         dsobs = cat[dictArgs["dataset"]].to_dask()
 
     # read in model and obs data

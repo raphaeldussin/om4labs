@@ -89,11 +89,7 @@ def read(dictArgs):
 
     if dictArgs["config"] is not None:
         # use dataset from catalog, either from command line or default
-        cat_platform = (
-            f"catalogs/{dictArgs['config']}_catalog_{dictArgs['platform']}.yml"
-        )
-        catfile = pkgr.resource_filename("om4labs", cat_platform)
-        cat = intake.open_catalog(catfile)
+        cat = open_intake_catalog(dictArgs["platform"], dictArgs["config"])
         if standard_grid is True:
             dstatic = cat["ice_static_1x1"].to_dask()
         else:
