@@ -147,6 +147,13 @@ def parse(cliargs=None, template=False):
     )
 
     parser.add_argument(
+        "--netcdf",
+        type=str,
+        default=None,
+        help="Name of NetCDF file containing passage timeseries. Default is None.",
+    )
+
+    parser.add_argument(
         "ppdir",
         metavar="PPDIR",
         type=str,
@@ -179,6 +186,15 @@ def run(dictArgs):
 
     # calculate the transports for each of the passages
     passages = [x.calculate() for x in passages]
+
+    # save timeseries to netcdf format if requested
+    if dictArgs["netcdf"] is not None:
+        ds_out = xr.Dataset()
+        for x in passages:
+            if x.transport is not None:
+                outvarname = x.passage_label.replace(" ", "_").replace("-", "_")
+                ds_out[outvarname] = x.transport
+                ds_out.to_netcdf(f"{dictArgs['outdir']}/{dictArgs['netcdf']}", mode="w")
 
     # loop over passages and call their plot method
     figs = [passage.plot() for passage in passages if passage.transport is not None]
