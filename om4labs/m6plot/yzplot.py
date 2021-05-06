@@ -166,6 +166,7 @@ def yzplot(
         for zzz in splitscale[1:-1]:
             plt.axhline(zzz, color="k", linestyle="--")
         axis.set_yscale("splitscale", zval=splitscale)
+        axis.invert_yaxis()
     # plt.xlim(yLims)
     # plt.ylim(zLims)
     axis.annotate(
