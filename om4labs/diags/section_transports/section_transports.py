@@ -147,6 +147,13 @@ def parse(cliargs=None, template=False):
     )
 
     parser.add_argument(
+        "--netcdf",
+        type=str,
+        default=None,
+        help="Name of NetCDF file containing passage timeseries. Default is None.",
+    )
+
+    parser.add_argument(
         "ppdir",
         metavar="PPDIR",
         type=str,
@@ -180,6 +187,19 @@ def run(dictArgs):
     # calculate the transports for each of the passages
     passages = [x.calculate() for x in passages]
 
+    # create a unifying xarray.Dataset object
+    ds_out = xr.Dataset()
+    for x in passages:
+        if x.transport is not None:
+            outvarname = x.passage_label.replace(" ", "_").replace("-", "_")
+            ds_out[outvarname] = x.transport
+
+    # save timeseries to netcdf format if requested
+    outfile = ds_out.to_netcdf()
+    if dictArgs["netcdf"] is not None:
+        with open(f"{dictArgs['outdir']}/{dictArgs['netcdf']}", "wb") as fhandle:
+            fhandle.write(outfile)
+
     # loop over passages and call their plot method
     figs = [passage.plot() for passage in passages if passage.transport is not None]
 
@@ -194,13 +214,13 @@ def run(dictArgs):
     filenames = [f"{dictArgs['outdir']}/{x}" for x in filenames]
     imgbufs = image_handler(figs, dictArgs, filename=filenames)
 
-    return imgbufs
+    return (imgbufs, outfile)
 
 
 def parse_and_run(cliargs=None):
     args = parse(cliargs)
     args = args.__dict__
-    imgbuf = run(args)
+    imgbuf, outfile = run(args)
     return imgbuf
 
 
