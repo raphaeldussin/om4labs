@@ -7,13 +7,11 @@ domain ?= OM4p125
 ifeq ($(domain), OM4p125)
 suffix=_d2
 extrasect=Windward_Passage.png
-segment=0126-0130
 endif
 
 ifeq ($(domain), OM4p25)
 suffix=
 extrasect=
-segment=2000-2004
 endif
 
 
@@ -48,21 +46,21 @@ test_data/$(domain):
 $(patsubst %, output/$(domain)/%, $(HEAT_TRANS_PLOTS)): test_data/$(domain) test_data/obs ../om4labs/diags/heat_transport/heat_transport.py
 	om4labs heat_transport --platform testing -o output/$(domain) \
 	-s test_data/$(domain)/pp/ocean_monthly$(suffix)/ocean_monthly$(suffix).static.nc \
-	test_data/$(domain)/pp/ocean_monthly$(suffix)/av/annual_5yr/ocean_monthly$(suffix).0126-0130.ann.nc
+	test_data/$(domain)/pp/ocean_monthly$(suffix)/av/annual_Xyr/ocean_monthly$(suffix).ann.nc
 
 $(patsubst %, output/$(domain)/%, $(MOC_PLOTS)): test_data/$(domain) ../om4labs/diags/moc/moc.py
 	# density plot
 	om4labs moc -o output/$(domain) \
 	-s test_data/$(domain)/pp/ocean_annual_rho2$(suffix)/ocean_annual_rho2$(suffix).static.nc \
 	--topog test_data/$(domain)/pp/ocean_annual_rho2$(suffix)/ocean_annual_rho2$(suffix).static.nc \
-	test_data/$(domain)/pp/ocean_annual_rho2$(suffix)/av/annual_10yr/ocean_annual_rho2$(suffix).0121-0130.ann.nc
+	test_data/$(domain)/pp/ocean_annual_rho2$(suffix)/av/annual_Xyr/ocean_annual_rho2$(suffix).ann.nc
 	mv output/$(domain)/moc.png output/$(domain)/moc_rho.png
 
 	# z-level plot
 	om4labs moc -o output/$(domain) \
 	-s test_data/$(domain)/pp/ocean_annual_z$(suffix)/ocean_annual_z$(suffix).static.nc \
 	--topog test_data/$(domain)/pp/ocean_annual_z$(suffix)/ocean_annual_z$(suffix).static.nc \
-	test_data/$(domain)/pp/ocean_annual_z$(suffix)/av/annual_10yr/ocean_annual_z$(suffix).0121-0130.ann.nc
+	test_data/$(domain)/pp/ocean_annual_z$(suffix)/av/annual_Xyr/ocean_annual_z$(suffix).ann.nc
 	mv output/$(domain)/moc.png output/$(domain)/moc_z.png
 
 $(patsubst %, output/$(domain)/%, $(SECTION_PLOTS)): test_data/$(domain) \
@@ -74,32 +72,31 @@ $(patsubst %, output/$(domain)/%, $(SFC_BIAS_PLOTS)): test_data/$(domain) test_d
 	../om4labs/diags/sst_annual_bias_1x1deg/sst_annual_bias_1x1deg.py \
 	../om4labs/diags/sss_annual_bias_1x1deg/sss_annual_bias_1x1deg.py
 	om4labs sst_annual_bias_1x1deg --platform testing -o output/$(domain) \
-	test_data/$(domain)/pp/ocean_annual_z$(suffix)_1x1deg/av/annual_10yr/ocean_annual_z$(suffix)_1x1deg.0121-0130.ann.nc
+	test_data/$(domain)/pp/ocean_annual_z$(suffix)_1x1deg/av/annual_Xyr/ocean_annual_z$(suffix)_1x1deg.ann.nc
 	om4labs sss_annual_bias_1x1deg --platform testing -o output/$(domain) \
-	test_data/$(domain)/pp/ocean_annual_z$(suffix)_1x1deg/av/annual_10yr/ocean_annual_z$(suffix)_1x1deg.0121-0130.ann.nc
+	test_data/$(domain)/pp/ocean_annual_z$(suffix)_1x1deg/av/annual_Xyr/ocean_annual_z$(suffix)_1x1deg.ann.nc
 
 $(patsubst %, output/$(domain)/%, $(THETAO_YZ_PLOTS)): test_data/$(domain) test_data/obs \
 	../om4labs/diags/generic_yz_annual_bias_1x1deg/generic_yz_annual_bias_1x1deg.py \
 	../om4labs/diags/thetao_yz_annual_bias_1x1deg/thetao_yz_annual_bias_1x1deg.py
 	om4labs thetao_yz_annual_bias_1x1deg --style diff --platform testing -o output/$(domain) \
 	--static test_data/$(domain)/pp/ocean_annual_z$(suffix)_1x1deg/ocean_annual_z$(suffix)_1x1deg.static.nc  \
-	test_data/$(domain)/pp/ocean_annual_z$(suffix)_1x1deg/av/annual_10yr/ocean_annual_z$(suffix)_1x1deg.0121-0130.ann.nc
+	test_data/$(domain)/pp/ocean_annual_z$(suffix)_1x1deg/av/annual_Xyr/ocean_annual_z$(suffix)_1x1deg.ann.nc
 
 $(patsubst %, output/$(domain)/%, $(SO_YZ_PLOTS)): test_data/$(domain) test_data/obs \
 	../om4labs/diags/generic_yz_annual_bias_1x1deg/generic_yz_annual_bias_1x1deg.py \
 	../om4labs/diags/so_yz_annual_bias_1x1deg/so_yz_annual_bias_1x1deg.py
 	om4labs so_yz_annual_bias_1x1deg --style diff --platform testing -o output/$(domain) \
 	--static test_data/$(domain)/pp/ocean_annual_z$(suffix)_1x1deg/ocean_annual_z$(suffix)_1x1deg.static.nc  \
-	test_data/$(domain)/pp/ocean_annual_z$(suffix)_1x1deg/av/annual_10yr/ocean_annual_z$(suffix)_1x1deg.0121-0130.ann.nc
+	test_data/$(domain)/pp/ocean_annual_z$(suffix)_1x1deg/av/annual_Xyr/ocean_annual_z$(suffix)_1x1deg.ann.nc
 
 clean:
 	rm -f $(IMG)
 	rm -f bilinear*.nc
 
 distclean:
-	rm -f $(IMG)
 	rm -f bilinear*.nc
 	rm -fR test_data
 	rm -fR output
 	rm -f om4labs.obs_data.latest.tar.gz
-	rm -f om4labs.$(domain)_test_data.latest.tar.gz
+	rm -f om4labs.*_test_data.latest.tar.gz
