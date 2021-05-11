@@ -39,7 +39,7 @@ def plot_z(otsfn, lat, depth, label=None, dates=None):
     # Top panel: Atlantic-Arctic
     arr = otsfn[0]
     ax1 = plt.subplot(3, 1, 1, facecolor="#bbbbbb")
-    plot_z_panel(ax1, arr, lat, depth, xlim=(-33, 90))
+    cb = plot_z_panel(ax1, arr, lat, depth, xlim=(-33, 90))
     ax1.text(
         0.01,
         1.02,
@@ -68,7 +68,7 @@ def plot_z(otsfn, lat, depth, label=None, dates=None):
     # Middle panel: Indo-Pacific
     arr = otsfn[1]
     ax2 = plt.subplot(3, 1, 2, facecolor="#bbbbbb")
-    plot_z_panel(ax2, arr, lat, depth, xlim=(-40, 65))
+    _ = plot_z_panel(ax2, arr, lat, depth, xlim=(-40, 65))
     ax2.text(
         0.01, 1.02, "b. Indo-Pacific", ha="left", fontsize=12, transform=ax2.transAxes
     )
@@ -76,7 +76,7 @@ def plot_z(otsfn, lat, depth, label=None, dates=None):
     # Bottom panel: Global
     arr = otsfn[2]
     ax3 = plt.subplot(3, 1, 3, facecolor="#bbbbbb")
-    plot_z_panel(ax3, arr, lat, depth)
+    _ = plot_z_panel(ax3, arr, lat, depth)
     ax3.text(0.01, 1.02, "c. Global", ha="left", fontsize=12, transform=ax3.transAxes)
 
     # Add dates to top panel
@@ -89,6 +89,10 @@ def plot_z(otsfn, lat, depth, label=None, dates=None):
 
     # add top label
     plt.suptitle(label)
+
+    # colorbar
+    cbar_ax = fig.add_axes([0.30, 0.05, 0.4, 0.01])
+    fig.colorbar(cb, cax=cbar_ax, orientation="horizontal")
 
     return fig
 
@@ -110,14 +114,21 @@ def plot_z_panel(ax, arr, lat, depth, levels=None, xlim=None):
         list of contour intervals, by default None
     xlim : tuple, optional
         latitude range for plotting, by default None
+
+    Returns
+    -------
+    matplotlib.collections.QuadMesh
+        output from pcolormesh
     """
 
     levels = np.arange(-45, 48, 3) if levels is None else levels
-    ax.contourf(lat, depth, arr, levels=levels, cmap="RdBu_r")
+    cb = ax.contourf(lat, depth, arr, levels=levels, cmap="RdBu_r")
     ax.contour(lat, depth, arr, levels=levels, colors=["k"], linewidths=0.5)
     ax.contour(lat, depth, arr, levels=[0.0], colors=["k"], linewidths=1)
     ax.set_yscale("splitscale", zval=[6500.0, 2000.0, 0.0])
     ax.set_xlim(xlim)
+
+    return cb
 
 
 def z_extremes(arr, lat, depth, zlim=None, ylim=None):
