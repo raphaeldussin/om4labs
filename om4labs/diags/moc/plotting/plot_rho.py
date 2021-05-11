@@ -96,4 +96,8 @@ def plot_rho(otsfn, lat, rho, label=None, dates=None):
         dates = f"Years {dates[0]} - {dates[1]}"
         ax1.text(0.98, 1.02, dates, ha="right", transform=ax1.transAxes)
 
+    # colorbar
+    cbar_ax = fig.add_axes([0.30, 0.05, 0.4, 0.01])
+    fig.colorbar(cb1, cax=cbar_ax, orientation="horizontal")
+
     return fig
