@@ -78,22 +78,42 @@ def date_range(ds, ref_time="1970-01-01T00:00:00Z"):
         # and shifting may be necessary
 
         if isinstance(ds["time_bnds"].values[0][0], np.timedelta64):
-            base_time = ds["time"].encoding["units"]
-            base_time = base_time.split(" ")[2:4]
-            base_time = np.datetime64(f"{base_time[0]}T{base_time[1]}Z")
-            offset = base_time - np.datetime64(ref_time)
 
-            t0 = ds["time_bnds"].values[0][0] + offset
-            t0 = datetime.fromtimestamp(int(np.ceil(int(t0) * 1.0e-9)))
-            t0 = tuple(t0.timetuple())
-            # if start bound is Dec-31, advance to next year
-            t0 = (t0[0] + 1) if (t0[1:3] == (12, 31)) else t0[0]
+            # When opening multi-file datasets with open_mfdataset(),
+            # xarray strips out the calendar encoding. Since bounds
+            # are computed differently to begin with, fall back to
+            # another FMS generated time variable to get the calendar
+            # base date.
 
-            t1 = ds["time_bnds"].values[-1][-1] + offset
-            t1 = datetime.fromtimestamp(int(np.ceil(int(t1) * 1.0e-9)))
-            t1 = tuple(t1.timetuple())
-            # if end bound is Jan-1, fall back to previous year
-            t1 = (t1[0] - 1) if (t1[1:3] == (1, 1)) else t1[0]
+            if "units" in ds["time"].encoding.keys():
+                base_time = ds["time"].encoding["units"]
+            elif "units" in ds["average_T1"].encoding.keys():
+                base_time = ds["average_T1"].encoding["units"]
+            else:
+                base_time = None
+
+            if base_time is not None:
+                base_time = base_time.split(" ")[2:4]
+                base_time = np.datetime64(f"{base_time[0]}T{base_time[1]}Z")
+                offset = base_time - np.datetime64(ref_time)
+
+                t0 = ds["time_bnds"].values[0][0] + offset
+                t0 = datetime.fromtimestamp(int(np.ceil(int(t0) * 1.0e-9)))
+                t0 = tuple(t0.timetuple())
+                # if start bound is Dec-31, advance to next year
+                t0 = (t0[0] + 1) if (t0[1:3] == (12, 31)) else t0[0]
+
+                t1 = ds["time_bnds"].values[-1][-1] + offset
+                t1 = datetime.fromtimestamp(int(np.ceil(int(t1) * 1.0e-9)))
+                t1 = tuple(t1.timetuple())
+                # if end bound is Jan-1, fall back to previous year
+                t1 = (t1[0] - 1) if (t1[1:3] == (1, 1)) else t1[0]
+
+            else:
+                # return very obvious incorrect dates to alert the
+                # user that the inferred time range failed
+                t0 = 9999
+                t1 = 9999
 
         else:
             t0 = tuple(ds["time_bnds"].values[0][0].timetuple())[0]
