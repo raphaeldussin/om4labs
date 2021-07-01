@@ -107,10 +107,11 @@ def read(dictArgs):
         ds["GEOLON"] = xr.DataArray(X, dims=["lat", "lon"])
         ds["GEOLAT"] = xr.DataArray(Y, dims=["lat", "lon"])
         _AREA = standard_grid_cell_area(_lat, _lon)
-        _MASK = np.array(dstatic["mask"].fillna(0.0).to_masked_array())
-        _AREA = _AREA * _MASK
-        ds["CELL_AREA"] = xr.DataArray(_AREA, dims=["lat", "lon"])
-        ds["AREA"] = xr.DataArray(_AREA, dims=["lat", "lon"])
+        # backward fill to zero NaNs on the antarctic continent (unmapped points)
+        _CELL_AREA = dstatic["CELL_AREA"].bfill(dim='lat')
+        # replace non-land values by result of analytical computation
+        ds["CELL_AREA"] = xr.where(_CELL_AREA == 0, 0, _AREA)
+        ds["AREA"] = ds["CELL_AREA"].copy()
         ds = ds.rename({"lon": "x", "lat": "y"})
     else:
         ds["CELL_AREA"] = dstatic["CELL_AREA"]
