@@ -93,8 +93,6 @@ def read(dictArgs):
     array = xr.open_mfdataset(dictArgs["infile"], use_cftime=True)[dictArgs["varname"]]
     areacello = xr.open_dataset(dictArgs["static"])["areacello"].fillna(0.0)
 
-    array.load()
-
     return (array, areacello)
 
 
