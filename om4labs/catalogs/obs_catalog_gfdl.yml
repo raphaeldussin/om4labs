@@ -43,7 +43,7 @@ sources:
     metadata:
       origin_url: ''
 
-  wavelet.NOAA-ERSST-v5.1957-2002:
+  wavelet_NOAA_ERSST_v5_1957_2002:
     description: "NOAA Reconstructed SST NINO Region Wavelet Analysis 1957-2002"
     driver: netcdf
     args:
@@ -51,7 +51,7 @@ sources:
     metadata:
       origin_url: ''
 
-  wavelet.NOAA-ERSST-v5.1880-2019:
+  wavelet_NOAA_ERSST_v5_1880_2019:
     description: "NOAA Reconstructed SST NINO Region Wavelet Analysis 1880-2019"
     driver: netcdf
     args:

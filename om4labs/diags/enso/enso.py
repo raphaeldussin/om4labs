@@ -106,8 +106,8 @@ def read(dictArgs):
         cat = open_intake_catalog(dictArgs["platform"], "obs")
 
         # open reference datasets
-        ref1 = cat["wavelet.NOAA-ERSST-v5.1957-2002"].to_dask()
-        ref2 = cat["wavelet.NOAA-ERSST-v5.1880-2019"].to_dask()
+        ref1 = cat["wavelet_NOAA_ERSST_v5_1957_2002"].to_dask()
+        ref2 = cat["wavelet_NOAA_ERSST_v5_1880_2019"].to_dask()
 
         # select spectrum variable
         ref1 = ref1["spectrum"]
