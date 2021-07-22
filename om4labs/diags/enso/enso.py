@@ -9,6 +9,7 @@ import xwavelet as xw
 import warnings
 
 from om4labs.om4common import image_handler
+from om4labs.om4common import open_intake_catalog
 from om4labs.om4parser import default_diag_parser
 
 warnings.filterwarnings("ignore", message=".*csr_matrix.*")
@@ -19,23 +20,23 @@ warnings.filterwarnings("ignore", message=".*dates out of range.*")
 nino12 = {
     "lat_range": (-10, 0.0),
     "lon_range": (270.0, 280.0),
-    "label": "NINO1+2",
+    "label": 1.2,
 }
 
 nino3 = {
     "lat_range": (-5.0, 5.0),
     "lon_range": (210.0, 270.0),
-    "label": "NINO3",
+    "label": 3,
 }
 nino34 = {
     "lat_range": (-5.0, 5.0),
     "lon_range": (190.0, 240.0),
-    "label": "NINO3+4",
+    "label": 3.4,
 }
 nino4 = {
     "lat_range": (-5.0, 5.0),
     "lon_range": (160.0, 210.0),
-    "label": "NINO4",
+    "label": 4,
 }
 
 regions = [nino12, nino3, nino34, nino4]
@@ -58,7 +59,7 @@ def parse(cliargs=None, template=False):
 
     description = " "
 
-    exclude = ["platform", "basin", "obsfile", "hgrid", "topog", "gridspec", "config"]
+    exclude = ["basin", "hgrid", "topog", "gridspec", "config"]
 
     parser = default_diag_parser(
         description=description, template=template, exclude=exclude
@@ -90,13 +91,38 @@ def read(dictArgs):
     (xarray.DataArray, xarray.DataArray)
     """
 
+    # Open model array and static file
     array = xr.open_mfdataset(dictArgs["infile"], use_cftime=True)[dictArgs["varname"]]
     areacello = xr.open_dataset(dictArgs["static"])["areacello"].fillna(0.0)
 
-    return (array, areacello)
+    # Open pre-calculated ENSO spectra from Obs.
+    if dictArgs["obsfile"] is not None:
+        ref1 = xr.open_dataset(dictArgs["obsfile"])
+        ref1 = ref1["spectrum"]
+        ref1.attrs = {**ref1.attrs, "label": "Reference"}
+        reference = [ref1]
+
+    else:
+        cat = open_intake_catalog(dictArgs["platform"], "obs")
+
+        # open reference datasets
+        ref1 = cat["wavelet.NOAA-ERSST-v5.1957-2002"].to_dask()
+        ref2 = cat["wavelet.NOAA-ERSST-v5.1880-2019"].to_dask()
+
+        # select spectrum variable
+        ref1 = ref1["spectrum"]
+        ref2 = ref2["spectrum"]
+
+        # set attributes
+        ref1.attrs = {**ref1.attrs, "label": "ERSST v5 1957-2002"}
+        ref2.attrs = {**ref2.attrs, "label": "ERSST v5 1880-2019"}
+
+        reference = [ref1, ref2]
+
+    return (array, areacello, reference)
 
 
-def calculate(array, areacello, timedim="time"):
+def calculate(array, areacello, timedim="time", reference=None):
     """Main calculation function
 
     Parameters
@@ -115,6 +141,9 @@ def calculate(array, areacello, timedim="time"):
 
     attrs = array.attrs
 
+    if reference is not None:
+        reference = [reference] if not isinstance(reference, list) else reference
+
     # get a set of variable dimentions excluding "time"
     dims = list(array.dims)
     dims.remove(timedim)
@@ -124,18 +153,21 @@ def calculate(array, areacello, timedim="time"):
     londim = "lon"
 
     array = [
-        array.sel({latdim: slice(*x["lat_range"]), londim: slice(*x["lon_range"])})
-        .weighted(
-            areacello.sel(
-                {latdim: slice(*x["lat_range"]), londim: slice(*x["lon_range"])}
+        (
+            array.sel({latdim: slice(*x["lat_range"]), londim: slice(*x["lon_range"])})
+            .weighted(
+                areacello.sel(
+                    {latdim: slice(*x["lat_range"]), londim: slice(*x["lon_range"])}
+                )
             )
+            .mean(dims)
+            .assign_attrs({**attrs, "region": f"NINO{x['label']}"}),
+            [y.sel(region=x["label"]) for y in reference],
         )
-        .mean(dims)
-        .assign_attrs({**attrs, "region": x["label"]})
         for x in regions
     ]
 
-    return [xw.Wavelet(x, detrend=False, scaled=True) for x in array]
+    return [xw.Wavelet(x[0], reference=x[1], detrend=False, scaled=True) for x in array]
 
 
 def plot(results, label):
@@ -179,10 +211,10 @@ def run(dictArgs):
         plt.switch_backend("Agg")
 
     # read in data
-    array, areacello = read(dictArgs)
+    array, areacello, reference = read(dictArgs)
 
     # calculate otsfn
-    results = calculate(array, areacello)
+    results = calculate(array, areacello, reference=reference)
 
     # make the plots
     fig = plot(results, dictArgs["label"])
