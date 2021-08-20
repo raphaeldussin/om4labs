@@ -25,7 +25,7 @@ def ACC_Transport(darray, zdim="z_l", ydim="yh"):
         Data Array containing time series of transport
     """
     darray = darray.sum(dim=(zdim, ydim))
-    darray = darray * (1 / 1035) * 1.0e-6
+    darray = darray * (1. / 1035.) * 1.0e-6
     darray = darray.groupby("time.year").mean(dim="time")
 
     return darray
