@@ -7,8 +7,23 @@ def read(dictArgs):
     return dset
 
 
-def ACC_Transport(varname="umo", zdim="z_l", ydim="yh"):
-    darray = dset[varname]
+def ACC_Transport(darray, zdim="z_l", ydim="yh"):
+    """Calculate ACC Transport by summing across dimensions
+
+    Parameters
+    ----------
+    darray : xarray.DataArray
+        Data Array containing transport
+    zdim : str, optional
+        Name of vertical dimension, by default "z_l"
+    ydim : str, optional
+        Name of latitude dimension, by default "yh"
+
+    Returns
+    -------
+    xarray.DataArray
+        Data Array containing time series of transport
+    """
     darray = darray.sum(dim=(zdim, ydim))
     darray = darray * (1 / 1035) * 1.0e-6
     darray = darray.groupby("time.year").mean(dim="time")
@@ -17,12 +32,51 @@ def ACC_Transport(varname="umo", zdim="z_l", ydim="yh"):
 
 
 def compute(dset):
-    darray = dset.umo
-    if darray.dims[2] == "yh":
-        dset = darray.sel(xq=-70, method="nearest", yh=slice(-70, -54))
-        result = ACC_Transport(varname="umo", zdim=darray.dims[2], ydim=darray.dims[1])
-    else:
-        result = ACC_Transport(varname="umo", zdim=darray.dims[2], ydim=darray.dims[1])
+    """Performs the ACC calculation
+
+    Parameters
+    ----------
+    dset : xarray.Dataset
+        Input dataset containing umo
+
+    Returns
+    -------
+    xarray.DataArray
+        Output DataArray with time series of ACC transport
+    """
+
+    # Read in umo from dataset to data array
+    darray = dset["umo"]
+
+    # Define a list of acceptable coordinates
+    possible_xdims = ["xq", "xh", "xc", "lon", "xq_sub01", "xq_sub02"]
+    possible_ydims = ["yh", "yq", "yc", "lat", "yh_sub01", "yh_sub02"]
+    possible_zdims = ["z_l", "lev", "level"]
+
+    xdim = list(set(darray.dims) | set(possible_xdims))
+    ydim = list(set(darray.dims) | set(possible_ydims))
+    zdim = list(set(darray.dims) | set(possible_zdims))
+
+    # Make sure we have exactly one value per coordinate
+    for dim in [xdim, ydim, zdim]:
+        assert len(dim) == 1, "Ambiguous coordinates found."
+
+    xdim = xdim[0]
+    ydim = ydim[0]
+    zdim = zdim[0]
+
+    # If the max latitude is positive (i.e. Northern Hemisphere), assume
+    # we have a global array that needs to be subset. Otherwise, just keep
+    # the array as-is
+
+    darray = (
+        darray.sel({xdim: -70, ydim: slice(-70, -54)}, method="nearest")
+        if max(darray[ydim]) > 0.0
+        else darray
+    )
+
+    result = ACC_Transport(darray, zdim=zdim, ydim=ydim)
+
     return result
 
 
