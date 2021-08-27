@@ -5,21 +5,19 @@ from om4labs.om4common import image_handler
 from om4labs.om4common import open_intake_catalog
 from om4labs.om4parser import default_diag_parser
 
+
 def parse(cliargs=None, template=False):
     description = """Plot annual volume transport through the Drake Passage"""
 
     parser = default_diag_parser(description=description, template=template)
 
-    parser.add_argument(
-        "--dataset",
-        type=str,
-        required=False
-    )
+    parser.add_argument("--dataset", type=str, required=False)
 
     if template is True:
         return parser.parse_args(None).__dict__
     else:
         return parser.parse_args(cliargs)
+
 
 def read(dictArgs):
     dset = xr.open_mfdataset(dictArgs["infile"])
@@ -44,7 +42,7 @@ def ACC_Transport(darray, zdim="z_l", ydim="yh"):
         Data Array containing time series of transport
     """
     darray = darray.sum(dim=(zdim, ydim))
-    darray = darray * (1. / 1035.) * 1.0e-6
+    darray = darray * (1.0 / 1035.0) * 1.0e-6
     darray = darray.groupby("time.year").mean(dim="time")
 
     return darray
@@ -77,10 +75,10 @@ def calculate(dset):
     # set converts our list to a squence of distinct interable elements
     # the intersection method returns a set that contains the items
     # which exist in both set(darray.dims) and set(possible_xdims)
-    # and then we turn this back into a list 
-    xdim = list(set(darray.dims).intersection(set(possible_xdims)) 
-    ydim = list(set(darray.dims).intersection(set(possible_ydims))
-    zdim = list(set(darray.dims).intersection(set(possible_zdims))
+    # and then we turn this back into a list
+    xdim = list(set(darray.dims).intersection(set(possible_xdims)))
+    ydim = list(set(darray.dims).intersection(set(possible_ydims)))
+    zdim = list(set(darray.dims).intersection(set(possible_zdims)))
 
     # Make sure we have exactly one value per coordinate
     # Immediately trigger error message if condition is false.
@@ -96,10 +94,9 @@ def calculate(dset):
     # the array as-is
 
     if max(darray[ydim]) > 0.0:
-    	darray = (
-        	darray.sel({xdim: -70, ydim: slice(-70, -54)}, method="nearest"))
-    else: 
-	darray
+        darray = darray.sel({xdim: -70, ydim: slice(-70, -54)}, method="nearest")
+    else:
+        darray
 
     result = ACC_Transport(darray, zdim=zdim, ydim=ydim)
 
@@ -178,6 +175,7 @@ def plot(dset_out):
 
     return fig
 
+
 def run(dictArgs):
     # set visual backend
     if dictArgs["interactive"] is False:
@@ -194,6 +192,7 @@ def run(dictArgs):
     imgbufs = image_handler(figs, dictArgs, filename=filenames)
 
     return imgbufs
+
 
 def parse_and_run(cliargs=None):
     """Function to make compatibile with the superwrapper"""
