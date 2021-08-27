@@ -188,7 +188,7 @@ def run(dictArgs):
     figs = plot(dset_out)
 
     filenames = [
-        f"{dictArgs['outdir']}/Volume_Transport_Drake.dtdz_max",
+        f"{dictArgs['outdir']}/Volume_Transport_Drake",
     ]
 
     imgbufs = image_handler(figs, dictArgs, filename=filenames)
