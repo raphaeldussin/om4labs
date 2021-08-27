@@ -1,6 +1,25 @@
-def parse():
-    return
+import xarray as xr
+import matplotlib.pyplot as plt
 
+from om4labs.om4common import image_handler
+from om4labs.om4common import open_intake_catalog
+from om4labs.om4parser import default_diag_parser
+
+def parse(cliargs=None, template=False):
+    description = """Plot annual volume transport through the Drake Passage"""
+
+    parser = default_diag_parser(description=description, template=template)
+
+    parser.add_argument(
+        "--dataset",
+        type=str,
+        required=False
+    )
+
+    if template is True:
+        return parser.parse_args(None).__dict__
+    else:
+        return parser.parse_args(cliargs)
 
 def read(dictArgs):
     dset = xr.open_mfdataset(dictArgs["infile"])
@@ -31,8 +50,10 @@ def ACC_Transport(darray, zdim="z_l", ydim="yh"):
     return darray
 
 
-def compute(dset):
-    """Performs the ACC calculation
+def calculate(dset):
+    """Performs the ACC calculation by slicing to correct
+       y and x regions if using global umo output. Calls
+       the ACC_Transport function to compute the transport.
 
     Parameters
     ----------
@@ -53,11 +74,16 @@ def compute(dset):
     possible_ydims = ["yh", "yq", "yc", "lat", "yh_sub01", "yh_sub02"]
     possible_zdims = ["z_l", "lev", "level"]
 
-    xdim = list(set(darray.dims) | set(possible_xdims))
-    ydim = list(set(darray.dims) | set(possible_ydims))
-    zdim = list(set(darray.dims) | set(possible_zdims))
+    # set converts our list to a squence of distinct interable elements
+    # the intersection method returns a set that contains the items
+    # which exist in both set(darray.dims) and set(possible_xdims)
+    # and then we turn this back into a list 
+    xdim = list(set(darray.dims).intersection(set(possible_xdims)) 
+    ydim = list(set(darray.dims).intersection(set(possible_ydims))
+    zdim = list(set(darray.dims).intersection(set(possible_zdims))
 
     # Make sure we have exactly one value per coordinate
+    # Immediately trigger error message if condition is false.
     for dim in [xdim, ydim, zdim]:
         assert len(dim) == 1, "Ambiguous coordinates found."
 
@@ -69,11 +95,11 @@ def compute(dset):
     # we have a global array that needs to be subset. Otherwise, just keep
     # the array as-is
 
-    darray = (
-        darray.sel({xdim: -70, ydim: slice(-70, -54)}, method="nearest")
-        if max(darray[ydim]) > 0.0
-        else darray
-    )
+    if max(darray[ydim]) > 0.0:
+    	darray = (
+        	darray.sel({xdim: -70, ydim: slice(-70, -54)}, method="nearest"))
+    else: 
+	darray
 
     result = ACC_Transport(darray, zdim=zdim, ydim=ydim)
 
@@ -152,10 +178,30 @@ def plot(dset_out):
 
     return fig
 
+def run(dictArgs):
+    # set visual backend
+    if dictArgs["interactive"] is False:
+        plt.switch_backend("Agg")
 
-def run():
-    return
+    dset = read(dictArgs)
+    dset_out = calculate(dset)
+    figs = plot(dset_out)
+
+    filenames = [
+        f"{dictArgs['outdir']}/Volume_Transport_Drake.dtdz_max",
+    ]
+
+    imgbufs = image_handler(figs, dictArgs, filename=filenames)
+
+    return imgbufs
+
+def parse_and_run(cliargs=None):
+    """Function to make compatibile with the superwrapper"""
+    args = parse(cliargs)
+    args = args.__dict__
+    imgbuf = run(args)
+    return imgbuf
 
 
-def parse_and_run():
-    return
+if __name__ == "__main__":
+    parse_and_run()
