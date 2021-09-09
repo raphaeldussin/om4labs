@@ -184,6 +184,8 @@ def run(dictArgs):
     dset = read(dictArgs)
     dset_out = calculate(dset)
     figs = plot(dset_out)
+    figs = [figs] if not isinstance(figs,list) else figs
+    assert isinstance(figs,list), "Figures must be inside a list object"
 
     filenames = [
         f"{dictArgs['outdir']}/Volume_Transport_Drake",
