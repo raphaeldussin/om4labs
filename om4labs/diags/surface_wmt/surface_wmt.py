@@ -84,7 +84,7 @@ def read(dictArgs, heatflux_varname="hfds", saltflux_varname="sfdsi",
     if "bins" in dictArgs:
         bins_args = dictArgs["bins"]
         bins_args = tuple([float(x) for x in bins_args.split(",")])
-        bins = np.arange(**bins_args)
+        bins = np.arange(*bins_args)
     else:
         # Default bins
         bins = np.arange(20,30,0.1)
