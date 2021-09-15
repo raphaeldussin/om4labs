@@ -26,12 +26,17 @@ warnings.filterwarnings("ignore", message=".*csr_matrix.*")
 warnings.filterwarnings("ignore", message=".*dates out of range.*")
 
 
-def calculate(ds, bins):
+def calculate(ds, bins, group_tend):
     """Calculates watermass transformation from surface fluxes"""
     
     # Think it makes most sense here to not group tendencies
-    G = swmt(ds).G('sigma0', bins=bins, group_tend=False)
-
+    G = swmt(ds).G('sigma0', bins=bins, group_tend=group_tend)
+    
+    # If tendencies were grouped then G is a DataArray
+    # For consistency in plotting function, convert it to a dataset
+    if group_tend:
+        G = G.to_dataset()
+        
     return G
 
 
@@ -43,6 +48,14 @@ def parse(cliargs=None, template=False):
 
     parser = default_diag_parser(
         description=description, template=template, exclude=["obsfile", "topog"]
+    )
+    
+    parser.add_argument(
+        "--bins", type=str, default="20,30,0.1", help="Density bins at which to evaluate transformation, provided as start, stop, increment.",
+    )
+    
+    parser.add_argument(
+        "--group_tend", dest="group_tend", action="store_true", help="Group heat and salt tendencies together, i.e. only return the total transformation. Not passing this could lead to a performance cost.",
     )
 
     if template is True:
@@ -56,7 +69,7 @@ def read(dictArgs, heatflux_varname="hfds", saltflux_varname="sfdsi",
     """Read in surface flux data"""
 
     infile = dictArgs["infile"]
-    ds = xr.open_mfdataset(infile, combine="by_coords")
+    ds = xr.open_mfdataset(infile, combine="by_coords", use_cftime=True)
 
     ### WMT preprocessing step
     # Perhaps we should pull out some of what happens in here
@@ -66,27 +79,25 @@ def read(dictArgs, heatflux_varname="hfds", saltflux_varname="sfdsi",
     # Get gridcell area ## How to specify to get from static grid?
     # Possibly get some masks ?
 
-    outputgrid = "nonsymetric"
-    dsV = horizontal_grid(dictArgs, point_type="T", outputgrid=outputgrid)
-    
-#     if advective.shape[-2] == (dsV.geolat.shape[0] + 1):
-#         print("Symmetric grid detected.<br>")
-#         outputgrid = "symetric"
-#         dsV = horizontal_grid(dictArgs, point_type="v", outputgrid=outputgrid)
-
-    ds['areacello'] = dsV['area']
+    ds["areacello"] = xr.open_mfdataset(dictArgs["static"])["areacello"]
     
     if "bins" in dictArgs:
-        bins = dictArgs["bins"]
+        bins_args = dictArgs["bins"]
+        bins_args = tuple([float(x) for x in bins_args.split(",")])
+        bins = np.arange(**bins_args)
     else:
         # Default bins
         bins = np.arange(20,30,0.1)
     # Expand bins to capture full density range
     bins = np.concatenate((np.array([0]),bins,np.array([100])))
+    
+    # Retrieve group_tend boolean
+    group_tend=dictArgs["group_tend"]
 
     return (
         ds,
-        bins
+        bins,
+        group_tend
     )
 
 def plot(G):
@@ -102,16 +113,21 @@ def plot(G):
     
     fig,ax = plt.subplots()
     # Plot each term
-    total = xr.zeros_like(G[terms[0]])
     for term in terms:
         if term =='heat':
             color='tab:red'
         elif term =='salt':
             color='tab:blue'
+        else:
+            color='k'
         ax.plot(levs,G[term],label=term,color=color)
-        total += G[term]
-    # Plot total
-    ax.plot(levs,total,label='total',color='k')
+        
+    # If terms were not grouped then sum them up to get total
+    if len(terms)>1:
+        total = xr.zeros_like(G[terms[0]])
+        for term in terms:
+            total += G[term]
+        ax.plot(levs,total,label='total',color='k')
         
     ax.legend()
     ax.set_xlabel('SIGMA0')
