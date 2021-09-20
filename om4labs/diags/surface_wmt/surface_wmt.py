@@ -11,10 +11,8 @@ import palettable
 import xarray as xr
 import warnings
 
-### To be replaced when API of xwmt is confirmed
-from wmt_inert_tracer.swmt import swmt
-from wmt_inert_tracer.compute import lbin_define
-from wmt_inert_tracer.preprocessing import preprocessing
+from xwmt.preprocessing import preprocessing
+from xwmt.swmt import swmt
 
 from om4labs.om4common import horizontal_grid
 from om4labs.om4common import image_handler
@@ -29,7 +27,6 @@ warnings.filterwarnings("ignore", message=".*dates out of range.*")
 def calculate(ds, bins, group_tend):
     """Calculates watermass transformation from surface fluxes"""
     
-    # Think it makes most sense here to not group tendencies
     G = swmt(ds).G('sigma0', bins=bins, group_tend=group_tend)
     
     # If tendencies were grouped then G is a DataArray
@@ -47,7 +44,7 @@ def parse(cliargs=None, template=False):
     description = """ """
 
     parser = default_diag_parser(
-        description=description, template=template, exclude=["obsfile", "topog"]
+        description=description, template=template, exclude=["obsfile", "topog", "config", "platform", "basin"]
     )
     
     parser.add_argument(
@@ -70,16 +67,22 @@ def read(dictArgs, heatflux_varname="hfds", saltflux_varname="sfdsi",
 
     infile = dictArgs["infile"]
     ds = xr.open_mfdataset(infile, combine="by_coords", use_cftime=True)
-
-    ### WMT preprocessing step
-    # Perhaps we should pull out some of what happens in here
-    ds = preprocessing(ds, grid=ds, decode_times=False, verbose=False)
     
-    # Check for presence of correct variables
-    # Get gridcell area ## How to specify to get from static grid?
-    # Possibly get some masks ?
-
+    ### NEED TO IMPOSE CHECK TO MAKE SURE THIS IS NOT ANNUAL DATA
+    
+    # Check that all required variables are here
+    check_vars=[heatflux_varname,saltflux_varname,fwflux_varname,
+               sst_varname,sss_varname]
+    check = all(item in ds.data_vars for item in check_vars)
+    if not check:
+        missing = set(check_vars)-set(ds.drop("hfds").data_vars)
+        raise RuntimeError("Necessary variable {} not present in dataset".format(missing))
+    
     ds["areacello"] = xr.open_mfdataset(dictArgs["static"])["areacello"]
+    
+    ### WMT preprocessing step
+    # Perhaps we should pull out some of what happens in here ?
+    ds = preprocessing(ds, grid=ds, decode_times=False, verbose=False)
     
     if "bins" in dictArgs:
         bins_args = dictArgs["bins"]
@@ -88,8 +91,6 @@ def read(dictArgs, heatflux_varname="hfds", saltflux_varname="sfdsi",
     else:
         # Default bins
         bins = np.arange(20,30,0.1)
-    # Expand bins to capture full density range
-    bins = np.concatenate((np.array([0]),bins,np.array([100])))
     
     # Retrieve group_tend boolean
     group_tend=dictArgs["group_tend"]
@@ -147,10 +148,11 @@ def run(dictArgs):
     # --- the main show ---
     (
         ds,
-        bins
+        bins,
+        group_tend
     ) = read(dictArgs)
 
-    G = calculate(ds,bins)
+    G = calculate(ds,bins,group_tend)
 
     fig = plot(G)
 

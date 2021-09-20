@@ -21,6 +21,7 @@ dependencies:
     - git+https://github.com/raphaeldussin/static_downsampler.git
     - git+https://github.com/raphaeldussin/xoverturning
     - git+https://github.com/jkrasting/xwavelet.git
+    - git+https://github.com/jetesdal/xwmt.git
   - pyshp
   - pytest
   - regionmask
@@ -30,3 +31,5 @@ dependencies:
   - xarray
   - xesmf=0.4.0
   - xgcm
+  - xhistogram
+  - gsw
