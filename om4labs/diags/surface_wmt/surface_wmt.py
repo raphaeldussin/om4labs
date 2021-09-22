@@ -75,10 +75,13 @@ def read(dictArgs, heatflux_varname="hfds", saltflux_varname="sfdsi",
                sst_varname,sss_varname]
     check = all(item in ds.data_vars for item in check_vars)
     if not check:
-        missing = set(check_vars)-set(ds.drop("hfds").data_vars)
+        missing = set(check_vars)-set(ds.data_vars)
         raise RuntimeError("Necessary variable {} not present in dataset".format(missing))
     
     ds["areacello"] = xr.open_mfdataset(dictArgs["static"])["areacello"]
+    ds["deptho"] = xr.open_mfdataset(dictArgs["static"])["deptho"]
+    ds["geolat"] = xr.open_mfdataset(dictArgs["static"])["geolat"]
+    ds["geolon"] = xr.open_mfdataset(dictArgs["static"])["geolon"]
     
     ### WMT preprocessing step
     # Perhaps we should pull out some of what happens in here ?
