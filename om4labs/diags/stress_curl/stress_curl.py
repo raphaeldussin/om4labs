@@ -41,15 +41,15 @@ def parse(cliargs=None, template=False):
 
 
 def read(dictArgs):
-    ds        = xr.open_mfdataset(dictArgs["infile"])
+    ds        = xr.open_mfdataset(dictArgs["infile"], use_cftime=True)
     ds_static = xr.open_mfdataset(dictArgs["static"])
 
-    # replace the nominal xq and yq by indices so that Xarray does not get confused
-    # since there are inconsistencies between static file grid and model data grid
-    # for the last value of yq. We never need xq and yq for actual calculations, so
-    # filling these arrays with any value is not going to change any results.  But
-    # Xarray needs them to be consistent between the two files when doing the curl 
-    # operation below.
+    # replace the nominal xq and yq by indices so that Xarray does not get confused.
+    # Confusion arises since there are inconsistencies between static file grid and 
+    # model data grid for the last value of yq. We never need xq and yq for actual 
+    # calculations, so filling these arrays with any value is not going to change 
+    # any results. But Xarray needs them to be consistent between the two files when 
+    # doing the curl operation on the stress. 
     ds['xq'] = xr.DataArray(np.arange(len(ds['xq'])), dims=['xq'])
     ds['yq'] = xr.DataArray(np.arange(len(ds['yq'])), dims=['yq'])
     ds_static['xq'] = xr.DataArray(np.arange(len(ds_static['xq'])), dims=['xq'])
@@ -63,7 +63,6 @@ def calculate(
              ):
     """Calculate curl of stress acting on surface of the ocean. 
 
-    Calculation function
     Parameters
         ----------
     ds        : xarray.Dataset dataset with tauuo and tauvo
@@ -85,7 +84,14 @@ def calculate(
     rho0 = 1035.0
     area = ds_static[areacello_bu]
     taux = ds[varx]
+    taux = taux.mean(dim="time")
     tauy = ds[vary]
+    tauy = tauy.mean(dim="time")
+
+     # fill nan with 0.0 since want 0.0 values over land for the curl operation
+    taux = taux.fillna(0.0)
+    tauy = tauy.fillna(0.0)
+        
 
     grid = Grid(ds_static, coords={'X': {'center': 'xh', 'outer': 'xq'},
                                    'Y': {'center': 'yh', 'outer': 'yq'} }, periodic=['X'])
@@ -101,7 +107,7 @@ def calculate(
 
 
 def plot(field, vmin=-3e-10, vmax=3e-10, lat_lon_ext = [-180, 180, -85., 90.],
-         lon='geolon', lat='geolat', cmap=cmocean.cm.delta, title='stress curl'):
+         lon='geolon', lat='geolat', cmap=cmocean.cm.delta, title='Curl of stress (N/m**2) acting on ocean surface'):
 
     fig = plt.figure(figsize=[22,8])
     ax  = fig.add_subplot(projection=ccrs.Robinson(),facecolor='grey')
@@ -133,7 +139,7 @@ def run(dictArgs):
         assert isinstance(figs,list), "Figures must be inside a list object"
 
         filenames = [
-            f"{dictArgs['outdir']}/Curl of surface stress (N/m^3)",
+            f"{dictArgs['outdir']}/surface_stress_curl",
         ]
 
         imgbufs = image_handler(figs, dictArgs, filename=filenames)
