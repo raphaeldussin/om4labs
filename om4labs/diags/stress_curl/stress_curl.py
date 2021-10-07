@@ -5,19 +5,63 @@ import cmocean
 import xarray as xr
 from xgcm import Grid
 
-def parse():
-    return
+from om4labs.om4common import image_handler
+from om4labs.om4common import open_intake_catalog
+from om4labs.om4parser import default_diag_parser
+
+
+
+def parse(cliargs=None, template=False):
+    """Function to capture the user-specified command line options
+
+    Parameters
+    ----------
+    cliargs : argparse, optional
+        Command line options from argparse, by default None
+    template : bool, optional
+        Return dictionary instead of parser, by default False
+
+    Returns
+    -------
+        parsed command line arguments
+    """
+
+    description = " "
+
+    exclude = ["basin", "hgrid", "topog", "gridspec", "config"]
+
+    parser = default_diag_parser(
+        description=description, template=template, exclude=exclude
+    )
+
+    if template is True:
+        return parser.parse_args(None).__dict__
+    else:
+        return parser.parse_args(cliargs)
+
 
 def read(dictArgs):
     ds        = xr.open_mfdataset(dictArgs["infile"])
     ds_static = xr.open_mfdataset(dictArgs["static"])
+
+    # replace the nominal xq and yq by indices so that Xarray does not get confused
+    # since there are inconsistencies between static file grid and model data grid
+    # for the last value of yq. We never need xq and yq for actual calculations, so
+    # filling these arrays with any value is not going to change any results.  But
+    # Xarray needs them to be consistent between the two files when doing the curl 
+    # operation below.
+    ds['xq'] = xr.DataArray(np.arange(len(ds['xq'])), dims=['xq'])
+    ds['yq'] = xr.DataArray(np.arange(len(ds['yq'])), dims=['yq'])
+    ds_static['xq'] = xr.DataArray(np.arange(len(ds_static['xq'])), dims=['xq'])
+    ds_static['yq'] = xr.DataArray(np.arange(len(ds_static['yq'])), dims=['yq'])    
+
     return ds, ds_static
 
 
 def calculate(
     ds, ds_static, varx="tauuo", vary="tauvo", areacello_bu="areacello_bu", xdim="lon", ydim="lat"
-               ):
-    """Calculate curl of stress acting on surface of the ocean 
+             ):
+    """Calculate curl of stress acting on surface of the ocean. 
 
     Calculation function
     Parameters
@@ -40,8 +84,11 @@ def calculate(
 
     rho0 = 1035.0
     area = ds_static[areacello_bu]
-    taux = ds_modeldata[varx]
-    tauy = ds_modeldata[vary]
+    taux = ds[varx]
+    tauy = ds[vary]
+
+    grid = Grid(ds_static, coords={'X': {'center': 'xh', 'outer': 'xq'},
+                                   'Y': {'center': 'yh', 'outer': 'yq'} }, periodic=['X'])
 
     stress_curl = ( - grid.diff(taux * ds_static.dxCu, 'Y', boundary='fill')
                     + grid.diff(tauy * ds_static.dyCv, 'X', boundary='fill') )
@@ -93,11 +140,23 @@ def run(dictArgs):
 
         return imgbufs
     
-        
-def run():
-    return
 
 
-def parse_and_run():
-    return
+def parse_and_run(cliargs=None):
+    """Parses command line and runs diagnostic
 
+    Returns
+    -------
+    io.BytesIO
+    In-memory image buffer
+    """
+    args = parse(cliargs)
+    args = args.__dict__
+    imgbuf = run(args)
+    return imgbuf
+
+
+if __name__ == "__main__":
+    parse_and_run()
+
+                                
