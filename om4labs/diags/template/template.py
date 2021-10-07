@@ -12,19 +12,16 @@ import xarray as xr
 import xoverturning
 import warnings
 
-from om4labs.om4common import horizontal_grid
-from om4labs.om4common import read_topography
-from om4labs.om4common import image_handler
-from om4labs.om4common import is_symmetric
-from om4labs.om4common import generate_basin_masks
-from om4labs.om4common import date_range
+# these are always needed
 from om4labs.om4parser import default_diag_parser
+from om4labs.om4common import image_handler
 
-from om4labs.diags.moc.plotting import plot_z
-from om4labs.diags.moc.plotting import plot_rho
-
-warnings.filterwarnings("ignore", message=".*csr_matrix.*")
-warnings.filterwarnings("ignore", message=".*dates out of range.*")
+# these are available to you to use
+from om4labs.om4common import date_range
+from om4labs.om4common import generate_basin_masks
+from om4labs.om4common import horizontal_grid
+from om4labs.om4common import is_symmetric
+from om4labs.om4common import read_topography
 
 
 def parse(cliargs=None, template=False):
