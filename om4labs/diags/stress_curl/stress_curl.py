@@ -124,32 +124,36 @@ def plot(
     vmin=-3e-10,
     vmax=3e-10,
     lat_lon_ext=[-180, 180, -85.0, 90.0],
-    lon="geolon",
-    lat="geolat",
+    lon="geolon_c",
+    lat="geolat_c",
     cmap=cmocean.cm.delta,
     title="Curl of stress (N/m**2) acting on ocean surface",
 ):
 
+    # convert xarray to ordinary numpy arrays
+    if isinstance(field, xr.DataArray):
+        geolon = field[lon].values
+        geolat = field[lat].values
+        field = field.values
+
     fig = plt.figure(figsize=[22, 8])
     ax = fig.add_subplot(projection=ccrs.Robinson(), facecolor="grey")
-    p = field.plot(
-        ax=ax,
-        x="geolon_c",
-        y="geolat_c",
+    cb = ax.pcolormesh(
+        geolon,
+        geolat,
+        field,
+        transform=ccrs.PlateCarree(),
         vmin=vmin,
         vmax=vmax,
         cmap=cmap,
-        transform=ccrs.PlateCarree(),
-        add_labels=True,
-        add_colorbar=False,
     )
 
     # add separate colorbar
-    cb = plt.colorbar(p, ax=ax, format="%.1e", extend="both", shrink=0.6)
+    cb = plt.colorbar(cb, ax=ax, format="%.1e", extend="both", shrink=0.6)
     cb.ax.tick_params(labelsize=12)
 
     # add gridlines and extent of lat/lon
-    p.axes.gridlines(color="black", alpha=0.5, linestyle="--")
+    ax.gridlines(color="black", alpha=0.5, linestyle="--")
     ax.set_extent(lat_lon_ext, crs=ccrs.PlateCarree())
     _ = plt.title(title, fontsize=14)
 
