@@ -8,6 +8,7 @@ from . import moc
 from . import sst_annual_bias_1x1deg
 from . import sss_annual_bias_1x1deg
 from . import seaice
+from . import thermocline_bias
 from . import thetao_yz_annual_bias_1x1deg
 from . import section_transports
 from . import so_yz_annual_bias_1x1deg
