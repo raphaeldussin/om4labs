@@ -25,7 +25,7 @@ warnings.filterwarnings("ignore", message=".*dates out of range.*")
 default_mld = 'MLD_003'
 
 #Various domains to plot MLD maps for regional focus.
-Dims={'global':[-300,60,-80,88],
+dims={'global':[-300,60,-80,88],
      'NAtl':[-70,20,40,88],
      'EqPac':[120,300,-25,25],
      'SO':[-240,120,-75,-25]
@@ -34,41 +34,41 @@ Dims={'global':[-300,60,-80,88],
 #Colorbar limits are specified here for either min/max, the MLD type,
 # and the domain.  These are fixed rather than computed from the data
 # to ease intercomparison.  An auto override could be added.
-CLim = {'min': {'MLD_003':{'global':[0,60,-20,20],
-                           'NAtl':[0,40,-10,10],
-                           'EqPac':[0,60,-20,20],
-                           'SO':[0,60,-20,20]},
-                'MLD_EN1':{'global':[0,60,-20,20],
-                           'NAtl':[5,45,-10,10],
-                           'EqPac':[0,60,-20,20],
-                           'SO':[0,60,-20,20]},
-                'MLD_EN2':{'global':[0,150,-20,20],
-                           'NAtl':[0,150,-20,20],
-                           'EqPac':[0,150,-20,20],
-                           'SO':[0,150,-20,20]},
-                'MLD_EN3':{'global':[0,1000,-200,200],
-                           'NAtl':[0,1000,-200,200],
-                           'EqPac':[0,1000,-200,200],
-                           'SO':[0,1000,-200,200]}
-            },
-        'max': {'MLD_003':{'global':[0,500,-100,100],
-                           'NAtl':[0,500,-100,100],
-                           'EqPac':[0,500,-100,100],
-                           'SO':[0,500,-100,100]},
-                'MLD_EN1':{'global':[0,500,-100,100],
-                           'NAtl':[0,500,-100,100],
-                           'EqPac':[0,500,-100,100],
-                           'SO':[0,500,-100,100]},
-                'MLD_EN2':{'global':[0,500,-100,100],
-                           'NAtl':[0,500,-100,100],
-                           'EqPac':[0,500,-100,100],
-                           'SO':[0,500,-100,100]},
-                'MLD_EN3':{'global':[0,1000,-200,200],
-                           'NAtl':[0,1000,-200,200],
-                           'EqPac':[0,1000,-200,200],
-                           'SO':[0,1000,-200,200]}
-            }
-    }
+cbar_lim = {'min': {'MLD_003':{'global':[0,60,-20,20],
+                              'NAtl':[0,40,-10,10],
+                              'EqPac':[0,60,-20,20],
+                              'SO':[0,60,-20,20]},
+                   'MLD_EN1':{'global':[0,60,-20,20],
+                              'NAtl':[5,45,-10,10],
+                              'EqPac':[0,60,-20,20],
+                              'SO':[0,60,-20,20]},
+                   'MLD_EN2':{'global':[0,150,-20,20],
+                              'NAtl':[0,150,-20,20],
+                              'EqPac':[0,150,-20,20],
+                              'SO':[0,150,-20,20]},
+                   'MLD_EN3':{'global':[0,1000,-200,200],
+                              'NAtl':[0,1000,-200,200],
+                              'EqPac':[0,1000,-200,200],
+                              'SO':[0,1000,-200,200]}
+               },
+           'max': {'MLD_003':{'global':[0,500,-100,100],
+                              'NAtl':[0,500,-100,100],
+                              'EqPac':[0,500,-100,100],
+                              'SO':[0,500,-100,100]},
+                   'MLD_EN1':{'global':[0,500,-100,100],
+                              'NAtl':[0,500,-100,100],
+                              'EqPac':[0,500,-100,100],
+                              'SO':[0,500,-100,100]},
+                   'MLD_EN2':{'global':[0,500,-100,100],
+                              'NAtl':[0,500,-100,100],
+                              'EqPac':[0,500,-100,100],
+                              'SO':[0,500,-100,100]},
+                   'MLD_EN3':{'global':[0,1000,-200,200],
+                              'NAtl':[0,1000,-200,200],
+                              'EqPac':[0,1000,-200,200],
+                              'SO':[0,1000,-200,200]}
+               }
+       }
 
 
 def parse(cliargs=None, template=False):
@@ -179,10 +179,10 @@ def calculate(ds_model, ds_obs, ds_static, dictArgs):
     #Using the obs to build the plotting grid
     
     #The plot dimensions are set by the grid choice.
-    LonMin = Dims[dictArgs["grid"]][0]
-    LonMax = Dims[dictArgs["grid"]][1]
-    LatMin = Dims[dictArgs["grid"]][2]
-    LatMax = Dims[dictArgs["grid"]][3]
+    LonMin = dims[dictArgs["grid"]][0]
+    LonMax = dims[dictArgs["grid"]][1]
+    LatMin = dims[dictArgs["grid"]][2]
+    LatMax = dims[dictArgs["grid"]][3]
 
     #Extract copy of obs domain
     obs_lat = np.copy(ds_obs["Lat"])
@@ -287,11 +287,11 @@ def plot(ds_plot, dictArgs):
     cmap2.set_bad('gray')
 
     # The level limits are set above in this file.
-    levels = np.linspace(CLim[method][mldvar][grid][0],
-                         CLim[method][mldvar][grid][1],
+    levels = np.linspace(cbar_lim[method][mldvar][grid][0],
+                         cbar_lim[method][mldvar][grid][1],
                          21)
-    levels2 = np.linspace(CLim[method][mldvar][grid][2],
-                          CLim[method][mldvar][grid][3],
+    levels2 = np.linspace(cbar_lim[method][mldvar][grid][2],
+                          cbar_lim[method][mldvar][grid][3],
                           21)
 
     F = plt.figure(figsize=(12, 6))
