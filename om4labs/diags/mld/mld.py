@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 #Delete anything not used.
+import intake
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,6 +17,7 @@ from om4labs.om4common import image_handler
 from om4labs.om4common import is_symmetric
 from om4labs.om4common import generate_basin_masks
 from om4labs.om4common import date_range
+from om4labs.om4common import open_intake_catalog
 from om4labs.om4parser import default_diag_parser
 
 warnings.filterwarnings("ignore", message=".*csr_matrix.*")
@@ -141,14 +143,17 @@ def read(dictArgs):
     else:
         mldvar = dictArgs["mldvar"]
         if mldvar == 'MLD_EN1':
-            FILE = '/net3/bgr/Datasets/Argo/MLDs/Argo_MLD_MonthlyMedians.mld_pe_anomaly_25.nc'
+            cat = open_intake_catalog(dictArgs["platform"],"obs")
+            ds_obs = cat["Argo_MLD_EN1"].to_dask()
         elif mldvar == 'MLD_EN2':
-            FILE = '/net3/bgr/Datasets/Argo/MLDs/Argo_MLD_MonthlyMedians.mld_pe_anomaly_2500.nc'
+            cat = open_intake_catalog(dictArgs["platform"],"obs")
+            ds_obs = cat["Argo_MLD_EN2"].to_dask()
         elif mldvar == 'MLD_EN3':
-            FILE = '/net3/bgr/Datasets/Argo/MLDs/Argo_MLD_MonthlyMedians.mld_pe_anomaly_250000.nc'
+            cat = open_intake_catalog(dictArgs["platform"],"obs")
+            ds_obs = cat["Argo_MLD_EN3"].to_dask()
         elif mldvar == 'MLD_003':
-            FILE = '/net3/bgr/Datasets/Argo/MLDs/Argo_MLD_MonthlyMedians.mld_prho_threshold_003.nc'
-        ds_obs = xr.open_dataset(FILE)
+            cat = open_intake_catalog(dictArgs["platform"],"obs")
+            ds_obs = cat["Argo_MLD_003"].to_dask()
 
     ds_model = ds_input[mldvar].groupby('time.month').mean('time')
 
@@ -294,7 +299,7 @@ def plot(ds_plot, dictArgs):
                           cbar_lim[method][mldvar][grid][3],
                           21)
 
-    F = plt.figure(figsize=(12, 6))
+    fig = plt.figure(figsize=(12, 6))
     #Extract plot data
     lon = ds_plot["lon"].values
     lat = ds_plot["lat"].values
@@ -305,8 +310,8 @@ def plot(ds_plot, dictArgs):
     lon,lat = np.meshgrid(lon,lat)
 
     #Consider alternate map projections?
-    #ax=F.add_axes([0.1,0.52,0.425,0.32],projection=ccrs.Robinson(central_longitude=dictArgs["central"]),facecolor='gray',)
-    ax=F.add_axes([0.1,0.52,0.4,0.32])
+    #ax=fig.add_axes([0.1,0.52,0.425,0.32],projection=ccrs.Robinson(central_longitude=dictArgs["central"]),facecolor='gray',)
+    ax=fig.add_axes([0.1,0.52,0.4,0.32])
     cb0 = ax.pcolormesh(lon,
                         lat,
                         mod,
@@ -321,8 +326,8 @@ def plot(ds_plot, dictArgs):
     ax.pcolor(lon,lat,notobs,hatch='+',cmap=ListedColormap(['none']),shading='auto')
     ax.set_title('Model')
 
-    #ax=F.add_axes([0.5,0.52,0.425,0.32],projection=ccrs.Robinson(central_longitude=dictArgs["central"]),facecolor='gray')
-    ax=F.add_axes([0.55,0.52,0.4,0.32])
+    #ax=fig.add_axes([0.5,0.52,0.425,0.32],projection=ccrs.Robinson(central_longitude=dictArgs["central"]),facecolor='gray')
+    ax=fig.add_axes([0.55,0.52,0.4,0.32])
     cb1 = ax.pcolormesh(lon,lat,obs,
                        shading="auto",
                        #transform=ccrs.PlateCarree(),
@@ -330,8 +335,8 @@ def plot(ds_plot, dictArgs):
                        norm = mpl.colors.BoundaryNorm(levels, ncolors=cmap.N, clip=False),)
     ax.set_title('Argo')
 
-    #ax=F.add_axes([0.1,0.1,0.425,0.32],projection=ccrs.Robinson(central_longitude=dictArgs["central"]),facecolor='gray')
-    ax=F.add_axes([0.1,0.1,0.4,0.32])
+    #ax=fig.add_axes([0.1,0.1,0.425,0.32],projection=ccrs.Robinson(central_longitude=dictArgs["central"]),facecolor='gray')
+    ax=fig.add_axes([0.1,0.1,0.4,0.32])
     cb2 = ax.pcolormesh(lon,lat,dif,
                        shading="auto",
                        #transform=ccrs.PlateCarree(),
@@ -339,18 +344,18 @@ def plot(ds_plot, dictArgs):
                        norm = mpl.colors.BoundaryNorm(levels2, ncolors=cmap2.N, clip=False),)
     ax.set(title='Model - Argo')
 
-    cax1 = F.add_axes([0.55, 0.35, 0.4, 0.02])
+    cax1 = fig.add_axes([0.55, 0.35, 0.4, 0.02])
     cbar1 = plt.colorbar(cb1,cax=cax1,orientation='horizontal')
     if dictArgs["mldvar"] is not None:
         cbar1.set_label(dictArgs["mldvar"]+' [m]')
     else:
         cbar1.set_label(default_mld+' [m]')
-    cax2 = F.add_axes([0.55, 0.2, 0.4, 0.02])
+    cax2 = fig.add_axes([0.55, 0.2, 0.4, 0.02])
     cbar2 = plt.colorbar(cb2,cax=cax2,orientation='horizontal')
     cbar2.set_label(dictArgs["mldvar"]+' difference [m]')
 
 
-    ax = F.add_axes([0.1,0.9,0.8,0.1])
+    ax = fig.add_axes([0.1,0.9,0.8,0.1])
     ax.axis('off')
     ax.set(xlim=(0,1),ylim=(0,1))
     FS=12
@@ -362,7 +367,7 @@ def plot(ds_plot, dictArgs):
             fontsize=FS,horizontalalignment='center')
 
 
-    return F
+    return fig
 
 
 def run(dictArgs):
