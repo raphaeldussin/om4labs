@@ -2,9 +2,11 @@ import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 import numpy as np
 import cmocean
+import xcompare
 import xarray as xr
 from xgcm import Grid
 
+from xcompare import plot_three_panel
 from om4labs.om4common import image_handler
 from om4labs.om4common import open_intake_catalog
 from om4labs.om4parser import default_diag_parser
@@ -23,6 +25,9 @@ def parse(cliargs=None, template=False):
     Returns
     -------
         parsed command line arguments
+
+    example usage:
+    om4labs stress_curl -s fname_static.nc --ref_taux omip_taux.nc  --ref_tauy omip_tauy.nc fname_model_taux.nc fname_model_tauy.nc
     """
 
     description = " "
@@ -33,6 +38,22 @@ def parse(cliargs=None, template=False):
         description=description, template=template, exclude=exclude
     )
 
+    parser.add_argument(
+        "--ref_taux",
+        type=str,
+        required=False,
+        default=None,
+        help="Name of the taux (N/m2) reference file",
+    )
+
+    parser.add_argument(
+        "--ref_tauy",
+        type=str,
+        required=False,
+        default=None,
+        help="Name of the tauy (N/m2) reference file",
+    )
+
     if template is True:
         return parser.parse_args(None).__dict__
     else:
@@ -40,7 +61,10 @@ def parse(cliargs=None, template=False):
 
 
 def read(dictArgs):
-    ds = xr.open_mfdataset(dictArgs["infile"], use_cftime=True)
+    ds_model = xr.open_mfdataset(dictArgs["infile"], use_cftime=True)
+    ds_ref_tau = xr.open_mfdataset(
+        [dictArgs["ref_taux"], dictArgs["ref_tauy"]], use_cftime=True
+    )
     ds_static = xr.open_mfdataset(dictArgs["static"])
 
     # replace the nominal xq and yq by indices so that Xarray does not get confused.
@@ -49,15 +73,17 @@ def read(dictArgs):
     # calculations, so filling these arrays with any value is not going to change
     # any results. But Xarray needs them to be consistent between the two files when
     # doing the curl operation on the stress.
-    ds["xq"] = xr.DataArray(np.arange(len(ds["xq"])), dims=["xq"])
-    ds["yq"] = xr.DataArray(np.arange(len(ds["yq"])), dims=["yq"])
+    ds_model["xq"] = xr.DataArray(np.arange(len(ds_model["xq"])), dims=["xq"])
+    ds_model["yq"] = xr.DataArray(np.arange(len(ds_model["yq"])), dims=["yq"])
+    ds_ref_tau["xq"] = xr.DataArray(np.arange(len(ds_ref_tau["xq"])), dims=["xq"])
+    ds_ref_tau["yq"] = xr.DataArray(np.arange(len(ds_ref_tau["yq"])), dims=["yq"])
     ds_static["xq"] = xr.DataArray(np.arange(len(ds_static["xq"])), dims=["xq"])
     ds_static["yq"] = xr.DataArray(np.arange(len(ds_static["yq"])), dims=["yq"])
 
-    return ds, ds_static
+    return ds_model, ds_ref_tau, ds_static
 
 
-def calculate(
+def calc_curl_stress(
     ds,
     ds_static,
     varx="tauuo",
@@ -75,7 +101,7 @@ def calculate(
     varname   : str, optional
         Name of the tauuo and tauvo variables, by default "tauuo" and "tauvo"
     area : str, optional
-        Name of the area variable, by default "areacello"
+        Name of the area variable, by default "areacello_bu"
     xdim : str, optional
         Name of the longitude coordinate, by default "lon"
     ydim : str, optional
@@ -119,7 +145,22 @@ def calculate(
     return stress_curl
 
 
-def plot(
+def calculate(ds_model, ds_ref_tau, ds_static, dictArgs):
+
+    curl_model = xr.Dataset({"stress_curl": calc_curl_stress(ds_model, ds_static)})
+    curl_ref   = xr.Dataset({"stress_curl": calc_curl_stress(ds_ref_tau, ds_static)})
+    results    = xcompare.compare_datasets(curl_model, curl_ref)
+
+    return results
+
+
+def plot(dictArgs, results):
+
+    fig = xcompare.plot_three_panel(results, "stress_curl")
+    return fig
+
+
+def plot_old(
     field,
     vmin=-3e-10,
     vmax=3e-10,
@@ -165,9 +206,10 @@ def run(dictArgs):
     if dictArgs["interactive"] is False:
         plt.switch_backend("Agg")
 
-    ds, ds_static = read(dictArgs)
-    darray = calculate(ds, ds_static)
-    figs = plot(darray)
+    ds_model, ds_ref_tau, ds_static = read(dictArgs)
+
+    results = calculate(ds_model, ds_ref_tau, ds_static, dictArgs)
+    figs = plot(dictArgs, results)
     figs = [figs] if not isinstance(figs, list) else figs
     assert isinstance(figs, list), "Figures must be inside a list object"
 
