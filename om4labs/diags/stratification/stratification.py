@@ -102,7 +102,7 @@ def parse(cliargs=None, template=False):
         return parser.parse_args(cliargs)
 
 
-def read(dictArgs, infile=None):
+def read(dictArgs):
     """Read required fields
 
     Parameters
