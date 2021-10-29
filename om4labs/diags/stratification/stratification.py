@@ -122,8 +122,7 @@ def read(dictArgs):
     model_ycoord = dictArgs["model_ycoord"]
     model_zcoord = dictArgs["model_zcoord"]
 
-    infile = dictArgs["infile"] if infile is None else infile
-    model = xr.open_mfdataset(infile, use_cftime=True)
+    model = xr.open_mfdataset(dictArgs["infile"], use_cftime=True)
     model = xr.Dataset(
         {
             "temp": model[tempvar].mean(dim="time"),
