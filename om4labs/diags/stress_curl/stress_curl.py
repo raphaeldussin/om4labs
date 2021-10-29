@@ -147,8 +147,20 @@ def calc_curl_stress(
 
 def calculate(ds_model, ds_ref_tau, ds_static, dictArgs):
 
-    curl_model = xr.Dataset({"stress_curl": calc_curl_stress(ds_model, ds_static)})
-    curl_ref = xr.Dataset({"stress_curl": calc_curl_stress(ds_ref_tau, ds_static)})
+    curl_model = xr.Dataset(
+        {
+            "stress_curl": calc_curl_stress(ds_model, ds_static),
+            "areacello_bu": ds_static["areacello_bu"],
+        }
+    )
+
+    curl_ref = xr.Dataset(
+        {
+            "stress_curl": calc_curl_stress(ds_ref_tau, ds_static),
+            "areacello_bu": ds_static["areacello_bu"],
+        }
+    )
+
     results = xcompare.compare_datasets(curl_model, curl_ref)
 
     return results
