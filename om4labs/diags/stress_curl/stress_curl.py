@@ -9,6 +9,7 @@ from xgcm import Grid
 from xcompare import plot_three_panel
 from om4labs.om4common import image_handler
 from om4labs.om4common import open_intake_catalog
+from om4labs.om4common import date_range
 from om4labs.om4parser import default_diag_parser
 
 
@@ -62,6 +63,7 @@ def parse(cliargs=None, template=False):
 
 def read(dictArgs):
     ds_model = xr.open_mfdataset(dictArgs["infile"], use_cftime=True)
+    dates    = date_range(ds_model)
     ds_ref_tau = xr.open_mfdataset(
         [dictArgs["ref_taux"], dictArgs["ref_tauy"]], use_cftime=True
     )
@@ -74,14 +76,15 @@ def read(dictArgs):
     # any results. But Xarray needs them to be consistent between the two files when
     # doing the curl operation on the stress.
     ds_model["xq"] = xr.DataArray(np.arange(len(ds_model["xq"])), dims=["xq"])
-    ds_model["yq"] = xr.DataArray(np.arange(len(ds_model["yq"])), dims=["yq"])
+    ds_model["yq"] = xr.DataArray(np.arange(len(ds_model["yq"])), dims=["yq"])    
     ds_ref_tau["xq"] = xr.DataArray(np.arange(len(ds_ref_tau["xq"])), dims=["xq"])
     ds_ref_tau["yq"] = xr.DataArray(np.arange(len(ds_ref_tau["yq"])), dims=["yq"])
     ds_static["xq"] = xr.DataArray(np.arange(len(ds_static["xq"])), dims=["xq"])
     ds_static["yq"] = xr.DataArray(np.arange(len(ds_static["yq"])), dims=["yq"])
 
-    return ds_model, ds_ref_tau, ds_static
+    ds_model.attrs = {"date_range":dates}
 
+    return ds_model, ds_ref_tau, ds_static
 
 def calc_curl_stress(
     ds,
@@ -168,7 +171,11 @@ def calculate(ds_model, ds_ref_tau, ds_static, dictArgs):
 
 def plot(dictArgs, results):
 
-    fig = xcompare.plot_three_panel(results, "stress_curl")
+    fig = xcompare.plot_three_panel(results, "stress_curl", cmap=cmocean.cm.delta,
+                                    projection=ccrs.Robinson(), coastlines = False,
+                                    vmin=-3e-10, vmax=3e-10, diffvmin=-3e-10, diffvmax=3e-10,
+                                    labels=[dictArgs["label"],"OMIP reference"],
+                                    lon_range=(-180,180),lat_range=(-90,90))
     return fig
 
 
