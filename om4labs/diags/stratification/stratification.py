@@ -366,6 +366,8 @@ def _plot_basin(dtdz_model, dtdz_argo, basin="atlantic", model_zcoord="z_l", arg
     )
     ax2.text(0.98, 1.02, f"Argo", ha="right", transform=ax2.transAxes)
 
+    return fig
+
 
 def plot(max_comparison_results, dtdz_model, dtdz_argo):
     """Plotting wrapper
