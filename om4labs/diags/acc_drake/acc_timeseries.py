@@ -5,6 +5,11 @@ from om4labs.om4common import image_handler
 from om4labs.om4common import open_intake_catalog
 from om4labs.om4parser import default_diag_parser
 
+# Define a list of acceptable coordinates
+possible_xdims = ["xq", "xh", "xc", "lon", "xq_sub01", "xq_sub02"]
+possible_ydims = ["yh", "yq", "yc", "lat", "yh_sub01", "yh_sub02"]
+possible_zdims = ["z_l", "lev", "level"]
+
 
 def parse(cliargs=None, template=False):
     description = """Plot annual volume transport through the Drake Passage"""
@@ -20,57 +25,13 @@ def parse(cliargs=None, template=False):
 
 
 def read(dictArgs):
+    """read zonal velocity field from list of files (either global or section) and extract drake passage if needed"""
+
+    # open the dataset
     dset = xr.open_mfdataset(dictArgs["infile"])
-    return dset
-
-
-def ACC_Transport(darray, zdim="z_l", ydim="yh"):
-    """Calculate ACC Transport by summing across dimensions
-
-    Parameters
-    ----------
-    darray : xarray.DataArray
-        Data Array containing transport
-    zdim : str, optional
-        Name of vertical dimension, by default "z_l"
-    ydim : str, optional
-        Name of latitude dimension, by default "yh"
-
-    Returns
-    -------
-    xarray.DataArray
-        Data Array containing time series of transport
-    """
-    darray = darray.sum(dim=(zdim, ydim))
-    darray = darray * (1.0 / 1035.0) * 1.0e-6
-    darray = darray.groupby("time.year").mean(dim="time")
-
-    return darray
-
-
-def calculate(dset):
-    """Performs the ACC calculation by slicing to correct
-       y and x regions if using global umo output. Calls
-       the ACC_Transport function to compute the transport.
-
-    Parameters
-    ----------
-    dset : xarray.Dataset
-        Input dataset containing umo
-
-    Returns
-    -------
-    xarray.DataArray
-        Output DataArray with time series of ACC transport
-    """
 
     # Read in umo from dataset to data array
     darray = dset["umo"]
-
-    # Define a list of acceptable coordinates
-    possible_xdims = ["xq", "xh", "xc", "lon", "xq_sub01", "xq_sub02"]
-    possible_ydims = ["yh", "yq", "yc", "lat", "yh_sub01", "yh_sub02"]
-    possible_zdims = ["z_l", "lev", "level"]
 
     # set converts our list to a squence of distinct interable elements
     # the intersection method returns a set that contains the items
@@ -92,18 +53,54 @@ def calculate(dset):
     # If the max latitude is positive (i.e. Northern Hemisphere), assume
     # we have a global array that needs to be subset. Otherwise, just keep
     # the array as-is
+    # RD: this will require fix when switching from nominal coords to grid indices
 
     if max(darray[ydim]) > 0.0:
         darray = darray.sel({xdim: -70, ydim: slice(-70, -54)}, method="nearest")
     else:
         darray
 
-    result = ACC_Transport(darray, zdim=zdim, ydim=ydim)
-
-    return result
+    return darray
 
 
-def plot(dset_out):
+def calculate(darray):
+    """Performs the ACC calculation by slicing to correct
+       y and x regions if using global umo output. Calls
+       the ACC_Transport function to compute the transport.
+
+    Parameters
+    ----------
+    darray : xarray.DataArray
+        Data Array containing transport
+
+    Returns
+    -------
+    xarray.DataArray
+        Output DataArray with time series of ACC transport
+    """
+
+    dims = list(darray.dims)
+    dims.remove("time")
+
+    full_transport = darray.sum(dim=dims)
+    full_transport = full_transport * (1.0 / 1035.0) * 1.0e-6  # convert to Sv
+    annual_mean_transport = full_transport.groupby("time.year").mean(dim="time")
+
+    return annual_mean
+
+
+def plot(darray_ts):
+    """plot the timeserie of ACC transport at Drake passage vs observations
+
+    Parameters
+    ----------
+    darray : xarray.DataArray
+        Data Array containing time series of ACC transport
+
+    Returns
+    -------
+    figure object
+    """
 
     ## Donohue et al. 2016 mean +/- 2 sigma
     x_end = len(dset_out.values)
@@ -181,11 +178,11 @@ def run(dictArgs):
     if dictArgs["interactive"] is False:
         plt.switch_backend("Agg")
 
-    dset = read(dictArgs)
-    dset_out = calculate(dset)
-    figs = plot(dset_out)
-    figs = [figs] if not isinstance(figs,list) else figs
-    assert isinstance(figs,list), "Figures must be inside a list object"
+    darray = read(dictArgs)
+    darray_ts = calculate(darray)
+    figs = plot(darray_ts)
+    figs = [figs] if not isinstance(figs, list) else figs
+    assert isinstance(figs, list), "Figures must be inside a list object"
 
     filenames = [
         f"{dictArgs['outdir']}/Volume_Transport_Drake",
