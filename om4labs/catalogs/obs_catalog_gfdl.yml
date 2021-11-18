@@ -3,6 +3,40 @@ plugins:
     - module: intake_xarray
 sources:
 
+  Argo_Climatology:
+    description: "Gridded in-situ temperature and salinity derived from Argo profiles"
+    driver: netcdf
+    args:
+      urlpath: ['/net2/bgr/Data/ARGO/RG_Clim/Updated/RG_ArgoClim_Temp_Extended_200401-202010.nc', '/net2/bgr/Data/ARGO/RG_Clim/Updated/RG_ArgoClim_Psal_Extended_200401-202010.nc']
+      chunks: {'time': 1}
+      xarray_kwargs:
+        decode_times: False
+        combine: "by_coords"
+    metadata:
+      origin_url: ''
+
+  Argo_Temp:
+    description: "Gridded in-situ temperature derived from Argo profiles"
+    driver: netcdf
+    args:
+      urlpath: '/net2/bgr/Data/ARGO/RG_Clim/Updated/RG_ArgoClim_Temp_Extended_200401-202010.nc'
+      chunks: {'time': 1}
+      xarray_kwargs:
+        decode_times: False
+    metadata:
+      origin_url: ''
+
+  Argo_Psal:
+    description: "Gridded in-situ practical salinity derived from Argo profiles"
+    driver: netcdf
+    args:
+      urlpath: '/net2/bgr/Data/ARGO/RG_Clim/Updated/RG_ArgoClim_Psal_Extended_200401-202010.nc'
+      chunks: {'time': 1}
+      xarray_kwargs:
+        decode_times: False
+    metadata:
+      origin_url: ''
+
   WOA13_annual_TS:
     description: "World Ocean Atlas 2013 annual climatology T/S"
     driver: netcdf
