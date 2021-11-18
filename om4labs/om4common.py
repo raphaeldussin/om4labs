@@ -351,6 +351,66 @@ def standard_grid_cell_area(lat, lon, rE=6371.0e3):
     return area
 
 
+def standardize_longitude(dset, lon_coord, start_lon=0.0):
+    """Processes a dataset so that the longitude ranges from
+    0 to 360 degrees and that it is montonically increasing
+
+    Parameters
+    ----------
+    dset : xarray.Dataset
+        Input dataset
+    lon_coord : str
+        Name of longitude coordinate
+    start_lon : float
+        Starting longitude ranging from -180. to 0,
+        by default 0.
+
+    Returns
+    ----------
+    xarray.Dataset
+
+    """
+
+    def _is_in_range(x, start_lon, end_lon):
+        return np.all(x < end_lon) & np.all(x > start_lon)
+
+    def _is_monotonic(x):
+        return np.all(np.diff(x) > 0)
+
+    # test to see if the starting longitude is between 0 and 360
+    if not ((start_lon >= -180.0) & (start_lon <= 0.0)):
+        raise ValueError(
+            "Starting longitude must be between -180 and 0 to ensure monotonicity"
+        )
+
+    # determine the ending longitude
+    end_lon = start_lon + 360.0
+
+    # copy the longitude dimension for manipulation
+    lon = dset[lon_coord]
+
+    # ensure the values are in the specified range
+    if not _is_in_range(lon, start_lon, end_lon):
+        lon = xr.where(lon > end_lon, lon - 360.0, lon)
+        lon = xr.where(lon < start_lon, 360.0 + lon, lon)
+        assert _is_in_range(
+            lon, start_lon, end_lon
+        ), "Unable to standardize longitude range"
+        dset = dset.assign_coords({lon_coord: lon})
+
+    # we can roll the dataset to get a monotonically ordered
+    # dimension for a one-dimensional x-dim, but best not to
+    # do this if we have a two-dimensionalx-dim
+
+    if len(lon.shape) == 1:
+        if not _is_monotonic(lon):
+            roll_delta = np.argmin(np.array(lon))
+            dset = dset.roll({lon_coord: -roll_delta}, roll_coords=True)
+            assert _is_monotonic(dset[lon_coord]), "Longitude is not monotonic"
+
+    return dset
+
+
 def subset_data(da, coordname, subset):
     """subset (float or slice) dataarray along coord"""
     if coordname in da.coords:
