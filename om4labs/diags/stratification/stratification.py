@@ -384,8 +384,12 @@ def plot(max_comparison_results, dtdz_model, dtdz_argo):
     """
 
     figs = [
-        xcompare.plot_three_panel(max_comparison_results, "dtdz_max"),
-        xcompare.plot_three_panel(max_comparison_results, "dtdz_max_depth"),
+        xcompare.plot_three_panel(
+            max_comparison_results, "dtdz_max", diffvmin=-0.02, diffvmax=0.02
+        ),
+        xcompare.plot_three_panel(
+            max_comparison_results, "dtdz_max_depth", diffvmin=-150, diffvmax=150
+        ),
     ]
 
     figs.append(_plot_basin(dtdz_model, dtdz_argo, "atlantic"))
