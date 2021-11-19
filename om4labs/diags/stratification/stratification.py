@@ -242,10 +242,10 @@ def calculate(
     )
 
     # define regions for model data
-    #_xval = pottemp[model_xcoord].sel({model_xcoord: -140.0}, method="nearest")
+    # _xval = pottemp[model_xcoord].sel({model_xcoord: -140.0}, method="nearest")
     _xval = pottemp[model_xcoord].sel({model_xcoord: 220.0}, method="nearest")
     pacific = {model_xcoord: _xval, model_ycoord: slice(-70.0, 60.0)}
-    #_xval = pottemp[model_xcoord].sel({model_xcoord: -30.0}, method="nearest")
+    # _xval = pottemp[model_xcoord].sel({model_xcoord: -30.0}, method="nearest")
     _xval = pottemp[model_xcoord].sel({model_xcoord: 330.0}, method="nearest")
     atlantic = {model_xcoord: _xval, model_ycoord: slice(-70.0, 80.0)}
 
@@ -300,7 +300,9 @@ def calculate(
     return max_comparison_results, dtdz_model, dtdz_argo
 
 
-def _plot_basin(dtdz_model, dtdz_argo, basin="atlantic", model_zcoord="z_l", argo_zcoord="PRESSURE"):
+def _plot_basin(
+    dtdz_model, dtdz_argo, basin="atlantic", model_zcoord="z_l", argo_zcoord="PRESSURE"
+):
 
     cmap = plt.cm.RdYlBu_r
     levels = [
@@ -321,7 +323,12 @@ def _plot_basin(dtdz_model, dtdz_argo, basin="atlantic", model_zcoord="z_l", arg
     ax1 = plt.subplot(1, 2, 1, facecolor="gray")
     plotarr = dtdz_model.sel(basin=basin)
     cb = ax1.pcolormesh(
-        plotarr.lat, plotarr[model_zcoord], plotarr.values, cmap=cmap, norm=norm, shading="auto"
+        plotarr.lat,
+        plotarr[model_zcoord],
+        plotarr.values,
+        cmap=cmap,
+        norm=norm,
+        shading="auto",
     )
     plt.plot(plotarr.lat, (plotarr.lat * 0.0) + 2000, "k--")
     plt.colorbar(cb)
