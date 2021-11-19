@@ -26,6 +26,7 @@ from om4labs.om4common import horizontal_grid
 from om4labs.om4common import is_symmetric
 from om4labs.om4common import open_intake_catalog
 from om4labs.om4common import read_topography
+from om4labs.om4common import standardize_longitude
 
 
 def parse(cliargs=None, template=False):
@@ -160,13 +161,7 @@ def read(dictArgs):
         argo_dset = cat["Argo_Climatology"].to_dask()
 
     # standardize longitude to go from 0 to 360.
-    argo_lon = argo_dset[obs_xcoord].values
-    argo_dset = argo_dset.assign_coords(
-        {obs_xcoord: np.where(argo_lon >= 360.0, argo_lon - 360.0, argo_lon)}
-    )
-
-    # roll the dataset
-    argo_dset = argo_dset.roll({obs_xcoord: 20}, roll_coords=True)
+    argo_dset = standardize_longitude(argo_dset, obs_xcoord)
 
     # subset varaibles
     argo_dset = xr.Dataset(
