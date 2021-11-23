@@ -46,7 +46,7 @@ possible_names["interfaces"] = ["z_i"]
 
 
 class DefaultDictParser(argparse.ArgumentParser):
-    """ argparse extention that bypasses error and returns a dict of defaults """
+    """argparse extention that bypasses error and returns a dict of defaults"""
 
     def error(self, message):
         actions = self.__dict__["_actions"]
@@ -216,7 +216,7 @@ def generate_basin_masks(basin_code, basin=None):
         2-dimensional array of CMIP-convention basin codes
     basin : str or int, optional
         Name of basin to calculate. Options are "atlantic_arctic"
-        and "indo_pacific". An integer basin code may also be 
+        and "indo_pacific". An integer basin code may also be
         passed. By default None
 
     Returns
@@ -243,7 +243,7 @@ def generate_basin_masks(basin_code, basin=None):
 
 
 def image_handler(figs, dictArgs, filename="./figure"):
-    """ Generic OM4Labs image handler. Depending on the framework mode,
+    """Generic OM4Labs image handler. Depending on the framework mode,
     this handler either saves a matplotlib figure handle to disk or
     returns an in-memory image buffer
 
@@ -297,7 +297,7 @@ def image_handler(figs, dictArgs, filename="./figure"):
 
 
 def infer_and_assign_coord(ds, da, coordname):
-    """ infer what the coord name is and assign it to dataarray """
+    """infer what the coord name is and assign it to dataarray"""
     assigned_coordname = try_variable_from_list(
         list(ds.variables), possible_names[coordname]
     )
@@ -307,7 +307,7 @@ def infer_and_assign_coord(ds, da, coordname):
 
 
 def read_data(ds, possible_variable_names):
-    """ read data from one file """
+    """read data from one file"""
 
     # find the appropriate variable names
     varname = try_variable_from_list(list(ds.variables), possible_variable_names)
@@ -325,7 +325,7 @@ def read_data(ds, possible_variable_names):
 
 
 def standard_grid_cell_area(lat, lon, rE=6371.0e3):
-    """ computes the cell area for a standard spherical grid """
+    """computes the cell area for a standard spherical grid"""
 
     warnings.warn(
         "standard_grid_cell_area is deprecated, use compute_area_regular_grid",
@@ -351,22 +351,82 @@ def standard_grid_cell_area(lat, lon, rE=6371.0e3):
     return area
 
 
+def standardize_longitude(dset, lon_coord, start_lon=0.0):
+    """Processes a dataset so that the longitude ranges from
+    0 to 360 degrees and that it is montonically increasing
+
+    Parameters
+    ----------
+    dset : xarray.Dataset
+        Input dataset
+    lon_coord : str
+        Name of longitude coordinate
+    start_lon : float
+        Starting longitude ranging from -180. to 0,
+        by default 0.
+
+    Returns
+    ----------
+    xarray.Dataset
+
+    """
+
+    def _is_in_range(x, start_lon, end_lon):
+        return np.all(x < end_lon) & np.all(x > start_lon)
+
+    def _is_monotonic(x):
+        return np.all(np.diff(x) > 0)
+
+    # test to see if the starting longitude is between 0 and 360
+    if not ((start_lon >= -180.0) & (start_lon <= 0.0)):
+        raise ValueError(
+            "Starting longitude must be between -180 and 0 to ensure monotonicity"
+        )
+
+    # determine the ending longitude
+    end_lon = start_lon + 360.0
+
+    # copy the longitude dimension for manipulation
+    lon = dset[lon_coord]
+
+    # ensure the values are in the specified range
+    if not _is_in_range(lon, start_lon, end_lon):
+        lon = xr.where(lon > end_lon, lon - 360.0, lon)
+        lon = xr.where(lon < start_lon, 360.0 + lon, lon)
+        assert _is_in_range(
+            lon, start_lon, end_lon
+        ), "Unable to standardize longitude range"
+        dset = dset.assign_coords({lon_coord: lon})
+
+    # we can roll the dataset to get a monotonically ordered
+    # dimension for a one-dimensional x-dim, but best not to
+    # do this if we have a two-dimensionalx-dim
+
+    if len(lon.shape) == 1:
+        if not _is_monotonic(lon):
+            roll_delta = np.argmin(np.array(lon))
+            dset = dset.roll({lon_coord: -roll_delta}, roll_coords=True)
+            assert _is_monotonic(dset[lon_coord]), "Longitude is not monotonic"
+
+    return dset
+
+
 def subset_data(da, coordname, subset):
-    """ subset (float or slice) dataarray along coord """
+    """subset (float or slice) dataarray along coord"""
     if coordname in da.coords:
         da = da.sel({coordname: subset})
     return da
 
 
 def simple_average(da, coordname):
-    """ average """
+    """average"""
     if coordname in da.coords:
         da = da.mean(dim=coordname)
     return da
 
 
 def copy_coordinates(da1, da2, coords):
-    """ copy coordinates of da1 into da2 """
+    """copy coordinates of da1 into da2"""
     for coord in coords:
         da2[coord] = da1[coord]
 
@@ -374,7 +434,7 @@ def copy_coordinates(da1, da2, coords):
 
 
 def compute_area_regular_grid(ds, Rearth=6378e3):
-    """ compute the cells area on a regular grid """
+    """compute the cells area on a regular grid"""
 
     rfac = 2 * np.pi * Rearth / 360
 
