@@ -40,11 +40,12 @@ jobs:
       - name: Set up conda environment
         run: |
           mamba env create -f ci/environment_test.yml
+          conda activate om4labs
           python -m pip install --no-deps -e .
       - name: Conda list information
         run: |
           conda env list
-          conda list
+          conda activate om4labs
 
     #- name: Lint with flake8
     #  run: |
