@@ -39,7 +39,7 @@ jobs:
 
       - name: Set up conda environment
         run: |
-          conda env create -f ci/environment.yml
+          conda env create -f ci/environment_test.yml
           python -m pip install --no-deps -e .
       - name: Conda list information
         run: |
