@@ -1,0 +1,6 @@
+name: om4labs
+channels:
+  - conda-forge
+dependencies:
+  - python
+  - pip
