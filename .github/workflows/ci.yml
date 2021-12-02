@@ -39,7 +39,7 @@ jobs:
 
       - name: Set up conda environment
         run: |
-          mamba env create -f ci/environment_test.yml
+          mamba env create -f ci/environment.yml
           conda activate om4labs
           python -m pip install --no-deps -e .
       - name: Conda list information
