@@ -34,17 +34,17 @@ jobs:
           channels: conda-forge
           mamba-version: '*'
           python-version: ${{ matrix.python-version }}
-          activate-environment: om4labs
-          auto-activate-base: false
+          #activate-environment: om4labs
+          #auto-activate-base: false
 
       - name: Set up conda environment
         run: |
-          mamba env update -f ci/environment.yml
+          mamba env create -f ci/environment.yml
+          conda activate om4labs
           python -m pip install --no-deps -e .
       - name: Conda list information
         run: |
           conda env list
-          conda list
 
     #- name: Lint with flake8
     #  run: |
@@ -54,5 +54,6 @@ jobs:
     #    flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
       - name: Test with pytest
         run: |
+          conda activate om4labs
           pytest -v om4labs
 
