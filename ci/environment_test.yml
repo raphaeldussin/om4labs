@@ -11,6 +11,7 @@ dependencies:
   - esmf=8.0.0
   - esmpy=8.0.0
   - matplotlib
+  - mpich
   - netcdf4
   - numpy
   - numba
