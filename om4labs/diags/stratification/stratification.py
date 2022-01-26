@@ -58,19 +58,12 @@ def parse(cliargs=None, template=False):
     )
 
     parser.add_argument(
-        "--argo_temp_file",
+        "--argo_file",
         type=str,
         required=False,
         default=None,
-        help="Name of the Argo in-situ temperature file",
-    )
-
-    parser.add_argument(
-        "--argo_psal_file",
-        type=str,
-        required=False,
-        default=None,
-        help="Name of the Argo practical salinity file",
+        help="Name of the Argo climatology file "
+        + "(in-situ temp and practical salinity)",
     )
 
     parser.add_argument(
@@ -141,20 +134,8 @@ def read(dictArgs):
     obs_ycoord = "LATITUDE"
     obs_zcoord = "PRESSURE"
 
-    if (dictArgs["argo_temp_file"] is not None) or (
-        dictArgs["argo_psal_file"] is not None
-    ):
-
-        assert (
-            dictArgs["argo_temp_file"] is not None
-            and dictArgs["argo_psal_file"] is not None
-        ), "Both Ago temp and psal files must be specified for consistency"
-
-        argo_dset = xr.open_mfdataset(
-            [dictArgs["argo_temp_file"], dictArgs["argo_psal_file"]],
-            combine="by_coords",
-            decode_times=False,
-        )
+    if dictArgs["argo_file"] is not None:
+        argo_dset = xr.open_dataset(dictArgs["argo_file"], decode_times=False,)
     else:
         # use dataset from catalog, either from command line or default
         cat = open_intake_catalog(dictArgs["platform"], "obs")
@@ -189,12 +170,7 @@ def read(dictArgs):
         cat = open_intake_catalog(dictArgs["platform"], "obs")
         dsobs = cat[dictArgs["dataset"]].to_dask()
 
-    woa = xr.Dataset(
-        {
-            "temp": dsobs["ptemp"],
-            "salt": dsobs["salinity"],
-        }
-    )
+    woa = xr.Dataset({"temp": dsobs["ptemp"], "salt": dsobs["salinity"],})
     woa = woa.squeeze()
     woa = woa.reset_coords(drop=True)
 
