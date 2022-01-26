@@ -1,5 +1,6 @@
 black
 dask
+gsw
 intake-xarray
 matplotlib
 netcdf4
@@ -13,4 +14,5 @@ scipy
 shapely
 six
 xarray
+xcompare
 xesmf
