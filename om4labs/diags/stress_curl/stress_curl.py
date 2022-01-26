@@ -76,7 +76,7 @@ def read(dictArgs):
     # any results. But Xarray needs them to be consistent between the two files when
     # doing the curl operation on the stress.
     ds_model["xq"] = xr.DataArray(np.arange(len(ds_model["xq"])), dims=["xq"])
-    ds_model["yq"] = xr.DataArray(np.arange(len(ds_model["yq"])), dims=["yq"])    
+    ds_model["yq"] = xr.DataArray(np.arange(len(ds_model["yq"])), dims=["yq"])
     ds_ref_tau["xq"] = xr.DataArray(np.arange(len(ds_ref_tau["xq"])), dims=["xq"])
     ds_ref_tau["yq"] = xr.DataArray(np.arange(len(ds_ref_tau["yq"])), dims=["yq"])
     ds_static["xq"] = xr.DataArray(np.arange(len(ds_static["xq"])), dims=["xq"])
@@ -94,6 +94,10 @@ def calc_curl_stress(
     areacello_bu="areacello_bu",
     xdim="lon",
     ydim="lat",
+    rho0=1035.0,
+    maskname="wet_c",
+    lonname="geolon_c",
+    latname="geolat_c",
 ):
     """Calculate curl of stress acting on surface of the ocean.
 
@@ -109,18 +113,23 @@ def calc_curl_stress(
         Name of the longitude coordinate, by default "lon"
     ydim : str, optional
         Name of the latitude coordinate, by default "lat"
+    rho0: float, optional
+        Reference density of seawater, by default 1035.0 kg/m3
+    maskname: str, optional
+        Name of land/sea mask, by default wet_c
+    lonname: str, optional
+        Name of longitude variable, by default geolon_c
+    latname: str, optional
+        Name of latitude variable, by default geolat_c
     Returns
     -------
         xarray.DataArray stress_curl
         curl of surface ocean stress
     """
 
-    rho0 = 1035.0
     area = ds_static[areacello_bu]
-    taux = ds[varx]
-    taux = taux.mean(dim="time")
-    tauy = ds[vary]
-    tauy = tauy.mean(dim="time")
+    taux = ds[varx].mean(dim="time")
+    tauy = ds[vary].mean(dim="time")
 
     # fill nan with 0.0 since want 0.0 values over land for the curl operation
     taux = taux.fillna(0.0)
@@ -140,9 +149,9 @@ def calc_curl_stress(
     )
 
     stress_curl = stress_curl / (area * rho0)
-    stress_curl = stress_curl.where(ds_static["wet_c"] == 1)
+    stress_curl = stress_curl.where(ds_static[maskname] == 1)
     stress_curl = stress_curl.assign_coords(
-        {"geolon_c": ds_static["geolon_c"], "geolat_c": ds_static["geolat_c"]}
+        {lonname: ds_static[lonname], latname: ds_static[latname]}
     )
 
     return stress_curl
