@@ -6,6 +6,7 @@ dependencies:
   - pip
   - black
   - cartopy
+  - cmocean
   - dask
   - intake-xarray
   - esmf=8.0.0
@@ -31,3 +32,4 @@ dependencies:
     - git+https://github.com/raphaeldussin/static_downsampler.git
     - git+https://github.com/raphaeldussin/xoverturning
     - git+https://github.com/jkrasting/xwavelet.git
+    - git+https://github.com/jkrasting/xcompare.git
