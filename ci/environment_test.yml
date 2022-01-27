@@ -6,6 +6,7 @@ dependencies:
   - pip
   - black
   - cartopy
+  - cmocean
   - dask
   - gsw
   - intake-xarray
@@ -33,3 +34,4 @@ dependencies:
     - git+https://github.com/raphaeldussin/xoverturning
     - git+https://github.com/jkrasting/xcompare.git
     - git+https://github.com/jkrasting/xwavelet.git
+    - git+https://github.com/jkrasting/xcompare.git

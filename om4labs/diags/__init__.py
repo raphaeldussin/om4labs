@@ -9,6 +9,7 @@ from . import sst_annual_bias_1x1deg
 from . import sss_annual_bias_1x1deg
 from . import seaice
 from . import stratification
+from . import stress_curl
 from . import thetao_yz_annual_bias_1x1deg
 from . import section_transports
 from . import so_yz_annual_bias_1x1deg
