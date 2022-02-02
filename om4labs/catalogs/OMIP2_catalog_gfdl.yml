@@ -1,0 +1,27 @@
+# this catalog is for data from ocean models from the OMIP2 exercice, e.g. OM4p25
+plugins:
+  source:
+    - module: intake_xarray
+sources:
+
+  OM4_windstress_1959-1978:
+    description: "Wind stress from OM4p25 cycle6 forced by JRA1.4 from OMIP2"
+    driver: netcdf
+    args:
+      urlpath: '/archive/Raphael.Dussin/datasets/wind_stress_omip2/om4/windstress_OM4p25_JRA1.4_cycle6_1959-1978.nc'
+      chunks: {'time': 1}
+      xarray_kwargs:
+        decode_times: True
+    metadata:
+      origin_url: ''
+
+  OM4_windstress_1999-2018:
+    description: "Wind stress from OM4p25 cycle6 forced by JRA1.4 from OMIP2"
+    driver: netcdf
+    args:
+      urlpath: '/archive/Raphael.Dussin/datasets/wind_stress_omip2/om4/windstress_OM4p25_JRA1.4_cycle6_1999-2018.nc'
+      chunks: {'time': 1}
+      xarray_kwargs:
+        decode_times: True
+    metadata:
+      origin_url: ''
