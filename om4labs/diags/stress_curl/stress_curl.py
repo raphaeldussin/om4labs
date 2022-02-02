@@ -28,7 +28,7 @@ def parse(cliargs=None, template=False):
         parsed command line arguments
 
     example usage:
-    om4labs stress_curl -s fname_static.nc --ref_taux omip_taux.nc  --ref_tauy omip_tauy.nc fname_model_taux.nc fname_model_tauy.nc
+    om4labs stress_curl -s fname_static.nc --dataset OM4_windstress --period 1999-2018 fname_model_taux.nc fname_model_tauy.nc
     """
 
     description = " "
@@ -40,20 +40,22 @@ def parse(cliargs=None, template=False):
     )
 
     parser.add_argument(
-        "--ref_taux",
+        "--dataset",
         type=str,
         required=False,
-        default=None,
-        help="Name of the taux (N/m2) reference file",
+        default="OM4_windstress",
+        help="Name of the observational dataset, \
+              as provided in intake catalog",
     )
 
     parser.add_argument(
-        "--ref_tauy",
+        "--period",
         type=str,
         required=False,
-        default=None,
-        help="Name of the tauy (N/m2) reference file",
+        default="1959-1978",
+        help="Time period for OMIP2 dataset, available are 1959-1978 and 1999-2018",
     )
+
 
     if template is True:
         return parser.parse_args(None).__dict__
@@ -64,9 +66,18 @@ def parse(cliargs=None, template=False):
 def read(dictArgs):
     ds_model = xr.open_mfdataset(dictArgs["infile"], use_cftime=True)
     dates    = date_range(ds_model)
-    ds_ref_tau = xr.open_mfdataset(
-        [dictArgs["ref_taux"], dictArgs["ref_tauy"]], use_cftime=True
-    )
+
+    if dictArgs["obsfile"] is not None:
+        # priority to user-provided obs file
+        dsobs = xr.open_mfdataset(
+            dictArgs["obsfile"], combine="by_coords", decode_times=False
+        )
+    else:
+        # use dataset from catalog, either from command line or default
+        cat = open_intake_catalog(dictArgs["platform"], "OMIP2")
+        obsdataset = f"{dictArgs['dataset']}_{dictArgs['period']}"
+        ds_ref_tau = cat[obsdataset].to_dask()
+
     ds_static = xr.open_mfdataset(dictArgs["static"])
 
     # replace the nominal xq and yq by indices so that Xarray does not get confused.
