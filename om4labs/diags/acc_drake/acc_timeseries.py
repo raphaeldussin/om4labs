@@ -86,7 +86,7 @@ def calculate(darray):
     full_transport = full_transport * (1.0 / 1035.0) * 1.0e-6  # convert to Sv
     annual_mean_transport = full_transport.groupby("time.year").mean(dim="time")
 
-    return annual_mean
+    return annual_mean_transport
 
 
 def plot(darray_ts):
