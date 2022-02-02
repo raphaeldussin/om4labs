@@ -103,8 +103,8 @@ def plot(darray_ts):
     """
 
     ## Donohue et al. 2016 mean +/- 2 sigma
-    x_end = len(dset_out.values)
-    x_full = (0, len(dset_out.values))
+    x_end = len(darray_ts.values)
+    x_full = (0, len(darray_ts.values))
     max_Donohue = 194.4
     min_Donohue = 151.9
     mean_Donohue = 173.3
@@ -118,7 +118,7 @@ def plot(darray_ts):
     mean_BSOSE = 164
 
     fig = plt.figure(figsize=(10, 5))
-    plt.plot(dset_out.values)
+    plt.plot(darray_ts.values)
     plt.ylabel("ACC [Sv]", fontweight="bold", fontsize="large")
     plt.xlabel("Model Year", fontweight="bold", fontsize="large")
     plt.grid()
