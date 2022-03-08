@@ -262,6 +262,9 @@ def image_handler(figs, dictArgs, filename="./figure"):
         In-memory image buffers
     """
 
+    # Set default dpi
+    dpi = dictArgs["dpi"] if dpi in dictArgs.keys() else 100
+
     imgbufs = []
     numfigs = len(figs)
 
@@ -283,13 +286,13 @@ def image_handler(figs, dictArgs, filename="./figure"):
         for n, fig in enumerate(figs):
             if dictArgs["format"] == "stream":
                 imgbuf = io.BytesIO()
-                fig.savefig(imgbuf, format="png", bbox_inches="tight")
+                fig.savefig(imgbuf, format="png", dpi=dpi, bbox_inches="tight")
                 imgbufs.append(imgbuf)
             else:
                 fig.savefig(
                     f"{filename[n]}.png",
                     format=dictArgs["format"],
-                    dpi=150,
+                    dpi=dpi,
                     bbox_inches="tight",
                 )
 
