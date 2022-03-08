@@ -56,7 +56,6 @@ def parse(cliargs=None, template=False):
         help="Time period for OMIP2 dataset, available are 1959-1978 and 1999-2018",
     )
 
-
     if template is True:
         return parser.parse_args(None).__dict__
     else:
@@ -65,7 +64,7 @@ def parse(cliargs=None, template=False):
 
 def read(dictArgs):
     ds_model = xr.open_mfdataset(dictArgs["infile"], use_cftime=True)
-    dates    = date_range(ds_model)
+    dates = date_range(ds_model)
 
     if dictArgs["obsfile"] is not None:
         # priority to user-provided obs file
@@ -93,9 +92,10 @@ def read(dictArgs):
     ds_static["xq"] = xr.DataArray(np.arange(len(ds_static["xq"])), dims=["xq"])
     ds_static["yq"] = xr.DataArray(np.arange(len(ds_static["yq"])), dims=["yq"])
 
-    ds_model.attrs = {"date_range":dates}
+    ds_model.attrs = {"date_range": dates}
 
     return ds_model, ds_ref_tau, ds_static
+
 
 def calc_curl_stress(
     ds,
@@ -191,11 +191,20 @@ def calculate(ds_model, ds_ref_tau, ds_static, dictArgs):
 
 def plot(dictArgs, results):
 
-    fig = xcompare.plot_three_panel(results, "stress_curl", cmap=cmocean.cm.delta,
-                                    projection=ccrs.Robinson(), coastlines = False,
-                                    vmin=-3e-10, vmax=3e-10, diffvmin=-3e-10, diffvmax=3e-10,
-                                    labels=[dictArgs["label"],"OMIP reference"],
-                                    lon_range=(-180,180),lat_range=(-90,90))
+    fig = xcompare.plot_three_panel(
+        results,
+        "stress_curl",
+        cmap=cmocean.cm.delta,
+        projection=ccrs.Robinson(),
+        coastlines=False,
+        vmin=-3e-10,
+        vmax=3e-10,
+        diffvmin=-3e-10,
+        diffvmax=3e-10,
+        labels=[dictArgs["label"], "OMIP reference"],
+        lon_range=(-180, 180),
+        lat_range=(-90, 90),
+    )
     return fig
 
 
