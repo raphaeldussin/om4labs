@@ -242,7 +242,7 @@ def generate_basin_masks(basin_code, basin=None):
     return mask
 
 
-def image_handler(figs, dictArgs, filename="./figure"):
+def image_handler(figs, dictArgs, dpi=100, filename="./figure"):
     """Generic OM4Labs image handler. Depending on the framework mode,
     this handler either saves a matplotlib figure handle to disk or
     returns an in-memory image buffer
@@ -253,6 +253,8 @@ def image_handler(figs, dictArgs, filename="./figure"):
         Matplotlib figure handle or list of figure handles
     dictArgs : dict
         Dictionary of parsed command-line options
+    dpi : int, optional
+        Figure resolution in dots per inch, by default 100
     filename : str, optional
         Figure filename, by default "./figure"
 
@@ -263,7 +265,7 @@ def image_handler(figs, dictArgs, filename="./figure"):
     """
 
     # Set default dpi
-    dpi = dictArgs["dpi"] if dpi in dictArgs.keys() else 100
+    dpi = dictArgs["dpi"] if dpi in dictArgs.keys() else dpi
 
     imgbufs = []
     numfigs = len(figs)
