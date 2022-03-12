@@ -265,7 +265,7 @@ def image_handler(figs, dictArgs, dpi=100, filename="./figure"):
     """
 
     # Set default dpi
-    dpi = dictArgs["dpi"] if dpi in dictArgs.keys() else dpi
+    dpi = dictArgs["dpi"] if "dpi" in dictArgs.keys() else dpi
 
     imgbufs = []
     numfigs = len(figs)
