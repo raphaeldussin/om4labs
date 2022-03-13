@@ -4,7 +4,7 @@ import pkg_resources as pkgr
 
 
 def parse(cliargs=None):
-    """ parse the command line arguments """
+    """parse the command line arguments"""
     parser = argparse.ArgumentParser(
         description="list observational datasets available"
     )
