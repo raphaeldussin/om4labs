@@ -96,21 +96,22 @@ def parse(cliargs=None, template=False):
         return parser.parse_args(cliargs)
 
 
-def read(dictArgs):
+def read(dictArgs, tempvar="thetao", saltvar="so"):
     """Read required fields
 
     Parameters
     ----------
     dictArgs : dict
         Dictionary containing argparse options
+    tempvar : str, optional
+        Name of potentital temperature variable, by default "thetao"
+    saltvar : str, optional
+        Name of practical salinity variable, by default "so"
 
     Returns
     -------
     xarray.DataSet
     """
-
-    tempvar = "thetao"
-    saltvar = "so"
 
     model_xcoord = dictArgs["model_xcoord"]
     model_ycoord = dictArgs["model_ycoord"]
