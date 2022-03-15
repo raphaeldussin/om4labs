@@ -1,0 +1,3 @@
+fb8837b0f2a61f25c16f4f3d2aba5378  RG_ArgoClim_Extended_200401-202112.nc
+49c4ccac20835fc246d04657587c611d  RG_ArgoClim_Extended_200401-202112_annual_clim_ptemp+salt.nc
+fa1f0722b68f0971cb44eff952a250b8  RG_ArgoClim_Extended_200401-202112_monthly_clim_ptemp+salt.nc
