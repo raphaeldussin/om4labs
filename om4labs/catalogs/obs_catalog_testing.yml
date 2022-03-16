@@ -7,11 +7,10 @@ sources:
     description: "Gridded in-situ temperature and salinity derived from Argo profiles"
     driver: netcdf
     args:
-      urlpath: ['test_data/obs/RG_ArgoClim_Temp_Extended_200401-202010.nc', 'test_data/obs/RG_ArgoClim_Psal_Extended_200401-202010.nc']
+      urlpath: 'test_data/obs/RG_ArgoClim_Extended_200401-202112_annual_clim_ptemp+salt.nc'
       chunks: {'time': 1}
       xarray_kwargs:
         decode_times: False
-        combine: "by_coords"
     metadata:
       origin_url: ''
 
@@ -19,7 +18,7 @@ sources:
     description: "Gridded in-situ temperature derived from Argo profiles"
     driver: netcdf
     args:
-      urlpath: 'test_data/obs/RG_ArgoClim_Temp_Extended_200401-202010.nc'
+      urlpath: 'test_data/obs/RG_ArgoClim_Extended_200401-202112_annual_clim_ptemp+salt.nc'
       chunks: {'time': 1}
       xarray_kwargs:
         decode_times: False
@@ -30,7 +29,7 @@ sources:
     description: "Gridded in-situ practical salinity derived from Argo profiles"
     driver: netcdf
     args:
-      urlpath: 'test_data/obs/RG_ArgoClim_Psal_Extended_200401-202010.nc'
+      urlpath: 'test_data/obs/RG_ArgoClim_Extended_200401-202112_annual_clim_ptemp+salt.nc'
       chunks: {'time': 1}
       xarray_kwargs:
         decode_times: False
