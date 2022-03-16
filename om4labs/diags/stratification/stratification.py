@@ -96,7 +96,16 @@ def parse(cliargs=None, template=False):
         return parser.parse_args(cliargs)
 
 
-def read(dictArgs, tempvar="thetao", saltvar="so"):
+def read(
+    dictArgs,
+    tempvar="thetao",
+    saltvar="so",
+    argo_xcoord="lon",
+    argo_ycoord="lat",
+    argo_tvar="ptemp",
+    argo_svar="salt",
+    argo_pvar="pres",
+):
     """Read required fields
 
     Parameters
@@ -107,6 +116,16 @@ def read(dictArgs, tempvar="thetao", saltvar="so"):
         Name of potentital temperature variable, by default "thetao"
     saltvar : str, optional
         Name of practical salinity variable, by default "so"
+    argo_xcoord : str, optional
+        Name of longitude coordinate in obs dataset, by default "lon"
+    argo_ycoord : str, optional
+        Name of latitude coordinate in obs dataset, by default "lat"
+    argo_tvar : str, optional
+        Name of temperature variable in obs dataset, by default "ptemp"
+    argo_svar : str, optional
+        Name of salinity variable in obs dataset, by default "salt"
+    argo_pvar : str, optional
+        Name of pressure variable in obs dataset, by default "pres"
 
     Returns
     -------
@@ -131,9 +150,6 @@ def read(dictArgs, tempvar="thetao", saltvar="so"):
     model = model.rename({model_xcoord: "lon", model_ycoord: "lat"})
 
     # ----- read the Argo data
-    obs_xcoord = "LONGITUDE"
-    obs_ycoord = "LATITUDE"
-    obs_zcoord = "PRESSURE"
 
     if dictArgs["argo_file"] is not None:
         argo_dset = xr.open_dataset(dictArgs["argo_file"], decode_times=False,)
@@ -143,21 +159,21 @@ def read(dictArgs, tempvar="thetao", saltvar="so"):
         argo_dset = cat["Argo_Climatology"].to_dask()
 
     # standardize longitude to go from 0 to 360.
-    argo_dset = standardize_longitude(argo_dset, obs_xcoord)
+    argo_dset = standardize_longitude(argo_dset, argo_xcoord)
 
     # subset varaibles
     argo_dset = xr.Dataset(
         {
-            "temp": argo_dset["ARGO_TEMPERATURE_MEAN"],
-            "salt": argo_dset["ARGO_SALINITY_MEAN"],
-            "pres": argo_dset["PRESSURE"],
+            "temp": argo_dset[argo_tvar],
+            "salt": argo_dset[argo_svar],
+            "pres": argo_dset[argo_pvar],
         }
     )
 
     # clean up and standardize
     argo_dset = argo_dset.squeeze()
     argo_dset = argo_dset.reset_coords(drop=True)
-    argo_dset = argo_dset.rename({obs_xcoord: "lon", obs_ycoord: "lat"})
+    argo_dset = argo_dset.rename({argo_xcoord: "lon", argo_ycoord: "lat"})
 
     # ----- read the WOA data
 
@@ -187,7 +203,7 @@ def calculate(
     model_ycoord="lat",
     argo_xcoord="lon",
     argo_ycoord="lat",
-    argo_zcoord="PRESSURE",
+    argo_zcoord="pres",
     depth_range=(25, 1000),
 ):
     """Main calculation function
@@ -278,7 +294,7 @@ def calculate(
 
 
 def _plot_basin(
-    dtdz_model, dtdz_argo, basin="atlantic", model_zcoord="z_l", argo_zcoord="PRESSURE"
+    dtdz_model, dtdz_argo, basin="atlantic", model_zcoord="z_l", argo_zcoord="pres"
 ):
 
     cmap = plt.cm.RdYlBu_r
