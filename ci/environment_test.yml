@@ -8,6 +8,7 @@ dependencies:
   - cartopy
   - cmocean
   - dask
+  - gsw
   - intake-xarray
   - esmf=8.0.0
   - esmpy=8.0.0
@@ -31,5 +32,6 @@ dependencies:
     - git+https://github.com/jkrasting/cmip_basins.git
     - git+https://github.com/raphaeldussin/static_downsampler.git
     - git+https://github.com/raphaeldussin/xoverturning
+    - git+https://github.com/jkrasting/xcompare.git
     - git+https://github.com/jkrasting/xwavelet.git
     - git+https://github.com/jkrasting/xcompare.git
