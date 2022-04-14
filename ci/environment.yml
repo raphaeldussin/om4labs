@@ -27,6 +27,8 @@ dependencies:
   - xarray
   - xesmf=0.6.2
   - xgcm
+  - xhistogram
+  - gsw
   - pip:
     - nc-time-axis>=1.3.1
     - git+https://github.com/jkrasting/cmip_basins.git
