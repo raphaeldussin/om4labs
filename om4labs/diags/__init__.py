@@ -17,3 +17,4 @@ from . import thetao_yz_annual_bias_1x1deg
 from . import section_transports
 from . import so_yz_annual_bias_1x1deg
 from . import acc_drake
+from . import surface_wmt
