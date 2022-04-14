@@ -37,3 +37,4 @@ dependencies:
     - git+https://github.com/jkrasting/xcompare.git
     - git+https://github.com/jkrasting/xwavelet.git
     - git+https://github.com/jkrasting/xcompare.git
+    - git+https://github.com/jetesdal/xwmt.git
