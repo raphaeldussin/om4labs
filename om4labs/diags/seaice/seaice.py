@@ -50,7 +50,10 @@ def parse(cliargs=None, template=False):
     )
 
     parser.add_argument(
-        "--month", type=str, default="March", help="Month to analyze. Deafult is March",
+        "--month",
+        type=str,
+        default="March",
+        help="Month to analyze. Deafult is March",
     )
 
     parser.add_argument(
@@ -135,7 +138,7 @@ def read(dictArgs):
 
 
 def calculate(ds, dobs, region="nh"):
-    """ Function to calculate sea ice parameters """
+    """Function to calculate sea ice parameters"""
 
     # Container dictionaries to hold results
     model = xr.Dataset()
@@ -418,7 +421,7 @@ def run(dictArgs):
 
 
 def parse_and_run(cliargs=None):
-    """ Function to make compatibile with the superwrapper """
+    """Function to make compatibile with the superwrapper"""
     args = parse(cliargs)
     args = args.__dict__
     imgbuf = run(args)

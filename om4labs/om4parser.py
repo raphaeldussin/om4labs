@@ -39,6 +39,7 @@ def default_diag_parser(description="", template=False, exclude=None):
     -l, --label:        str; string to use in plot titles
                         (typically the experiment name)
     -o, --outdir:       path; directory to store plots.  Will create if not present
+    -d, --dpi:          int; figure resolution in dots per inch (default is 100)
     -i, --interactive:  bool; displays figures to screen if present
     -v, --verbose:      turn on verbose output.  Need to consider multiple
                         levels of verbosity
@@ -135,6 +136,15 @@ def default_diag_parser(description="", template=False, exclude=None):
             type=str,
             default="./",
             help="Output directory. Default is current directory",
+        )
+
+    if "dpi" not in exclude:
+        parser.add_argument(
+            "-d",
+            "--dpi",
+            type=int,
+            default=100,
+            help="Figure resolution in dots per inch. Default is 100.",
         )
 
     if "interactive" not in exclude:

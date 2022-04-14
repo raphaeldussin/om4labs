@@ -7,7 +7,7 @@ except ImportError:
 
 
 def plot_xydiff(x, y, slice1, slice2, diff_kwargs, interactive=False, stream=False):
-    """ make difference plot """
+    """make difference plot"""
     if stream:
         img = io.BytesIO()
         diff_kwargs["save"] = img
@@ -20,7 +20,7 @@ def plot_xydiff(x, y, slice1, slice2, diff_kwargs, interactive=False, stream=Fal
 def plot_xycompare(
     x, y, slice1, slice2, compare_kwargs, interactive=False, stream=False
 ):
-    """ make 3 panel compare plot """
+    """make 3 panel compare plot"""
     if stream:
         img = io.BytesIO()
         compare_kwargs["save"] = img
@@ -33,7 +33,7 @@ def plot_xycompare(
 
 
 def plot_yzdiff(y, z, slice1, slice2, diff_kwargs, interactive=False, stream=False):
-    """ make difference plot """
+    """make difference plot"""
     if stream:
         img = io.BytesIO()
         diff_kwargs["save"] = img
@@ -46,7 +46,7 @@ def plot_yzdiff(y, z, slice1, slice2, diff_kwargs, interactive=False, stream=Fal
 def plot_yzcompare(
     y, z, slice1, slice2, compare_kwargs, interactive=False, stream=False
 ):
-    """ make 3 panel compare plot """
+    """make 3 panel compare plot"""
     if stream:
         img = io.BytesIO()
         compare_kwargs["save"] = img

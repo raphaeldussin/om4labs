@@ -25,7 +25,7 @@ imgbufs = []
 
 
 def read(dictArgs):
-    """ read data from model and obs files, process data and return it """
+    """read data from model and obs files, process data and return it"""
 
     if dictArgs["config"] is not None:
         # use dataset from catalog, either from command line or default
@@ -124,7 +124,7 @@ def read(dictArgs):
 
 
 def parse(cliargs=None, template=False):
-    """ parse the command line arguments """
+    """parse the command line arguments"""
 
     description = "Script for plotting annual-average bias to obs"
     parser = default_diag_parser(
