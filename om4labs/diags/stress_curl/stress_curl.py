@@ -4,6 +4,7 @@ import numpy as np
 import cmocean
 import xcompare
 import xarray as xr
+import xesmf
 from xgcm import Grid
 
 from xcompare import plot_three_panel
@@ -33,17 +34,33 @@ def parse(cliargs=None, template=False):
 
     description = " "
 
-    exclude = ["basin", "hgrid", "topog", "gridspec", "config"]
+    exclude = ["basin", "hgrid", "topog", "gridspec", "static"]
 
     parser = default_diag_parser(
         description=description, template=template, exclude=exclude
     )
 
     parser.add_argument(
+        "-s",
+        "--static",
+        type=str,
+        required=True,
+        help="Path to ocean.static.nc file",
+    )
+
+    parser.add_argument(
+        "-g",
+        "--hgrid",
+        type=str,
+        required=True,
+        help="Path to ocean_hgrid.nc file",
+    )
+
+    parser.add_argument(
         "--dataset",
         type=str,
         required=False,
-        default="OM4_windstress",
+        default="OM4_windstresscurl",
         help="Name of the observational dataset, \
               as provided in intake catalog",
     )
@@ -56,7 +73,6 @@ def parse(cliargs=None, template=False):
         help="Time period for OMIP2 dataset, available are 1959-1978 and 1999-2018",
     )
 
-
     if template is True:
         return parser.parse_args(None).__dict__
     else:
@@ -65,20 +81,26 @@ def parse(cliargs=None, template=False):
 
 def read(dictArgs):
     ds_model = xr.open_mfdataset(dictArgs["infile"], use_cftime=True)
-    dates    = date_range(ds_model)
+    dates = date_range(ds_model)
 
     if dictArgs["obsfile"] is not None:
         # priority to user-provided obs file
-        dsobs = xr.open_mfdataset(
+        ds_ref_curl = xr.open_mfdataset(
             dictArgs["obsfile"], combine="by_coords", decode_times=False
         )
     else:
         # use dataset from catalog, either from command line or default
         cat = open_intake_catalog(dictArgs["platform"], "OMIP2")
-        obsdataset = f"{dictArgs['dataset']}_{dictArgs['period']}"
-        ds_ref_tau = cat[obsdataset].to_dask()
+        obsdataset = (
+            f"{dictArgs['dataset']}_{dictArgs['period']}_grid{dictArgs['config']}"
+        )
+        ds_ref_curl = cat[obsdataset].to_dask()
 
-    ds_static = xr.open_mfdataset(dictArgs["static"])
+    if "time" not in ds_ref_curl.dims:
+        ds_ref_curl = ds_ref_curl.expand_dims(dim="time")
+
+    ds_static = xr.open_dataset(dictArgs["static"])
+    ds_hgrid = xr.open_dataset(dictArgs["hgrid"])
 
     # replace the nominal xq and yq by indices so that Xarray does not get confused.
     # Confusion arises since there are inconsistencies between static file grid and
@@ -88,14 +110,36 @@ def read(dictArgs):
     # doing the curl operation on the stress.
     ds_model["xq"] = xr.DataArray(np.arange(len(ds_model["xq"])), dims=["xq"])
     ds_model["yq"] = xr.DataArray(np.arange(len(ds_model["yq"])), dims=["yq"])
-    ds_ref_tau["xq"] = xr.DataArray(np.arange(len(ds_ref_tau["xq"])), dims=["xq"])
-    ds_ref_tau["yq"] = xr.DataArray(np.arange(len(ds_ref_tau["yq"])), dims=["yq"])
+    ds_ref_curl["xq"] = xr.DataArray(np.arange(len(ds_ref_curl["xq"])), dims=["xq"])
+    ds_ref_curl["yq"] = xr.DataArray(np.arange(len(ds_ref_curl["yq"])), dims=["yq"])
     ds_static["xq"] = xr.DataArray(np.arange(len(ds_static["xq"])), dims=["xq"])
     ds_static["yq"] = xr.DataArray(np.arange(len(ds_static["yq"])), dims=["yq"])
 
-    ds_model.attrs = {"date_range":dates}
+    # override lon/lat at q-points
+    ds_static["geolon_c"] = xr.DataArray(
+        ds_hgrid["x"][::2, ::2].values, dims=("yq", "xq")
+    )
+    ds_static["geolat_c"] = xr.DataArray(
+        ds_hgrid["y"][::2, ::2].values, dims=("yq", "xq")
+    )
 
-    return ds_model, ds_ref_tau, ds_static
+    assert (np.equal(ds_model["xq"], ds_static["xq"])).all()
+    assert (np.equal(ds_model["yq"], ds_static["yq"])).all()
+    assert (np.equal(ds_ref_curl["xq"], ds_static["xq"])).all()
+    assert (np.equal(ds_ref_curl["yq"], ds_static["yq"])).all()
+
+    # override lon/lat at q-points
+    ds_ref_curl["geolon_c"] = xr.DataArray(
+        ds_hgrid["x"][::2, ::2].values, dims=("yq", "xq")
+    )
+    ds_ref_curl["geolat_c"] = xr.DataArray(
+        ds_hgrid["y"][::2, ::2].values, dims=("yq", "xq")
+    )
+
+    ds_model.attrs = {"date_range": dates}
+
+    return ds_model, ds_ref_curl, ds_static
+
 
 def calc_curl_stress(
     ds,
@@ -168,60 +212,106 @@ def calc_curl_stress(
     return stress_curl
 
 
-def calculate(ds_model, ds_ref_tau, ds_static, dictArgs):
+def calculate(ds_model, ds_ref_curl, ds_static, dictArgs):
 
     curl_model = xr.Dataset(
         {
             "stress_curl": calc_curl_stress(ds_model, ds_static),
             "areacello_bu": ds_static["areacello_bu"],
+            "geolon_c": ds_static["geolon_c"],
+            "geolat_c": ds_static["geolat_c"],
         }
     )
 
     curl_ref = xr.Dataset(
         {
-            "stress_curl": calc_curl_stress(ds_ref_tau, ds_static),
+            "stress_curl": ds_ref_curl["curl"],
             "areacello_bu": ds_static["areacello_bu"],
+            "geolon_c": ds_ref_curl["geolon_c"],
+            "geolat_c": ds_ref_curl["geolat_c"],
         }
     )
 
+    return curl_model, curl_ref
+
+
+def plot(dictArgs, curl_model, curl_ref):
+
     results = xcompare.compare_datasets(curl_model, curl_ref)
 
-    return results
-
-
-def plot(dictArgs, results):
-
-    fig = xcompare.plot_three_panel(results, "stress_curl", cmap=cmocean.cm.delta,
-                                    projection=ccrs.Robinson(), coastlines = False,
-                                    vmin=-3e-10, vmax=3e-10, diffvmin=-3e-10, diffvmax=3e-10,
-                                    labels=[dictArgs["label"],"OMIP reference"],
-                                    lon_range=(-180,180),lat_range=(-90,90))
+    fig = xcompare.plot_three_panel(
+        results,
+        "stress_curl",
+        cmap=cmocean.cm.delta,
+        projection=ccrs.Robinson(),
+        coastlines=False,
+        vmin=-3e-10,
+        vmax=3e-10,
+        diffvmin=-3e-10,
+        diffvmax=3e-10,
+        labels=[dictArgs["label"], "OMIP reference"],
+        lon_range=(-180, 180),
+        lat_range=(-90, 90),
+    )
     return fig
 
 
 def plot_old(
-    field,
+    curl_model,
+    curl_ref,
     vmin=-3e-10,
     vmax=3e-10,
     lat_lon_ext=[-180, 180, -85.0, 90.0],
     lon="geolon_c",
     lat="geolat_c",
+    fieldname="stress_curl",
     cmap=cmocean.cm.delta,
     title="Curl of stress (N/m**2) acting on ocean surface",
 ):
 
     # convert xarray to ordinary numpy arrays
-    if isinstance(field, xr.DataArray):
-        geolon = field[lon].values
-        geolat = field[lat].values
-        field = field.values
+    if isinstance(curl_model, xr.Dataset):
+        geolon_model = curl_model[lon].values
+        geolat_model = curl_model[lat].values
+        data_model = curl_model[fieldname].values
 
-    fig = plt.figure(figsize=[22, 8])
-    ax = fig.add_subplot(projection=ccrs.Robinson(), facecolor="grey")
-    cb = ax.pcolormesh(
-        geolon,
-        geolat,
-        field,
+    if isinstance(curl_ref, xr.Dataset):
+        geolon_ref = curl_ref[lon].values
+        geolat_ref = curl_ref[lat].values
+        data_ref = curl_ref[fieldname].values
+
+    # fig = plt.figure(figsize=[22, 8])
+    fig, axs = plt.subplots(
+        ncols=1,
+        nrows=3,
+        subplot_kw={"projection": ccrs.Robinson(), "facecolor": "grey"},
+    )
+    # ax = fig.add_subplot(projection=ccrs.Robinson(), facecolor="grey")
+    # ax = fig.add_subplot(projection=ccrs.Robinson(), facecolor="grey")
+    cb = axs[0].pcolormesh(
+        geolon_model,
+        geolat_model,
+        data_model.squeeze(),
+        transform=ccrs.PlateCarree(),
+        vmin=vmin,
+        vmax=vmax,
+        cmap=cmap,
+    )
+
+    cb = axs[1].pcolormesh(
+        geolon_ref,
+        geolat_ref,
+        data_ref.squeeze(),
+        transform=ccrs.PlateCarree(),
+        vmin=vmin,
+        vmax=vmax,
+        cmap=cmap,
+    )
+
+    cb = axs[2].pcolormesh(
+        geolon_ref,
+        geolat_ref,
+        data_model.squeeze() - data_ref.squeeze(),
         transform=ccrs.PlateCarree(),
         vmin=vmin,
         vmax=vmax,
@@ -229,13 +319,13 @@ def plot_old(
     )
 
     # add separate colorbar
-    cb = plt.colorbar(cb, ax=ax, format="%.1e", extend="both", shrink=0.6)
-    cb.ax.tick_params(labelsize=12)
+    # cb = plt.colorbar(cb, ax=ax, format="%.1e", extend="both", shrink=0.6)
+    # cb.ax.tick_params(labelsize=12)
 
     # add gridlines and extent of lat/lon
-    ax.gridlines(color="black", alpha=0.5, linestyle="--")
-    ax.set_extent(lat_lon_ext, crs=ccrs.PlateCarree())
-    _ = plt.title(title, fontsize=14)
+    # ax.gridlines(color="black", alpha=0.5, linestyle="--")
+    # ax.set_extent(lat_lon_ext, crs=ccrs.PlateCarree())
+    # _ = plt.title(title, fontsize=14)
 
     return fig
 
@@ -247,8 +337,9 @@ def run(dictArgs):
 
     ds_model, ds_ref_tau, ds_static = read(dictArgs)
 
-    results = calculate(ds_model, ds_ref_tau, ds_static, dictArgs)
-    figs = plot(dictArgs, results)
+    curl_model, curl_ref = calculate(ds_model, ds_ref_tau, ds_static, dictArgs)
+    # figs = plot(dictArgs, results)
+    figs = plot(dictArgs, curl_model, curl_ref)
     figs = [figs] if not isinstance(figs, list) else figs
     assert isinstance(figs, list), "Figures must be inside a list object"
 
