@@ -133,7 +133,7 @@ def calculate(dset, dset_grid):
     Returns
     -------
     xarray.DataArray
-        Time-mean overturning streamfunction by basin 
+        Time-mean overturning streamfunction by basin
     """
 
     layer = dset.layer
@@ -183,7 +183,7 @@ def plot(dset, otsfn, label=None):
     dset : xarray.Dataset
         Input dataset with grid values, umo, and vmo
     otsfn : xarray.DataArray
-        Time-mean overturning streamfunction by basin 
+        Time-mean overturning streamfunction by basin
     label : str, optional
         title/experiment name for plot labels, by default None
 
