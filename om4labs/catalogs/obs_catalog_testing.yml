@@ -36,6 +36,38 @@ sources:
     metadata:
       origin_url: ''
 
+  Argo_MLD_003:
+    description: "Computed MLD_003 from Argo profiles"
+    driver: netcdf
+    args:
+      urlpath: '/test_data/obs/Datasets/Argo/MLDs/Argo_MLD.mld_prho_threshold_003.nc'
+    metadata:
+      origin_url: ""
+
+  Argo_MLD_EN1:
+    description: "Computed MLD_EN1 from Argo profiles"
+    driver: netcdf
+    args:
+      urlpath: '/test_data/obs/Datasets/Argo/MLDs/Argo_MLD.mld_pe_anomaly_25.nc'
+    metadata:
+      origin_url: ""
+
+  Argo_MLD_EN2:
+    description: "Computed MLD_EN2 from Argo profiles"
+    driver: netcdf
+    args:
+      urlpath: '/test_data/obs/Datasets/Argo/MLDs/Argo_MLD.mld_pe_anomaly_2500.nc'
+    metadata:
+      origin_url: ""
+
+  Argo_MLD_EN3:
+    description: "Computed MLD_EN3 from Argo profiles"
+    driver: netcdf
+    args:
+      urlpath: '/test_data/obs/Datasets/Argo/MLDs/Argo_MLD.mld_pe_anomaly_250000.nc'
+    metadata:
+      origin_url: ""
+
   WOA13_annual_TS:
     description: "World Ocean Atlas 2013 annual climatology T/S"
     driver: netcdf
