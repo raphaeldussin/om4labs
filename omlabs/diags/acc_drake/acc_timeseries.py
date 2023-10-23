@@ -1,9 +1,9 @@
 import xarray as xr
 import matplotlib.pyplot as plt
 
-from om4labs.om4common import image_handler
-from om4labs.om4common import open_intake_catalog
-from om4labs.om4parser import default_diag_parser
+from omlabs.om4common import image_handler
+from omlabs.om4common import open_intake_catalog
+from omlabs.om4parser import default_diag_parser
 
 # Define a list of acceptable coordinates
 possible_xdims = ["xq", "xh", "xc", "lon", "xq_sub01", "xq_sub02"]

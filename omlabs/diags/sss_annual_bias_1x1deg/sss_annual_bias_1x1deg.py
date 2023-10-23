@@ -1,6 +1,6 @@
 from .. import generic_annual_bias_1x1deg as generic
 
-from om4labs.m6plot.formatting import pmCI, linCI
+from omlabs.m6plot.formatting import pmCI, linCI
 
 possible_variable_names = ["so", "salt", "salinity", "SALT", "SALINITY"]
 

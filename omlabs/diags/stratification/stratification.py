@@ -6,27 +6,27 @@ import io
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-from om4labs import m6plot
+from omlabs import m6plot
 import palettable
 import xarray as xr
 import xcompare
 import xoverturning
 import warnings
-from om4labs import m6plot
+from omlabs import m6plot
 import gsw as gsw
 
 # these are always needed
-from om4labs.om4parser import default_diag_parser
-from om4labs.om4common import image_handler
+from omlabs.om4parser import default_diag_parser
+from omlabs.om4common import image_handler
 
 # these are available to you to use
-from om4labs.om4common import date_range
-from om4labs.om4common import generate_basin_masks
-from om4labs.om4common import horizontal_grid
-from om4labs.om4common import is_symmetric
-from om4labs.om4common import open_intake_catalog
-from om4labs.om4common import read_topography
-from om4labs.om4common import standardize_longitude
+from omlabs.om4common import date_range
+from omlabs.om4common import generate_basin_masks
+from omlabs.om4common import horizontal_grid
+from omlabs.om4common import is_symmetric
+from omlabs.om4common import open_intake_catalog
+from omlabs.om4common import read_topography
+from omlabs.om4common import standardize_longitude
 
 
 def parse(cliargs=None, template=False):

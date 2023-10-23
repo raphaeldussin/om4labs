@@ -5,11 +5,11 @@ import io
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-from om4labs import m6plot
+from omlabs import m6plot
 import xarray as xr
 
-from om4labs.om4common import image_handler
-from om4labs.om4parser import default_diag_parser
+from omlabs.om4common import image_handler
+from omlabs.om4parser import default_diag_parser
 
 
 def parse(cliargs=None, template=False):

@@ -22,8 +22,8 @@ def parse(cliargs=None):
 
 def run(dictArgs):
     cat_platform = "catalogs/obs_catalog_" + dictArgs["platform"] + ".yml"
-    if pkgr.resource_exists("om4labs", cat_platform):
-        catfile = pkgr.resource_filename("om4labs", cat_platform)
+    if pkgr.resource_exists("omlabs", cat_platform):
+        catfile = pkgr.resource_filename("omlabs", cat_platform)
         cat = intake.open_catalog(catfile)
         return cat
     else:

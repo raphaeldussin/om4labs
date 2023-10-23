@@ -7,17 +7,17 @@ import xarray as xr
 import warnings
 import pkg_resources as pkgr
 
-from om4labs import m6plot
-from om4labs.helpers import get_run_name, try_variable_from_list
-from om4labs.om4plotting import plot_yzdiff, plot_yzcompare
-from om4labs.om4common import read_data, subset_data
-from om4labs.om4common import simple_average, copy_coordinates
-from om4labs.om4common import compute_area_regular_grid
-from om4labs.om4common import date_range
-from om4labs.om4common import image_handler
-from om4labs.om4common import open_intake_catalog
+from omlabs import m6plot
+from omlabs.helpers import get_run_name, try_variable_from_list
+from omlabs.om4plotting import plot_yzdiff, plot_yzcompare
+from omlabs.om4common import read_data, subset_data
+from omlabs.om4common import simple_average, copy_coordinates
+from omlabs.om4common import compute_area_regular_grid
+from omlabs.om4common import date_range
+from omlabs.om4common import image_handler
+from omlabs.om4common import open_intake_catalog
 
-from om4labs.om4parser import default_diag_parser
+from omlabs.om4parser import default_diag_parser
 
 from cmip_basins import generate_basin_codes
 

@@ -8,9 +8,9 @@ import xarray as xr
 import xwavelet as xw
 import warnings
 
-from om4labs.om4common import image_handler
-from om4labs.om4common import open_intake_catalog
-from om4labs.om4parser import default_diag_parser
+from omlabs.om4common import image_handler
+from omlabs.om4common import open_intake_catalog
+from omlabs.om4parser import default_diag_parser
 
 warnings.filterwarnings("ignore", message=".*csr_matrix.*")
 warnings.filterwarnings("ignore", message=".*dates out of range.*")

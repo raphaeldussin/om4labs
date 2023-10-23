@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 
-from om4labs.om4parser import default_diag_parser
-from om4labs.om4common import image_handler
+from omlabs.om4parser import default_diag_parser
+from omlabs.om4common import image_handler
 
 
 def parse(cliargs=None, template=False):

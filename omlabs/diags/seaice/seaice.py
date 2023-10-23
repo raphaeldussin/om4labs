@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-om4labs: model-simulated sea ice vs. NSIDC obs
+omlabs: model-simulated sea ice vs. NSIDC obs
 """
 
 __all__ = ["parse", "read", "calculate", "plot", "run", "parse_and_run"]
@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 import pkg_resources as pkgr
 from matplotlib.lines import Line2D
 
-from om4labs.om4common import (
+from omlabs.om4common import (
     annual_cycle,
     curv_to_curv,
     date_range,
@@ -27,7 +27,7 @@ from om4labs.om4common import (
     open_intake_catalog,
     standard_grid_cell_area,
 )
-from om4labs.om4parser import default_diag_parser
+from omlabs.om4parser import default_diag_parser
 
 warnings.filterwarnings("ignore", message=".*csr_matrix.*")
 warnings.filterwarnings("ignore", message=".*dates out of range.*")

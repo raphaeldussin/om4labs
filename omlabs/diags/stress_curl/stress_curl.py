@@ -7,10 +7,10 @@ import xarray as xr
 from xgcm import Grid
 
 from xcompare import plot_three_panel
-from om4labs.om4common import image_handler
-from om4labs.om4common import open_intake_catalog
-from om4labs.om4common import date_range
-from om4labs.om4parser import default_diag_parser
+from omlabs.om4common import image_handler
+from omlabs.om4common import open_intake_catalog
+from omlabs.om4common import date_range
+from omlabs.om4parser import default_diag_parser
 
 
 def parse(cliargs=None, template=False):
@@ -28,7 +28,7 @@ def parse(cliargs=None, template=False):
         parsed command line arguments
 
     example usage:
-    om4labs stress_curl -s fname_static.nc --dataset OM4_windstress --period 1999-2018 fname_model_taux.nc fname_model_tauy.nc
+    omlabs stress_curl -s fname_static.nc --dataset OM4_windstress --period 1999-2018 fname_model_taux.nc fname_model_tauy.nc
     """
 
     description = " "

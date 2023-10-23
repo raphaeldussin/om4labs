@@ -7,7 +7,7 @@ sources:
     description: "File containing basin masks on native model grid"
     driver: netcdf
     args:
-      urlpath: '/mnt/data/dora-dev/external/om4labs/testing/test_data/model_grids/OM4p25/ocean_static.nc'
+      urlpath: '/mnt/data/dora-dev/external/omlabs/testing/test_data/model_grids/OM4p25/ocean_static.nc'
       xarray_kwargs:
         decode_times: False
     metadata:
@@ -17,7 +17,7 @@ sources:
     description: "Horizontal grid information from the gridspec"
     driver: netcdf
     args:
-      urlpath: '/mnt/data/dora-dev/external/om4labs/testing/test_data/model_grids/OM4p25/ocean_hgrid.nc'
+      urlpath: '/mnt/data/dora-dev/external/omlabs/testing/test_data/model_grids/OM4p25/ocean_hgrid.nc'
       xarray_kwargs:
         decode_times: False
     metadata:
@@ -27,7 +27,7 @@ sources:
     description: "Model topography"
     driver: netcdf
     args:
-      urlpath: '/mnt/data/dora-dev/external/om4labs/testing/test_data/model_grids/OM4p25/ocean_static.nc'
+      urlpath: '/mnt/data/dora-dev/external/omlabs/testing/test_data/model_grids/OM4p25/ocean_static.nc'
       xarray_kwargs:
         decode_times: False
     metadata:
@@ -37,7 +37,7 @@ sources:
     description: "Ice Model 1x1 Static File"
     driver: netcdf
     args:
-      urlpath: '/mnt/data/dora-dev/external/om4labs/testing/test_data/model_grids/OM4p25/ice_1x1deg.static.nc'
+      urlpath: '/mnt/data/dora-dev/external/omlabs/testing/test_data/model_grids/OM4p25/ice_1x1deg.static.nc'
       xarray_kwargs:
         decode_times: False
     metadata:

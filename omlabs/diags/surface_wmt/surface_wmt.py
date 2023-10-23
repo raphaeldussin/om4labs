@@ -6,7 +6,7 @@ import io
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-from om4labs import m6plot
+from omlabs import m6plot
 import palettable
 import xarray as xr
 import warnings
@@ -14,11 +14,11 @@ import warnings
 from xwmt.preprocessing import preprocessing
 from xwmt.swmt import swmt
 
-from om4labs.om4common import horizontal_grid
-from om4labs.om4common import image_handler
-from om4labs.om4common import date_range
-from om4labs.om4common import open_intake_catalog
-from om4labs.om4parser import default_diag_parser
+from omlabs.om4common import horizontal_grid
+from omlabs.om4common import image_handler
+from omlabs.om4common import date_range
+from omlabs.om4common import open_intake_catalog
+from omlabs.om4parser import default_diag_parser
 
 warnings.filterwarnings("ignore", message=".*csr_matrix.*")
 warnings.filterwarnings("ignore", message=".*dates out of range.*")

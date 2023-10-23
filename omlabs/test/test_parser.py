@@ -1,6 +1,6 @@
 def test_default_diag_parser():
-    from om4labs.om4parser import default_diag_parser
-    from om4labs.om4parser import DefaultDictParser
+    from omlabs.om4parser import default_diag_parser
+    from omlabs.om4parser import DefaultDictParser
 
     parser = default_diag_parser(template=True)
     args = parser.parse_args([])

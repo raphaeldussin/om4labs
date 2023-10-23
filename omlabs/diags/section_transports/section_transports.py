@@ -6,13 +6,13 @@ import io
 import os
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from om4labs import m6plot
+from omlabs import m6plot
 import xarray as xr
 
-from om4labs.diags import generic_section_transport
-from om4labs.om4common import image_handler
-from om4labs.om4common import discover_ts_dir
-from om4labs.om4parser import default_diag_parser
+from omlabs.diags import generic_section_transport
+from omlabs.om4common import image_handler
+from omlabs.om4common import discover_ts_dir
+from omlabs.om4parser import default_diag_parser
 
 # passages with their frepp component mappings and observed ranges from
 # Griffies et al., 2016: OMIP contribution to CMIP6:

@@ -15,7 +15,7 @@ grid_1x1["lat_bnds"] = xr.DataArray(
 
 
 def test_infer_and_assign_coord():
-    from om4labs.om4common import infer_and_assign_coord
+    from omlabs.om4common import infer_and_assign_coord
 
     da = xr.DataArray(data=np.empty((360, 2)), dims=("lon", "bnds"))
     da = infer_and_assign_coord(grid_1x1, da, "lon")
@@ -23,7 +23,7 @@ def test_infer_and_assign_coord():
 
 
 def test_copy_coordinates():
-    from om4labs.om4common import copy_coordinates
+    from omlabs.om4common import copy_coordinates
 
     da = xr.DataArray(data=np.empty((360, 2)), dims=("lon", "bnds"))
     da = copy_coordinates(grid_1x1["lon_bnds"], da, ["lon", "bnds"])
@@ -31,7 +31,7 @@ def test_copy_coordinates():
 
 
 def test_compute_area_regular_grid():
-    from om4labs.om4common import compute_area_regular_grid
+    from omlabs.om4common import compute_area_regular_grid
 
     area = compute_area_regular_grid(grid_1x1)
     assert isinstance(area, np.ndarray)
@@ -39,7 +39,7 @@ def test_compute_area_regular_grid():
 
 
 def test_standardize_longitude():
-    from om4labs.om4common import standardize_longitude
+    from omlabs.om4common import standardize_longitude
 
     # case 1: extending past 360.
     lon = np.arange(20.5, 380.5, 1.0)

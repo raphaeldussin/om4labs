@@ -1,4 +1,4 @@
-""" om4labs lexicon for default diagnostic CLI options """
+""" omlabs lexicon for default diagnostic CLI options """
 
 import argparse
 

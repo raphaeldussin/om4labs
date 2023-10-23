@@ -2,11 +2,11 @@
 
 """ Potential Temperature Drift Diagnostic """
 
-from om4labs.om4parser import default_diag_parser
-from om4labs.diags.generic_depth_time_drift import read
-from om4labs.diags.generic_depth_time_drift import calculate
-from om4labs.diags.generic_depth_time_drift import plot
-from om4labs.diags.generic_depth_time_drift import run
+from omlabs.om4parser import default_diag_parser
+from omlabs.diags.generic_depth_time_drift import read
+from omlabs.diags.generic_depth_time_drift import calculate
+from omlabs.diags.generic_depth_time_drift import plot
+from omlabs.diags.generic_depth_time_drift import run
 
 
 def parse(cliargs=None, template=False):

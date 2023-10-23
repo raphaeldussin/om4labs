@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from om4labs.m6plot.formatting import VerticalSplitScale
+from omlabs.m6plot.formatting import VerticalSplitScale
 
 
 def plot_rho_panel(ax, arr, lat, rho, levels=None, title=None):
