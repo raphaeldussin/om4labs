@@ -1,0 +1,73 @@
+[build-system]
+requires = [ "setuptools>=41", "wheel", "setuptools-git-versioning"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "omlabs"
+description = "Analysis Routines for GFDL Ocean Models"
+dynamic = ["version"]
+authors = [
+    {name = "John Krasting", email="john.krasting@noaa.gov"}
+]
+license = {file = "LICENSE.txt"}
+readme = "README.md"
+requires-python = ">=3.8"
+keywords = ["oceanography", "mom", "mom6", "model", "ocean"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering",
+    "License :: Public Domain",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+dependencies = [
+    "importlib_metadata <5.0.0",
+    "cartopy",
+    "cmip_basins",
+    "gsw",
+    "intake",
+    "numpy",
+    "matplotlib",
+    "palettable",
+    "scipy",
+    "static_downsampler",
+    "xarray",
+    "xcompare",
+    "xesmf",
+    "xoverturning",
+    "xwavelet",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+]
+
+[project.urls]
+homepage = "https://github.com/jkrasting/omlabs"
+documentation = "https://github.com/jkrasting/omlabs"
+repository = "https://github.com/jkrasting/omlabs"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools-git-versioning]
+enabled = true
+template = "{tag}"
+dev_template = "{tag}"
+dirty_template = "{tag}"
+starting_version = "3.0.0a1" # this is a backup for pip <= 22.0 where git-versioning doesn't work
+
+[tool.dynamic]
+version = "placeholder" # this is a placeholder for the version pulled with git-versioning
+
+[tool.setuptools.package-data]
+omlabs = [
+    "catalogs/*",
+]
+
+[tool.setuptools]
+script-files = ["scripts/omlabs"]

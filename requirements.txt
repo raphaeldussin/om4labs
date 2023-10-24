@@ -1,0 +1,14 @@
+cartopy
+cmip_basins
+gsw
+intake
+numpy
+matplotlib
+palettable
+scipy
+static_downsampler
+xarray
+xcompare
+xesmf
+xoverturning
+xwavelet

@@ -34,59 +34,59 @@ IMG = $(patsubst %, output/$(domain)/%, $(COMBINED))
 all: $(IMG)
 
 test_data/obs:
-	curl -o om4labs.obs_data.latest.tar.gz \
-	ftp://ftp.gfdl.noaa.gov/perm/John.Krasting/om4labs/om4labs.obs_data.latest.tar.gz
-	tar -xzvf om4labs.obs_data.latest.tar.gz
+	curl -o omlabs.obs_data.latest.tar.gz \
+	ftp://ftp.gfdl.noaa.gov/perm/John.Krasting/omlabs/omlabs.obs_data.latest.tar.gz
+	tar -xzvf omlabs.obs_data.latest.tar.gz
 
 test_data/$(domain):
-	curl -o om4labs.$(domain)_test_data.latest.tar.gz \
-	ftp://ftp.gfdl.noaa.gov/perm/John.Krasting/om4labs/om4labs.$(domain)_test_data.latest.tar.gz
-	tar -xzvf om4labs.$(domain)_test_data.latest.tar.gz
+	curl -o omlabs.$(domain)_test_data.latest.tar.gz \
+	ftp://ftp.gfdl.noaa.gov/perm/John.Krasting/omlabs/omlabs.$(domain)_test_data.latest.tar.gz
+	tar -xzvf omlabs.$(domain)_test_data.latest.tar.gz
 
-$(patsubst %, output/$(domain)/%, $(HEAT_TRANS_PLOTS)): test_data/$(domain) test_data/obs ../om4labs/diags/heat_transport/heat_transport.py
-	om4labs heat_transport --platform testing -o output/$(domain) \
+$(patsubst %, output/$(domain)/%, $(HEAT_TRANS_PLOTS)): test_data/$(domain) test_data/obs ../omlabs/diags/heat_transport/heat_transport.py
+	omlabs heat_transport --platform testing -o output/$(domain) \
 	-s test_data/$(domain)/pp/ocean_monthly$(suffix)/ocean_monthly$(suffix).static.nc \
 	test_data/$(domain)/pp/ocean_monthly$(suffix)/av/annual_Xyr/ocean_monthly$(suffix).ann.nc
 
-$(patsubst %, output/$(domain)/%, $(MOC_PLOTS)): test_data/$(domain) ../om4labs/diags/moc/moc.py
+$(patsubst %, output/$(domain)/%, $(MOC_PLOTS)): test_data/$(domain) ../omlabs/diags/moc/moc.py
 	# density plot
-	om4labs moc -o output/$(domain) \
+	omlabs moc -o output/$(domain) \
 	-s test_data/$(domain)/pp/ocean_annual_rho2$(suffix)/ocean_annual_rho2$(suffix).static.nc \
 	--topog test_data/$(domain)/pp/ocean_annual_rho2$(suffix)/ocean_annual_rho2$(suffix).static.nc \
 	test_data/$(domain)/pp/ocean_annual_rho2$(suffix)/av/annual_Xyr/ocean_annual_rho2$(suffix).ann.nc
 	mv output/$(domain)/moc.png output/$(domain)/moc_rho.png
 
 	# z-level plot
-	om4labs moc -o output/$(domain) \
+	omlabs moc -o output/$(domain) \
 	-s test_data/$(domain)/pp/ocean_annual_z$(suffix)/ocean_annual_z$(suffix).static.nc \
 	--topog test_data/$(domain)/pp/ocean_annual_z$(suffix)/ocean_annual_z$(suffix).static.nc \
 	test_data/$(domain)/pp/ocean_annual_z$(suffix)/av/annual_Xyr/ocean_annual_z$(suffix).ann.nc
 	mv output/$(domain)/moc.png output/$(domain)/moc_z.png
 
 $(patsubst %, output/$(domain)/%, $(SECTION_PLOTS)): test_data/$(domain) \
-	../om4labs/diags/section_transports/section_transports.py \
-	../om4labs/diags/generic_section_transport/generic_section_transport.py
-	om4labs section_transports -o output/$(domain) test_data/$(domain)/pp
+	../omlabs/diags/section_transports/section_transports.py \
+	../omlabs/diags/generic_section_transport/generic_section_transport.py
+	omlabs section_transports -o output/$(domain) test_data/$(domain)/pp
 
 $(patsubst %, output/$(domain)/%, $(SFC_BIAS_PLOTS)): test_data/$(domain) test_data/obs \
-	../om4labs/diags/sst_annual_bias_1x1deg/sst_annual_bias_1x1deg.py \
-	../om4labs/diags/sss_annual_bias_1x1deg/sss_annual_bias_1x1deg.py
-	om4labs sst_annual_bias_1x1deg --platform testing -o output/$(domain) \
+	../omlabs/diags/sst_annual_bias_1x1deg/sst_annual_bias_1x1deg.py \
+	../omlabs/diags/sss_annual_bias_1x1deg/sss_annual_bias_1x1deg.py
+	omlabs sst_annual_bias_1x1deg --platform testing -o output/$(domain) \
 	test_data/$(domain)/pp/ocean_annual_z$(suffix)_1x1deg/av/annual_Xyr/ocean_annual_z$(suffix)_1x1deg.ann.nc
-	om4labs sss_annual_bias_1x1deg --platform testing -o output/$(domain) \
+	omlabs sss_annual_bias_1x1deg --platform testing -o output/$(domain) \
 	test_data/$(domain)/pp/ocean_annual_z$(suffix)_1x1deg/av/annual_Xyr/ocean_annual_z$(suffix)_1x1deg.ann.nc
 
 $(patsubst %, output/$(domain)/%, $(THETAO_YZ_PLOTS)): test_data/$(domain) test_data/obs \
-	../om4labs/diags/generic_yz_annual_bias_1x1deg/generic_yz_annual_bias_1x1deg.py \
-	../om4labs/diags/thetao_yz_annual_bias_1x1deg/thetao_yz_annual_bias_1x1deg.py
-	om4labs thetao_yz_annual_bias_1x1deg --style diff --platform testing -o output/$(domain) \
+	../omlabs/diags/generic_yz_annual_bias_1x1deg/generic_yz_annual_bias_1x1deg.py \
+	../omlabs/diags/thetao_yz_annual_bias_1x1deg/thetao_yz_annual_bias_1x1deg.py
+	omlabs thetao_yz_annual_bias_1x1deg --style diff --platform testing -o output/$(domain) \
 	--static test_data/$(domain)/pp/ocean_annual_z$(suffix)_1x1deg/ocean_annual_z$(suffix)_1x1deg.static.nc  \
 	test_data/$(domain)/pp/ocean_annual_z$(suffix)_1x1deg/av/annual_Xyr/ocean_annual_z$(suffix)_1x1deg.ann.nc
 
 $(patsubst %, output/$(domain)/%, $(SO_YZ_PLOTS)): test_data/$(domain) test_data/obs \
-	../om4labs/diags/generic_yz_annual_bias_1x1deg/generic_yz_annual_bias_1x1deg.py \
-	../om4labs/diags/so_yz_annual_bias_1x1deg/so_yz_annual_bias_1x1deg.py
-	om4labs so_yz_annual_bias_1x1deg --style diff --platform testing -o output/$(domain) \
+	../omlabs/diags/generic_yz_annual_bias_1x1deg/generic_yz_annual_bias_1x1deg.py \
+	../omlabs/diags/so_yz_annual_bias_1x1deg/so_yz_annual_bias_1x1deg.py
+	omlabs so_yz_annual_bias_1x1deg --style diff --platform testing -o output/$(domain) \
 	--static test_data/$(domain)/pp/ocean_annual_z$(suffix)_1x1deg/ocean_annual_z$(suffix)_1x1deg.static.nc  \
 	test_data/$(domain)/pp/ocean_annual_z$(suffix)_1x1deg/av/annual_Xyr/ocean_annual_z$(suffix)_1x1deg.ann.nc
 
@@ -98,5 +98,5 @@ distclean:
 	rm -f bilinear*.nc
 	rm -fR test_data
 	rm -fR output
-	rm -f om4labs.obs_data.latest.tar.gz
-	rm -f om4labs.*_test_data.latest.tar.gz
+	rm -f omlabs.obs_data.latest.tar.gz
+	rm -f omlabs.*_test_data.latest.tar.gz
