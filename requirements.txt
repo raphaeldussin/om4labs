@@ -5,6 +5,7 @@ intake
 numpy
 matplotlib
 palettable
+regionmask
 scipy
 static_downsampler
 xarray
