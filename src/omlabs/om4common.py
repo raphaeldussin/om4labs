@@ -19,10 +19,14 @@ import numpy as np
 import pkg_resources as pkgr
 import scipy
 import xarray as xr
-import xesmf as xe
 from cmip_basins import generate_basin_codes
 from packaging import version
 from xgcm import Grid
+
+try:
+    import xesmf as xe
+except ModuleNotFoundError as exc:
+    warnings.warn("Unable to import xesmf. Some functionality may not work.")
 
 try:
     from omlabs.helpers import try_variable_from_list
