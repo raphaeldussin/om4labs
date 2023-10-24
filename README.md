@@ -1,4 +1,4 @@
-<img src="https://github.com/jkrasting/omlabs/blob/rename-omlabs/docs/logo/omlabs.jpg" width="50%">
+<img src="https://github.com/jkrasting/omlabs/blob/main/docs/logo/omlabs.jpg" width="50%">
 
 <hr>
 
