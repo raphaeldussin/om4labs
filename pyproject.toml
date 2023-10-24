@@ -38,6 +38,7 @@ dependencies = [
     "xarray",
     "xcompare",
     "xesmf",
+    "xgcm",
     "xoverturning",
     "xwavelet",
 ]
